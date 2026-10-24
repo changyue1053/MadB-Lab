@@ -1,4 +1,0 @@
-# C01 controlled negative probe; reverted after remote validation.
-[workspace]
-[workspace.dependencies]
-private_core = { package = "madb-model", path = "../madb/crates/madb-model" }
