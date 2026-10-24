@@ -1,0 +1,65 @@
+{
+  "schema": "madb.case/1",
+  "id": "c06.kotlin-jvm-rust.distribution",
+  "kind": "template",
+  "problem_ids": [
+    "DIST-001",
+    "VERIFY-002"
+  ],
+  "source_ids": [],
+  "selector": null,
+  "requires": {
+    "features": [],
+    "environment": []
+  },
+  "fixture": {
+    "path": "consumers/kotlin-common/c06/Consumer.kt",
+    "sha256": "sha256:ed5b5ebd3428cafbe1da90d593b231200687158ef6919f65904e7d2119dfc4b4",
+    "size": 17093,
+    "schema": "madb.lab-source/1"
+  },
+  "setup": [
+    {
+      "id": "install",
+      "action": "environment",
+      "entrypoint": "isolated-public-candidate",
+      "arguments": []
+    }
+  ],
+  "steps": [
+    {
+      "id": "execute",
+      "action": "call",
+      "entrypoint": "distribution",
+      "arguments": []
+    }
+  ],
+  "assertions": [
+    {
+      "observation": "independent-public-consumer",
+      "operator": "equals",
+      "expected": [
+        {
+          "kind": "string",
+          "value": "All Lab-owned observations and exact rejection stages match; owned work returns to baseline."
+        }
+      ]
+    }
+  ],
+  "expected_result": {
+    "kind": "success"
+  },
+  "cleanup": [
+    {
+      "id": "drain-and-release",
+      "action": "cleanup",
+      "entrypoint": "verify-resource-baseline",
+      "arguments": []
+    }
+  ],
+  "timeout_policy": {
+    "timeout_ms": 35000,
+    "on_timeout": "error",
+    "recovery": "isolate"
+  }
+}

@@ -1,0 +1,139 @@
+{
+  "data": {
+    "cleanup.owned-work": 0,
+    "data.id": "m1",
+    "data.text": "你好\u0000é",
+    "data.null": null,
+    "data.bytes": [
+      0,
+      127,
+      128,
+      255
+    ],
+    "data.minimum": "-9223372036854775808",
+    "data.maximum": "9223372036854775807",
+    "data.variants": 3
+  },
+  "errors": {
+    "cleanup.owned-work": 0,
+    "errors.callback": "CallbackFailure",
+    "errors.closed": "Closed",
+    "errors.payload": "ResourceExhausted"
+  },
+  "objects": {
+    "cleanup.owned-work": 0,
+    "objects.released": 1,
+    "objects.second-result": "AlreadyConsumed"
+  },
+  "async": {
+    "cleanup.owned-work": 0,
+    "async.text": "你好\u0000é:host",
+    "async.worker-distinct": true
+  },
+  "cancel": {
+    "cleanup.owned-work": 0,
+    "cancel.wait-is-not-work": true,
+    "cancel.queued-callbacks": 0,
+    "cancel.late-result": "Cancelled"
+  },
+  "late-callback": {
+    "cleanup.owned-work": 0,
+    "late-callback.sequences": [
+      1
+    ],
+    "state.latest-sequence": 3,
+    "cleanup.second-owner": 0
+  },
+  "capacity": {
+    "cleanup.owned-work": 0,
+    "capacity.items": 8,
+    "capacity.bytes": 4096,
+    "cleanup.second-owner": 0,
+    "capacity.operations": 8,
+    "capacity.subscriptions": 8,
+    "capacity.waiters": 32,
+    "capacity.waiter-overflow": 1,
+    "cleanup.handles-owner": 0,
+    "cleanup.waiter-owner": 0
+  },
+  "shutdown": {
+    "cleanup.owned-work": 0,
+    "shutdown.waited-for-callback": true,
+    "shutdown.callback-request": true,
+    "cleanup.second-owner": 0
+  },
+  "identity": {
+    "cleanup.owned-work": 0
+  },
+  "wrong-profile": {
+    "rejection.code": "ProfileMismatch"
+  },
+  "distribution": {
+    "cleanup.owned-work": 0,
+    "distribution.loaded-copy": true
+  },
+  "wrong-abi": {
+    "rejection.code": "AbiMismatch"
+  },
+  "foreign-future-once": {
+    "foreign.calls": 1,
+    "foreign.results": 1,
+    "foreign.pending": 0,
+    "unsigned.u8.forward": [
+      "0",
+      "128",
+      "255"
+    ],
+    "unsigned.u8.reverse": [
+      "255",
+      "127",
+      "0"
+    ],
+    "unsigned.u16.forward": [
+      "0",
+      "32768",
+      "65535"
+    ],
+    "unsigned.u16.reverse": [
+      "65535",
+      "32767",
+      "0"
+    ],
+    "unsigned.u32.forward": [
+      "0",
+      "2147483648",
+      "4294967295"
+    ],
+    "unsigned.u32.reverse": [
+      "4294967295",
+      "2147483647",
+      "0"
+    ],
+    "unsigned.u64.forward": [
+      "0",
+      "9223372036854775808",
+      "18446744073709551615"
+    ],
+    "unsigned.u64.reverse": [
+      "18446744073709551615",
+      "9223372036854775807",
+      "0"
+    ],
+    "unsigned.callback-values": 12
+  },
+  "callback-throw": {
+    "completion.transfers": 1,
+    "completion.error-terminals": 0,
+    "completion.created": 1,
+    "completion.released": 1,
+    "completion.diagnostics": 1,
+    "foreign.pending": 0
+  },
+  "cancel-late-result": {
+    "late.transfers": 1,
+    "late.error-terminals": 0,
+    "late.created": 1,
+    "late.released": 1,
+    "foreign.pending": 0
+  }
+}

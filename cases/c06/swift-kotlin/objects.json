@@ -1,0 +1,65 @@
+{
+  "schema": "madb.case/1",
+  "id": "c06.swift-kotlin.objects",
+  "kind": "template",
+  "problem_ids": [
+    "LIFE-001",
+    "LIFE-005"
+  ],
+  "source_ids": [],
+  "selector": null,
+  "requires": {
+    "features": [],
+    "environment": []
+  },
+  "fixture": {
+    "path": "consumers/swift/c06-skie/Main.swift",
+    "sha256": "sha256:8b05719283688188f75d78b4875cfe596c8482bfa6e5dd58060d5cba7e1dc913",
+    "size": 1402,
+    "schema": "madb.lab-source/1"
+  },
+  "setup": [
+    {
+      "id": "install",
+      "action": "environment",
+      "entrypoint": "isolated-public-candidate",
+      "arguments": []
+    }
+  ],
+  "steps": [
+    {
+      "id": "execute",
+      "action": "call",
+      "entrypoint": "objects",
+      "arguments": []
+    }
+  ],
+  "assertions": [
+    {
+      "observation": "independent-public-consumer",
+      "operator": "equals",
+      "expected": [
+        {
+          "kind": "string",
+          "value": "All Lab-owned observations and exact rejection stages match; owned work returns to baseline."
+        }
+      ]
+    }
+  ],
+  "expected_result": {
+    "kind": "success"
+  },
+  "cleanup": [
+    {
+      "id": "drain-and-release",
+      "action": "cleanup",
+      "entrypoint": "verify-resource-baseline",
+      "arguments": []
+    }
+  ],
+  "timeout_policy": {
+    "timeout_ms": 35000,
+    "on_timeout": "error",
+    "recovery": "isolate"
+  }
+}

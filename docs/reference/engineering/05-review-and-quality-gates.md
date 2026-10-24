@@ -15,11 +15,11 @@ Agent 按[开发规范](07-agent-development.md)绑定任务、相关设计、�
 | 公共 API/契约 | 类型、线程、所有权、取消、兼容与文档 | API 比较、正反例、消费端编译 |
 | 核心模型/规则 | 单一职责、纯函数、精度与缺口区分 | 单元测试、结构校验、确定性 |
 | 生成器 | 来源追踪、路径所有权、失败恢复、可读性 | golden、重生成、编译和语义测试 |
-| 注解/宏/便利 API | 普通入口可用、无隐藏副作用、语义与来源一致、编译依赖明确 | [DX 验收](https://github.com/changyue1053/MadB/blob/bd2fc28dca8e72995ee9bce6330c6b37ad8b557d/docs/validation/07-developer-ergonomics.md)、宏组合与独立消费 |
+| 注解/宏/便利 API | 普通入口可用、无隐藏副作用、语义与来源一致、编译依赖明确 | [DX 验收](https://github.com/changyue1053/MadB/blob/0daf56372c721059be5cc49f80857dd79941cf9d/docs/validation/07-developer-ergonomics.md)、宏组合与独立消费 |
 | 运行时 | 状态机、别名、释放器、重入与终态认领 | 定时序交错、资源计数、适用动态检查 |
 | 诊断/插桩 | 可选采集与必要保护分离、有界开销、无重复计数 | 开关对照、sink 失败注入、未插桩 Release |
 | 后端/工具链 | 运行时、方向、交付形态、构建系统、稳定发布与模板补丁身份 | 精确锁、目标编译与运行、实际公开接口调用、反向调用 |
-| 语言/运行时扩展 | 开放身份、受检语义、协议协商、组件依赖与禁用隔离 | [扩展验收](https://github.com/changyue1053/MadB/blob/bd2fc28dca8e72995ee9bce6330c6b37ad8b557d/docs/validation/05-language-onboarding.md)及真实消费探针 |
+| 语言/运行时扩展 | 开放身份、受检语义、协议协商、组件依赖与禁用隔离 | [扩展验收](https://github.com/changyue1053/MadB/blob/0daf56372c721059be5cc49f80857dd79941cf9d/docs/validation/05-language-onboarding.md)及真实消费探针 |
 | 打包/发布 | 文件完整性、许可、符号、装载、根 metadata、native 依赖与分发设置 | 干净环境从候选包消费；官方/CPF 坐标无冲突，Apple 制品异机可用 |
 | 文档/示例 | 可运行、链接有效、无误导能力声明 | 文档检查和相关示例 |
 
@@ -44,7 +44,7 @@ unsafe、线程能力、结果所有权转移、关闭排水、动态装载和�
 
 ## 门禁与例外
 
-原型评审检查假设、范围和失败预期，不要求预先冻结全部语言 API。正式集成按[设计准入](https://github.com/changyue1053/MadB/blob/bd2fc28dca8e72995ee9bce6330c6b37ad8b557d/docs/delivery/04-design-readiness-and-first-route.md)核对契约、生成形状、依赖和可执行样例；公开发布再核对公共声明与兼容承诺。自定义便利层必须有等价普通用法及 DX 证据，架构表中列出技术名称不能替代这些材料。
+原型评审检查假设、范围和失败预期，不要求预先冻结全部语言 API。正式集成按[设计准入](https://github.com/changyue1053/MadB/blob/0daf56372c721059be5cc49f80857dd79941cf9d/docs/delivery/04-design-readiness-and-first-route.md)核对契约、生成形状、依赖和可执行样例；公开发布再核对公共声明与兼容承诺。自定义便利层必须有等价普通用法及 DX 证据，架构表中列出技术名称不能替代这些材料。
 
 候选发布的必需证据缺失必须阻断。实验性能力可以明确不在认证集合中继续开发，但不能以“已知问题”将失败伪装为通过。临时 CI 故障记录复现信息并重新执行，证据仍绑定原候选内容。
 
@@ -52,13 +52,13 @@ unsafe、线程能力、结果所有权转移、关闭排水、动态装载和�
 
 ## 文档和 HTML 专项门禁
 
-规范、计划、展示数据、模板和生成 HTML 作为一个变更审查，使用[文档质量规范](https://github.com/changyue1053/MadB/blob/bd2fc28dca8e72995ee9bce6330c6b37ad8b557d/docs/engineering/06-documentation-quality.md)。必须检查路线独有机制、条件与拒绝路径、原生/队列/消费者三段生命周期，以及问题→任务→验收的显式映射。节点数量、链接可用和 JS 语法通过仅是结构证据。
+规范、计划、展示数据、模板和生成 HTML 作为一个变更审查，使用[文档质量规范](https://github.com/changyue1053/MadB/blob/0daf56372c721059be5cc49f80857dd79941cf9d/docs/engineering/06-documentation-quality.md)。必须检查路线独有机制、条件与拒绝路径、原生/队列/消费者三段生命周期，以及问题→任务→验收的显式映射。节点数量、链接可用和 JS 语法通过仅是结构证据。
 
 `python3 tools/check_docs.py` 运行静态一致性检查，`python3 -m unittest discover -s tools/tests` 验证文档工具的关键拒绝规则。浏览器渲染、窄屏、键盘和交互结果另记录，未执行不能写成“已通过”。
 
 ## 实施契约的评审准入
 
-按[设计决定](https://github.com/changyue1053/MadB/blob/bd2fc28dca8e72995ee9bce6330c6b37ad8b557d/docs/adr/0009-implementation-contracts-and-gates.md)检查四类资产：明确规则、实际接口/schema/任务图、成功用例、准确负例。首链集成先通过 DEC-01 至 DEC-06 及所用运行机制；后续 profile 再落实责任表、调度/容量、装配和制品匹配。规则已经写入文档不等于实现通过。
+按[设计决定](https://github.com/changyue1053/MadB/blob/0daf56372c721059be5cc49f80857dd79941cf9d/docs/adr/0009-implementation-contracts-and-gates.md)检查四类资产：明确规则、实际接口/schema/任务图、成功用例、准确负例。首链集成先通过 DEC-01 至 DEC-06 及所用运行机制；后续 profile 再落实责任表、调度/容量、装配和制品匹配。规则已经写入文档不等于实现通过。
 
 并发生成与增量输入使用 CRIT-09/10；资源句柄和执行器退出使用 CRIT-08/11；身份与错库使用 CRIT-07/12。已有门禁和案例继续保留，决策索引不增加第二套进度统计。
 
@@ -72,7 +72,7 @@ CI 使用同一检查入口，外部 PR 不接收发布凭证。远程仓库的�
 
 ## 工程骨架的依赖门禁
 
-目录与允许依赖以[模块规范](https://github.com/changyue1053/MadB/blob/bd2fc28dca8e72995ee9bce6330c6b37ad8b557d/docs/architecture/02-modules-and-ports.md)为准，Lab 结构以[验证工程](../validation/02-lab-architecture.md)为准。C01 建立检查入口，C04 随实际实现收紧边界；规则的预期失败也必须可复现，不能只展示当前没有违规。
+目录与允许依赖以[模块规范](https://github.com/changyue1053/MadB/blob/0daf56372c721059be5cc49f80857dd79941cf9d/docs/architecture/02-modules-and-ports.md)为准，Lab 结构以[验证工程](../validation/02-lab-architecture.md)为准。C01 建立检查入口，C04 随实际实现收紧边界；规则的预期失败也必须可复现，不能只展示当前没有违规。
 
 | 检查 | 必需正例与负例 | 落点 |
 |---|---|---|
