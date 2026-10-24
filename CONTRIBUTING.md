@@ -8,8 +8,10 @@ Read-only specification snapshots are refreshed from a reviewed MadB commit, wit
 
 Only contribute content you can license under Apache-2.0 and retain third-party notices. Use SECURITY.md for vulnerability reporting.
 
-## Private repository merge controls
+## Main branch merge controls
 
-The C01 branch-protection request is stored in `.github/branch-protection.json`. GitHub currently rejects it with HTTP 403 because the selected private repository lacks the required plan capability. This file is prepared configuration, not an active protection rule; C01 remains unaccepted and its draft PR stays unmerged. Do not make the repository public or remove the check requirement to work around it.
+The repository owner authorized public visibility on 2026-10-24. The effective `main` protection requires the `MadB-Lab C01 baseline` check and an up-to-date PR branch, applies to administrators, and prohibits force pushes and branch deletion. The required check is associated with GitHub Actions. A workflow file alone is not proof that these controls are active.
 
-After the account has the required capability, the authorized maintainer can apply the request with `gh api --method PUT repos/changyue1053/MadB-Lab/branches/main/protection --input .github/branch-protection.json`, read back the effective configuration, and verify a failing required check blocks merging. Only then may C01's remaining acceptance be assessed.
+The reproducible request is stored in `.github/branch-protection.json`. An authorized maintainer can apply it with `gh api --method PUT repos/changyue1053/MadB-Lab/branches/main/protection --input .github/branch-protection.json`. Read back the effective settings and validate that a failing required check blocks merging after changing repository visibility, permissions or merge controls. Do not weaken the required checks to resolve a configuration failure.
+
+C01 verification is recorded in the [MadB review](https://github.com/changyue1053/MadB/blob/codex/c01-baseline/docs/reviews/2026-10-24-c01-public-repositories.md). Repository visibility does not imply a software release or platform certification; the current task catalog and the PR's actual checks remain the acceptance evidence.
