@@ -149,7 +149,8 @@ def type_references(definition):
     if kind == "nullable": return [definition["inner"]]
     if kind == "record": return [field["type_id"] for field in definition["fields"]]
     if kind == "callback":
-        return [parameter["type_id"] for parameter in definition["parameters"]] + [definition["result"]]
+        return ([parameter["type_id"] for parameter in definition["parameters"]] + [definition["result"]]
+                + ([definition["throws"]] if "throws" in definition else []))
     if kind == "variant":
         return [definition["tag_type"]] + [case["payload"] for case in definition["cases"] if case["payload"] is not None]
     return []
@@ -164,7 +165,8 @@ def layout_projection(contract, reachable=None):
 def shape_digest(contract, symbol):
     types = {item["id"]: item for item in identity_set(contract["types"], "id")}
     shape = symbol["shape"]
-    pending = [parameter["type_id"] for parameter in shape["parameters"]] + [shape["result"]]
+    pending = ([parameter["type_id"] for parameter in shape["parameters"]] + [shape["result"]]
+               + ([shape["throws"]] if "throws" in shape else []))
     reachable = set()
     while pending:
         name = pending.pop()
@@ -206,8 +208,28 @@ def policy_digest(contract):
     return semantic_digest("madb.policy/1", [value for _, value in sorted(policies, key=lambda item: item[0])])
 
 
+def verify_error_channels(contract):
+    types = {item["id"]: item["definition"] for item in contract["types"]}
+    declarations = [symbol["shape"] for symbol in contract["symbols"]]
+    declarations.extend(definition for definition in types.values() if definition["kind"] == "callback")
+    for declaration in declarations:
+        if "throws" not in declaration:
+            continue
+        error_type = declaration["throws"]
+        definition = types.get(error_type, {}) if isinstance(error_type, str) else {}
+        if definition.get("kind") == "variant":
+            continue
+        # Swift's any Error is an erased backend-owned object. It has no
+        # enumerable payload/case declaration and is not a C pointer or ID table.
+        if (definition.get("kind") == "resource" and definition.get("representation") == "backend-handle"
+                and set(definition) == {"kind", "representation", "owner"}):
+            continue
+        raise CandidateError("AbiMismatch", "error channel requires a declared value variant or backend-owned erased error")
+
+
 def verify_contract_digests(contract):
     sources = set()
+    verify_error_channels(contract)
     for symbol in identity_set(contract["symbols"], "public_id"):
         if symbol["precision"] not in {"artifact-derived", "compiler-derived", "schema-derived"}:
             raise CandidateError("ArtifactMismatch", "first-route declaration precision is not authoritative")
@@ -312,6 +334,12 @@ def _keys(value, expected, label):
 
 
 def verify_candidate(root: Path) -> dict:
+    """C05 accepts only its original direct C ABI route."""
+    return verify_public_candidate(root, allowed_routes={"RUST-C-ABI"})
+
+
+def verify_public_candidate(root: Path, *, allowed_routes: set[str]) -> dict:
+    """Validate the shared public format; callers own their closed route allowlist."""
     root = root.resolve(strict=True)
     manifest = read_json(root / "candidate.json")
     _keys(manifest, ("schema", "candidate_digest", "selector", "generation_id", "contract_digest",
@@ -324,8 +352,8 @@ def verify_candidate(root: Path) -> dict:
             raise CandidateError("FormatInvalid", f"invalid {name}")
     selector = manifest["selector"]
     _keys(selector, ("route", "profile_id", "profile_digest", "target", "direction"), "selector")
-    if selector["route"] != "RUST-C-ABI" or selector["direction"] != "consumer-to-provider":
-        raise CandidateError("ProfileMismatch", "candidate is not a direct first-route consumer")
+    if selector["route"] not in allowed_routes or selector["direction"] != "consumer-to-provider":
+        raise CandidateError("ProfileMismatch", "candidate is not an allowed direct consumer route")
     if not DIGEST.fullmatch(selector["profile_digest"]):
         raise CandidateError("FormatInvalid", "invalid profile digest")
     for name in ("profile_id", "target"):

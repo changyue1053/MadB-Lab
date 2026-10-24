@@ -1,0 +1,66 @@
+{
+  "schema": "madb.case/1",
+  "id": "c06.swift-kotlin.missing-cinterop-origin",
+  "kind": "template",
+  "problem_ids": [
+    "TYPE-007"
+  ],
+  "source_ids": [],
+  "selector": null,
+  "requires": {
+    "features": [],
+    "environment": []
+  },
+  "fixture": {
+    "path": "consumers/swift/c06-skie/negative/MissingCInteropOrigin.swift",
+    "sha256": "sha256:80159a88638a0b969dd443e1c6debc67f7196706779b0d471ecfedfbd22dee28",
+    "size": 292,
+    "schema": "madb.lab-source/1"
+  },
+  "setup": [
+    {
+      "id": "install",
+      "action": "environment",
+      "entrypoint": "isolated-public-candidate",
+      "arguments": []
+    }
+  ],
+  "steps": [
+    {
+      "id": "execute",
+      "action": "call",
+      "entrypoint": "missing-cinterop-origin",
+      "arguments": []
+    }
+  ],
+  "assertions": [
+    {
+      "observation": "independent-public-consumer",
+      "operator": "equals",
+      "expected": [
+        {
+          "kind": "string",
+          "value": "All Lab-owned observations and exact rejection stages match; owned work returns to baseline."
+        }
+      ]
+    }
+  ],
+  "expected_result": {
+    "kind": "rejection",
+    "code": "CapabilityUnsupported",
+    "stage": "compile"
+  },
+  "cleanup": [
+    {
+      "id": "drain-and-release",
+      "action": "cleanup",
+      "entrypoint": "verify-resource-baseline",
+      "arguments": []
+    }
+  ],
+  "timeout_policy": {
+    "timeout_ms": 35000,
+    "on_timeout": "error",
+    "recovery": "isolate"
+  }
+}

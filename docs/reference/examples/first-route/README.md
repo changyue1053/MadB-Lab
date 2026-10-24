@@ -6,10 +6,10 @@
 
 | 资产 | 作用 | 后续验证 |
 |---|---|---|
-| [C 声明](https://github.com/changyue1053/MadB/blob/bd2fc28dca8e72995ee9bce6330c6b37ad8b557d/docs/examples/first-route/expected.h) | Rust 提供方的预期导出面及独立 C 提供方入口 | C03 cbindgen 对照；C05 实际符号、链接及 C 消费 |
-| [Rust 声明](https://github.com/changyue1053/MadB/blob/bd2fc28dca8e72995ee9bce6330c6b37ad8b557d/docs/examples/first-route/expected.rs) | `repr(C)`、数值状态和 `unsafe extern "C"` 导入形状 | C03 bindgen 对照；C05 独立 Rust 消费 C |
-| [C 消费片段](https://github.com/changyue1053/MadB/blob/bd2fc28dca8e72995ee9bce6330c6b37ad8b557d/docs/examples/first-route/consumer.c) | 字段偏移、宽度、状态常量及函数签名 | 本机编译；不等于运行或双目标探针通过 |
-| [格式与语义样本](https://github.com/changyue1053/MadB/blob/bd2fc28dca8e72995ee9bce6330c6b37ad8b557d/tests/fixtures/contracts/README.md) | 五个端口的独立样本、领域身份、策略来源与反例 | C02 跨实现检查；C04 端口执行、C05 真实读取器 |
+| [C 声明](https://github.com/changyue1053/MadB/blob/0daf56372c721059be5cc49f80857dd79941cf9d/docs/examples/first-route/expected.h) | Rust 提供方的预期导出面及独立 C 提供方入口 | C03 cbindgen 对照；C05 实际符号、链接及 C 消费 |
+| [Rust 声明](https://github.com/changyue1053/MadB/blob/0daf56372c721059be5cc49f80857dd79941cf9d/docs/examples/first-route/expected.rs) | `repr(C)`、数值状态和 `unsafe extern "C"` 导入形状 | C03 bindgen 对照；C05 独立 Rust 消费 C |
+| [C 消费片段](https://github.com/changyue1053/MadB/blob/0daf56372c721059be5cc49f80857dd79941cf9d/docs/examples/first-route/consumer.c) | 字段偏移、宽度、状态常量及函数签名 | 本机编译；不等于运行或双目标探针通过 |
+| [格式与语义样本](https://github.com/changyue1053/MadB/blob/0daf56372c721059be5cc49f80857dd79941cf9d/tests/fixtures/contracts/README.md) | 五个端口的独立样本、领域身份、策略来源与反例 | C02 跨实现检查；C04 端口执行、C05 真实读取器 |
 
 C ABI 是“状态返回 + 输出参数”；IR 的 `result: engine/u64/unit` 表示逻辑结果。C05 降低到 `MadbStatus` 与 `out_*`，失败状态不混入逻辑返回类型。格式样本覆盖五个基本接口；本目录还固定观察接口与 Rust 独立消费 C 的入口。观察接口的真实读取与有效策略由 C03/C05 补齐，不据此声称样本已覆盖所有回调运行路径。
 
@@ -38,7 +38,7 @@ C ABI 是“状态返回 + 输出参数”；IR 的 `result: engine/u64/unit` �
 - subscription 的 `request_close` 停止接纳新回调；已获取的回调许可可完成，`await_closed` 等待排水。回调内对本订阅或等待该回调的 engine 调用 `await_closed` 返回 WouldDeadlock。
 - engine 关闭也关闭其订阅并排水；成功后 context 可清理。subscription 的登记令牌仍由其调用者 release，避免引擎替消费者消费令牌；源端 owner 负责保持所需记录直到排水完成。
 
-上述是待 C05 验证的协议，不是 C02 的并发正确性证据。首链要求的错句柄、重复关闭、关闭超时、迟到回调、注册失败和同步反调见 [CRIT-03/08/11](https://github.com/changyue1053/MadB/blob/bd2fc28dca8e72995ee9bce6330c6b37ad8b557d/docs/validation/08-critical-scenarios.md)。
+上述是待 C05 验证的协议，不是 C02 的并发正确性证据。首链要求的错句柄、重复关闭、关闭超时、迟到回调、注册失败和同步反调见 [CRIT-03/08/11](https://github.com/changyue1053/MadB/blob/0daf56372c721059be5cc49f80857dd79941cf9d/docs/validation/08-critical-scenarios.md)。
 
 ## 来源诊断与拒绝基线
 
@@ -50,7 +50,7 @@ C ABI 是“状态返回 + 输出参数”；IR 的 `result: engine/u64/unit` �
 
 ## C03 生成验证补充
 
-[真实探针](https://github.com/changyue1053/MadB/blob/bd2fc28dca8e72995ee9bce6330c6b37ad8b557d/tests/integration/c03/README.md)已将本目录的完整 ABI 声明经 cbindgen/bindgen 生成并在两个 Apple 目标编译；运行部分使用独立 stateless provider，未实现这里的 engine 生命周期。
+[真实探针](https://github.com/changyue1053/MadB/blob/0daf56372c721059be5cc49f80857dd79941cf9d/tests/integration/c03/README.md)已将本目录的完整 ABI 声明经 cbindgen/bindgen 生成并在两个 Apple 目标编译；运行部分使用独立 stateless provider，未实现这里的 engine 生命周期。
 
 `expected.h` 的状态码改用普通整数宏：锁定版本 bindgen 未导出 `INT32_C(...)` 表达式，且普通非负宏默认映射为 u32，因此参数固定 `--default-macro-constant-type signed`。全部 12 个状态码继续被编译断言为原 i32 数值；没有改变 ABI、状态机或错误语义。不能把消费者强制转型当成生成正确。
 

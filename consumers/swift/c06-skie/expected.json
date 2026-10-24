@@ -1,0 +1,155 @@
+{
+  "data": {
+    "id": "m1",
+    "nullable": true,
+    "text": "你好\u0000é",
+    "bytes": [
+      0,
+      127,
+      128,
+      255
+    ],
+    "int64_min": "-9223372036854775808",
+    "int64_max": "9223372036854775807",
+    "independent_snapshot": 0
+  },
+  "errors": {
+    "oversize": "ResourceExhausted",
+    "closing": "Closing",
+    "closed": "Closed"
+  },
+  "objects": {
+    "distinct_subscriptions": true,
+    "active_before_stop": 2,
+    "active_after_first_stop": 1,
+    "remaining_observer_queued": 1,
+    "active_after_close": 0,
+    "foreign_host_retained": true,
+    "foreign_host_released": true
+  },
+  "async": {
+    "reverse_id": "host-m1",
+    "reverse_sequence": "42",
+    "reverse_bytes": [
+      255,
+      0
+    ],
+    "host_calls": 1,
+    "host_on_main": false,
+    "repeat_run": "AlreadyStarted",
+    "async_error": "ResourceExhausted",
+    "completed": 2
+  },
+  "cancel": {
+    "before_start": "Cancelled",
+    "before_start_calls": 0,
+    "cancel_wait": "Cancelled",
+    "work_retained_after_wait_cancel": 1,
+    "work_completed_after_wait_cancel": 1,
+    "running_callback_retained": 1,
+    "cancel_work": "Cancelled",
+    "cancelled": 2,
+    "active_after_cancel": 0,
+    "ack_wait_cancel": "Cancelled",
+    "ack_work_before_release": 1,
+    "ack_work_completed": 1,
+    "ack_work_cancelled": 0,
+    "ack_wait_retained": 0
+  },
+  "late-callback": {
+    "delivered": [
+      "first"
+    ],
+    "queued_after_stop": 0,
+    "retained_after_stop": 0,
+    "stopped_before_collect": 0,
+    "delivery_order": [
+      "callback-entered",
+      "callback-left",
+      "stop-returned"
+    ],
+    "reentrant_stop": "WouldDeadlock",
+    "reentrant_close": "WouldDeadlock",
+    "reentrant_query": 1,
+    "stop_returned_before_release": false,
+    "duplicate_collector": "AlreadyCollected",
+    "duplicate_preserved_original": true
+  },
+  "capacity": {
+    "event_items": 8,
+    "event_overflow": "ResourceExhausted",
+    "event_items_after_rejection": 8,
+    "byte_limit": 4096,
+    "byte_overflow": "ResourceExhausted",
+    "bytes_after_rejection": 4096,
+    "combined_limit": 4096,
+    "combined_overflow": "ResourceExhausted",
+    "state_slots": 1,
+    "state_latest": "latest",
+    "bytes_after_close": 0,
+    "operation_items": 8,
+    "operation_overflow": "ResourceExhausted",
+    "unstarted_host_calls": 0,
+    "observer_items": 8,
+    "observer_overflow": "ResourceExhausted",
+    "fanout_event_items": 8,
+    "fanout_event_overflow": "ResourceExhausted",
+    "fanout_items_after_rejection": 8,
+    "waiter_items": 32,
+    "waiter_overflow": 1,
+    "waiter_cancelled": 32,
+    "waiter_after_cancel": 0
+  },
+  "shutdown": {
+    "reject_after_close_request": "Closing",
+    "closed_before_callback_returns": false,
+    "callback_lease_before_return": 1,
+    "queued_after_close_request": 0,
+    "late_result": "Cancelled",
+    "closed_after_drain": true,
+    "retained_after_drain": 0,
+    "close_returned_before_body_release": false,
+    "callback_close_order": [
+      "callback-entered",
+      "callback-left",
+      "close-returned"
+    ],
+    "cleanup_close_before_release": false,
+    "cleanup_operation_before_release": 1,
+    "cleanup_result": "Cancelled",
+    "cleanup_retained_after_drain": 0,
+    "ack_close_before_release": false,
+    "ack_operation_before_release": 1,
+    "ack_result": "Cancelled",
+    "ack_retained_after_drain": 0
+  },
+  "identity": {
+    "profile_matches": true,
+    "bootstrap": 1,
+    "native_abi": 1,
+    "first_call": "m1"
+  },
+  "wrong-profile": {
+    "rejection": "ProfileMismatch"
+  },
+  "distribution": {
+    "profile_matches": true,
+    "bootstrap": 1,
+    "native_abi": 1,
+    "first_call": "m1"
+  },
+  "enhanced-api": {
+    "enum_cases": [
+      "open",
+      "closing",
+      "closed"
+    ],
+    "sealed_failure": "BusinessRejected",
+    "flow_data": "m1",
+    "flow_order": [
+      "0",
+      "1",
+      "2"
+    ]
+  }
+}

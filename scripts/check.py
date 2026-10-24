@@ -12,12 +12,18 @@ ROOT = Path(__file__).resolve().parents[1]
 
 def main():
     parser = argparse.ArgumentParser(description="Repository gates and optional explicit C05 candidate verification")
-    parser.add_argument("--first-route", action="store_true")
+    mode = parser.add_mutually_exclusive_group()
+    mode.add_argument("--first-route", action="store_true")
+    mode.add_argument("--c06", action="store_true")
+    parser.add_argument("--managed-root", type=Path)
     parser.add_argument("--candidates", type=Path)
-    parser.add_argument("--output", type=Path, default=ROOT / "reports" / "c05")
+    parser.add_argument("--output", type=Path, default=None)
     arguments = parser.parse_args()
-    if arguments.first_route and arguments.candidates is None:
-        parser.error("--first-route requires --candidates; missing SDK evidence is not a pass")
+    if (arguments.first_route or arguments.c06) and arguments.candidates is None:
+        parser.error("SDK verification requires --candidates; missing evidence is not a pass")
+    if arguments.c06 and arguments.managed_root is None:
+        parser.error("--c06 requires the candidate-bound --managed-root compiler installation")
+    arguments.output = arguments.output or ROOT / "reports" / ("c06" if arguments.c06 else "c05")
     expected = (ROOT / ".python-version").read_text().strip()
     if platform.python_version() != expected:
         raise RuntimeError(f"Use Python {expected}; got {platform.python_version()}")
@@ -30,6 +36,9 @@ def main():
         print("+ " + " ".join(command), flush=True)
         subprocess.run(command, cwd=ROOT, check=True)
     print("Lab repository and harness checks passed. These checks do not certify an SDK.")
+    if arguments.c06:
+        subprocess.run([sys.executable, "scripts/verify_c06.py", "--candidates", str(arguments.candidates),
+                        "--managed-root", str(arguments.managed_root), "--output", str(arguments.output)], cwd=ROOT, check=True)
     if arguments.first_route:
         subprocess.run([sys.executable, "scripts/verify_first_route.py", "--candidates", str(arguments.candidates),
                         "--output", str(arguments.output)], cwd=ROOT, check=True)

@@ -6,7 +6,7 @@ C01 使用独立 madb_lab Git 根建立可运行的仓库检查。首期不伪�
 
 ## 验证工程的目标目录
 
-本节是 MadB-Lab 目录的唯一维护入口；工具源码目录见[MadB 工程骨架](https://github.com/changyue1053/MadB/blob/bd2fc28dca8e72995ee9bce6330c6b37ad8b557d/docs/architecture/02-modules-and-ports.md)。以下为实施目标，按场景与目标逐步建立，不表示所有消费者已经实现。
+本节是 MadB-Lab 目录的唯一维护入口；工具源码目录见[MadB 工程骨架](https://github.com/changyue1053/MadB/blob/0daf56372c721059be5cc49f80857dd79941cf9d/docs/architecture/02-modules-and-ports.md)。以下为实施目标，按场景与目标逐步建立，不表示所有消费者已经实现。
 
 <!-- madb-lab-tree:start -->
 ```text
@@ -70,7 +70,7 @@ MadB-Lab/
 
 普通报告、临时工程、下载缓存和设备日志与手写案例分离，默认不进入源码提交；需保留的验收证据按固定候选归档、脱敏并记录摘要。golden 只证明形状，行为断言由独立 expected 负责。跨仓库通过已版本化的公开格式协作，不建立私有源码依赖；公开格式的编码复用不等于复用生产规则作为预期。
 
-新增语言执行[扩展验收](https://github.com/changyue1053/MadB/blob/bd2fc28dca8e72995ee9bce6330c6b37ad8b557d/docs/validation/05-language-onboarding.md)，扩展声明与实际认证分开记录。初始化场景调用候选 MadB 和模板，在新目录创建工程后执行[IDE 验收](https://github.com/changyue1053/MadB/blob/bd2fc28dca8e72995ee9bce6330c6b37ad8b557d/docs/validation/06-project-initialization.md)，记录导入、源码变更后重建、运行及承诺的调试能力；不预先修补被测工程。
+新增语言执行[扩展验收](https://github.com/changyue1053/MadB/blob/0daf56372c721059be5cc49f80857dd79941cf9d/docs/validation/05-language-onboarding.md)，扩展声明与实际认证分开记录。初始化场景调用候选 MadB 和模板，在新目录创建工程后执行[IDE 验收](https://github.com/changyue1053/MadB/blob/0daf56372c721059be5cc49f80857dd79941cf9d/docs/validation/06-project-initialization.md)，记录导入、源码变更后重建、运行及承诺的调试能力；不预先修补被测工程。
 
 Lab 的 Agent 按[共同开发规范](../engineering/07-agent-development.md)执行；根 AGENTS.md 强调公开候选消费、独立 expected 和真实报告，不直接复制工具仓库的私有实现规则。共享依据使用固定版本的可获取文档，不能依赖作者机器路径；失败不能通过更新预期或缺设备降级来伪装为成功。
 
@@ -97,7 +97,7 @@ SampleEngine 提供下列独立场景，避免借用聊天、账户等项目业�
 
 开发阶段可使用源码候选，但必须先构建成与发布形态相同的包，再交给 Lab。两个仓库无需锁步提交；兼容测试协议保证旧工具版本可以继续被复现验证。
 
-Rust↔C 首链建立两个真实消费者：C 消费 Rust 导出库，Rust 消费 C 库；回调另验，不能代替第二个直接方向。作者声明、生成接口、profile/锁、fixture、独立预期和候选包按[首链资产](https://github.com/changyue1053/MadB/blob/bd2fc28dca8e72995ee9bce6330c6b37ad8b557d/docs/delivery/04-design-readiness-and-first-route.md)落地。C09/C10 在 S1 提供首链所需能力，S5 再完成全矩阵收口；只通过一个字符串成功样例不满足 C05。
+Rust↔C 首链建立两个真实消费者：C 消费 Rust 导出库，Rust 消费 C 库；回调另验，不能代替第二个直接方向。作者声明、生成接口、profile/锁、fixture、独立预期和候选包按[首链资产](https://github.com/changyue1053/MadB/blob/0daf56372c721059be5cc49f80857dd79941cf9d/docs/delivery/04-design-readiness-and-first-route.md)落地。C09/C10 在 S1 提供首链所需能力，S5 再完成全矩阵收口；只通过一个字符串成功样例不满足 C05。
 
 ## 平台配方的独立消费
 
@@ -122,4 +122,4 @@ UI 测试分别验证前后台、页面隐藏/销毁、重复进入、输入法�
 
 ## 明确的交错入口
 
-fixture 至少能暂停“源端取得 context 后”“执行器已入队但未执行”“结果已 resume 但消费端未恢复”三个时刻。分别观测源端持有、队列票据、用户回调与结果资源；一个 live-count 不足以区分提前释放和遗漏收尾。组合应用 fixture 提供测试专用的实例身份，识别两个桥各建一套内核的问题。详细步骤与独立预期见[CRIT 场景](https://github.com/changyue1053/MadB/blob/bd2fc28dca8e72995ee9bce6330c6b37ad8b557d/docs/validation/08-critical-scenarios.md)。
+fixture 至少能暂停“源端取得 context 后”“执行器已入队但未执行”“结果已 resume 但消费端未恢复”三个时刻。分别观测源端持有、队列票据、用户回调与结果资源；一个 live-count 不足以区分提前释放和遗漏收尾。组合应用 fixture 提供测试专用的实例身份，识别两个桥各建一套内核的问题。详细步骤与独立预期见[CRIT 场景](https://github.com/changyue1053/MadB/blob/0daf56372c721059be5cc49f80857dd79941cf9d/docs/validation/08-critical-scenarios.md)。

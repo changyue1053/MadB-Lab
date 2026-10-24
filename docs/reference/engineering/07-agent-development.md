@@ -14,8 +14,8 @@
 
 | 内容 | 依据 | 执行要求 |
 |---|---|---|
-| 做什么、先后及何时完成 | [任务目录](https://github.com/changyue1053/MadB/blob/bd2fc28dca8e72995ee9bce6330c6b37ad8b557d/docs/catalog/implementation-plan.json)、[实施计划](../delivery/01-implementation-plan.md) | 绑定既有任务编号及本次范围；依赖按计划定义解释，提前探针不冒充整体验收 |
-| 怎么实现与哪些边界不能改变 | 对应 architecture 规范、ADR、[工具骨架](https://github.com/changyue1053/MadB/blob/bd2fc28dca8e72995ee9bce6330c6b37ad8b557d/docs/architecture/02-modules-and-ports.md)和[Lab 骨架](../validation/02-lab-architecture.md) | 从任务的 documents 和适用 DEC 准入开始阅读，再追踪涉及的规范；无需每次通读全部资料 |
+| 做什么、先后及何时完成 | [任务目录](https://github.com/changyue1053/MadB/blob/0daf56372c721059be5cc49f80857dd79941cf9d/docs/catalog/implementation-plan.json)、[实施计划](../delivery/01-implementation-plan.md) | 绑定既有任务编号及本次范围；依赖按计划定义解释，提前探针不冒充整体验收 |
+| 怎么实现与哪些边界不能改变 | 对应 architecture 规范、ADR、[工具骨架](https://github.com/changyue1053/MadB/blob/0daf56372c721059be5cc49f80857dd79941cf9d/docs/architecture/02-modules-and-ports.md)和[Lab 骨架](../validation/02-lab-architecture.md) | 从任务的 documents 和适用 DEC 准入开始阅读，再追踪涉及的规范；无需每次通读全部资料 |
 | 如何证明正确 | 任务 acceptance、适用 validation 文档、[质量门禁](05-review-and-quality-gates.md) | 按改动风险执行真实检查；部分成功不替代工作包验收 |
 | 历史信息与视图 | reviews、研究案例、HTML | 仅作导航或指定快照的证据，不覆盖现行规范和任务状态 |
 
