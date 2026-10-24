@@ -1,0 +1,65 @@
+{
+  "schema": "madb.case/1",
+  "id": "c05.c-to-rust-test.source-lease",
+  "kind": "template",
+  "problem_ids": [
+    "LIFE-002",
+    "LIFE-004"
+  ],
+  "source_ids": [],
+  "selector": null,
+  "requires": {
+    "features": [],
+    "environment": []
+  },
+  "fixture": {
+    "path": "consumers/c/main.c",
+    "sha256": "sha256:e7a03f22b1119e1d1ec9cb7b162017e9a5d6e26b12e6afe22cd684719045a0af",
+    "size": 16443,
+    "schema": "madb.lab-source/1"
+  },
+  "setup": [
+    {
+      "id": "install",
+      "action": "environment",
+      "entrypoint": "isolated-public-candidate",
+      "arguments": []
+    }
+  ],
+  "steps": [
+    {
+      "id": "execute",
+      "action": "call",
+      "entrypoint": "source-lease",
+      "arguments": []
+    }
+  ],
+  "assertions": [
+    {
+      "observation": "CRIT-03",
+      "operator": "equals",
+      "expected": [
+        {
+          "kind": "string",
+          "value": "context alive before bridge entry; no callbacks after await success"
+        }
+      ]
+    }
+  ],
+  "expected_result": {
+    "kind": "success"
+  },
+  "cleanup": [
+    {
+      "id": "close-and-release",
+      "action": "cleanup",
+      "entrypoint": "verify-resource-baseline",
+      "arguments": []
+    }
+  ],
+  "timeout_policy": {
+    "timeout_ms": 30000,
+    "on_timeout": "error",
+    "recovery": "isolate"
+  }
+}

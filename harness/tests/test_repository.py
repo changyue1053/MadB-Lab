@@ -39,6 +39,14 @@ class RepositoryBoundaries(unittest.TestCase):
         (self.root / "Cargo.toml").write_text('[patch.crates-io]\nhelper = { path = "../private-helper" }\n')
         self.assertTrue(any("LAB007" in error for error in checker.dependency_errors(self.root)))
 
+    def test_nested_readme_is_covered_by_snapshot_checksums(self):
+        shutil.copytree(ROOT / "docs" / "reference", self.root / "docs" / "reference")
+        reference = self.root / "docs" / "reference"
+        self.assertEqual(checker.snapshot_errors(self.root), [])
+        target = reference / "examples" / "first-route" / "README.md"
+        target.write_text(target.read_text() + "\nUnexpected nested edit.\n")
+        self.assertTrue(any("LAB003" in error for error in checker.snapshot_errors(self.root)))
+
     def test_snapshot_edits_are_rejected(self):
         shutil.copytree(ROOT / "docs" / "reference", self.root / "docs" / "reference")
         self.assertEqual(checker.snapshot_errors(self.root), [])

@@ -30,7 +30,7 @@ def snapshot_errors(root: Path) -> list[str]:
         if not path.is_file() or hashlib.sha256(path.read_bytes()).hexdigest() != digest:
             errors.append(f"LAB003: specification snapshot changed: {relative}")
     expected = {str(path.relative_to(reference)) for path in reference.rglob("*")
-                if path.is_file() and path.name not in {"README.md", "SHA256SUMS", "REVISION"}}
+                if path.is_file() and path.relative_to(reference).as_posix() not in {"README.md", "SHA256SUMS", "REVISION"}}
     if seen != expected or not seen:
         errors.append("LAB004: reference checksum coverage is incomplete")
     return errors

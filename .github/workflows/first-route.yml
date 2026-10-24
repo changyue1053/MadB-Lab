@@ -1,0 +1,83 @@
+name: C05 independent native candidates
+on:
+  push:
+    branches: [main, "codex/**"]
+  pull_request:
+  workflow_dispatch:
+permissions:
+  contents: read
+concurrency:
+  group: c05-${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
+env:
+  # Fixed public producer revision; candidate provenance is checked by the consumer.
+  MADB_PRODUCER_REVISION: bd2fc28dca8e72995ee9bce6330c6b37ad8b557d
+jobs:
+  producer:
+    name: C05 frozen Linux candidate producer
+    runs-on: ubuntu-24.04
+    timeout-minutes: 45
+    steps:
+      - name: Require an immutable producer revision
+        shell: bash
+        run: '[[ "$MADB_PRODUCER_REVISION" =~ ^[0-9a-f]{40}$ ]]'
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          repository: changyue1053/MadB
+          ref: ${{ env.MADB_PRODUCER_REVISION }}
+          persist-credentials: false
+      - uses: actions/setup-python@6d4fd22b20465ccc0f7354476588e8df7c9ca0e0 # v7.1.0
+        with:
+          python-version: "3.14.4"
+      - name: Install native tool prerequisites
+        run: |
+          sudo apt-get update
+          sudo apt-get install --no-install-recommends clang libclang-dev
+          rustup toolchain install 1.99.1 --profile minimal
+      - name: Build public candidates with locked generators
+        run: |
+          python scripts/install_native_tools.py --root "$RUNNER_TEMP/native-tools"
+          python scripts/build_first_route.py --output "$RUNNER_TEMP/candidates" --bindgen "$RUNNER_TEMP/native-tools/bin/bindgen" --cbindgen "$RUNNER_TEMP/native-tools/bin/cbindgen"
+      - uses: actions/upload-artifact@bbbca2ddaa5d8feaa63e36b76fdaad77386f024f # v7.0.0
+        with:
+          name: c05-native-candidates
+          path: ${{ runner.temp }}/candidates
+          if-no-files-found: error
+          retention-days: 14
+  consumer:
+    name: MadB-Lab C05 independent consumers
+    needs: producer
+    if: always()
+    runs-on: ubuntu-24.04
+    timeout-minutes: 20
+    steps:
+      - name: Require successful candidate production
+        env:
+          PRODUCER_RESULT: ${{ needs.producer.result }}
+        run: test "$PRODUCER_RESULT" = success
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          persist-credentials: false
+      - uses: actions/setup-python@6d4fd22b20465ccc0f7354476588e8df7c9ca0e0 # v7.1.0
+        with:
+          python-version-file: .python-version
+      - name: Install consumer compilers
+        run: |
+          sudo apt-get update
+          sudo apt-get install --no-install-recommends clang
+          rustup toolchain install 1.99.1 --profile minimal
+      - uses: actions/download-artifact@70fc10c6e5e1ce46ad2ea6f2b72d43f7d47b13c3 # v8.0.0
+        with:
+          name: c05-native-candidates
+          path: ${{ runner.temp }}/candidates
+      - name: Verify candidates without the producer checkout or caches
+        run: |
+          python scripts/check.py
+          python scripts/verify_first_route.py --candidates "$RUNNER_TEMP/candidates" --output "$RUNNER_TEMP/c05-reports" --producer-revision "$MADB_PRODUCER_REVISION"
+      - uses: actions/upload-artifact@bbbca2ddaa5d8feaa63e36b76fdaad77386f024f # v7.0.0
+        if: always()
+        with:
+          name: c05-lab-evidence
+          path: ${{ runner.temp }}/c05-reports
+          if-no-files-found: error
+          retention-days: 30

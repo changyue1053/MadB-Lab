@@ -1,0 +1,66 @@
+{
+  "schema": "madb.case/1",
+  "id": "c05.c-to-rust-test.capacity",
+  "kind": "template",
+  "problem_ids": [
+    "THR-001",
+    "THR-004",
+    "LIFE-004"
+  ],
+  "source_ids": [],
+  "selector": null,
+  "requires": {
+    "features": [],
+    "environment": []
+  },
+  "fixture": {
+    "path": "consumers/c/main.c",
+    "sha256": "sha256:e7a03f22b1119e1d1ec9cb7b162017e9a5d6e26b12e6afe22cd684719045a0af",
+    "size": 16443,
+    "schema": "madb.lab-source/1"
+  },
+  "setup": [
+    {
+      "id": "install",
+      "action": "environment",
+      "entrypoint": "isolated-public-candidate",
+      "arguments": []
+    }
+  ],
+  "steps": [
+    {
+      "id": "execute",
+      "action": "call",
+      "entrypoint": "capacity",
+      "arguments": []
+    }
+  ],
+  "assertions": [
+    {
+      "observation": "CRIT-11",
+      "operator": "equals",
+      "expected": [
+        {
+          "kind": "string",
+          "value": "64 subscription limit; closed token occupies slot; controls work while full"
+        }
+      ]
+    }
+  ],
+  "expected_result": {
+    "kind": "success"
+  },
+  "cleanup": [
+    {
+      "id": "close-and-release",
+      "action": "cleanup",
+      "entrypoint": "verify-resource-baseline",
+      "arguments": []
+    }
+  ],
+  "timeout_policy": {
+    "timeout_ms": 30000,
+    "on_timeout": "error",
+    "recovery": "isolate"
+  }
+}

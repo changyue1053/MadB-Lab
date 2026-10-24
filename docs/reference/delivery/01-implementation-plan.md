@@ -1,12 +1,12 @@
 # MadB 实施计划与阶段退出条件
 
-交付独立 MadB 与 MadB-Lab，九组语言边界、十六条主线全部保留。阶段安排表示验收顺序；人员和设备未落实前不编造日历工期。当前实施与认证状态以[工作包目录](https://github.com/changyue1053/MadB/blob/2c47c079dd08832a6ea2d82630cd249784fb6594/docs/catalog/implementation-plan.json)为准。
+交付独立 MadB 与 MadB-Lab，九组语言边界、十六条主线全部保留。阶段安排表示验收顺序；人员和设备未落实前不编造日历工期。当前实施与认证状态以[工作包目录](https://github.com/changyue1053/MadB/blob/bd2fc28dca8e72995ee9bce6330c6b37ad8b557d/docs/catalog/implementation-plan.json)为准。
 
 ## 计划的维护入口
 
-目录维护 41 个工作包：30 个主线、11 个后续扩展。任务的责任、依赖、acceptance、文档及实际证据只在目录修改；[HTML 计划](https://github.com/changyue1053/MadB/blob/2c47c079dd08832a6ea2d82630cd249784fb6594/docs/visuals/implementation-progress.html)直接生成阅读视图。本文解释阶段和交付安排，避免维护第二份任务明细。
+目录维护 41 个工作包：30 个主线、11 个后续扩展。任务的责任、依赖、acceptance、文档及实际证据只在目录修改；[HTML 计划](https://github.com/changyue1053/MadB/blob/bd2fc28dca8e72995ee9bce6330c6b37ad8b557d/docs/visuals/implementation-progress.html)直接生成阅读视图。本文解释阶段和交付安排，避免维护第二份任务明细。
 
-目录中的 `decision_gates` 对应 [ADR-0009](https://github.com/changyue1053/MadB/blob/2c47c079dd08832a6ea2d82630cd249784fb6594/docs/adr/0009-implementation-contracts-and-gates.md) 的 DEC-01 至 DEC-12，记录完成时点、规范、任务和验收。它们不是新增工作包，也不按“决策已写入”计工程完成度。
+目录中的 `decision_gates` 对应 [ADR-0009](https://github.com/changyue1053/MadB/blob/bd2fc28dca8e72995ee9bce6330c6b37ad8b557d/docs/adr/0009-implementation-contracts-and-gates.md) 的 DEC-01 至 DEC-12，记录完成时点、规范、任务和验收。它们不是新增工作包，也不按“决策已写入”计工程完成度。
 
 ## Agent 开发的计划执行
 
@@ -40,7 +40,7 @@ C01 已获准启动；当前任务状态与实际负责人见工作包目录。�
 | 事项 | 已采用的处理要求 | 完成时点 |
 |---|---|---|
 | 仓库和文档归属 | 工作区下 madb 与 madb_lab 分别建 Git 仓库；权威资料放入 madb/docs。原 docs 可保留单向兼容链接，不保留可独立修改的副本；Lab 使用固定来源和摘要的必要规范只读副本 | 首次提交前 |
-| 检查可复现 | 当前直接检查因缺 jsonschema 而退出；提供固定 Python/Node、校验依赖清单与安装入口，独立检出和 CI 使用同一命令，不依赖本机临时目录 | C01 首批交付 |
+| 检查可复现 | 提供固定 Python/Node、校验依赖锁与安装入口，独立检出和 CI 使用同一命令，不依赖本机临时目录；环境未安装完整时明确失败 | C01 首批交付 |
 | 工具链锁 | 工具宿主采用已选 Rust 1.99.1 / Edition 2024，项目 rust-toolchain.toml 与 Cargo.lock 固定；只添加已使用的依赖，不升级用户全局默认工具链 | 首次构建前 |
 | 身份与责任 | C01 负责人为已核对账号 changyue1053；落实 MadB、MadB-Lab 仓库及必要权限。自有 crate 初期 publish=false；未来渠道坐标取得前不声明已经占用 | C01 内 |
 | Agent 与合入约束 | 两份简短根 AGENTS.md、实际检查入口、依赖负例及 CI 必需检查；用实际小任务验证失败不能放行。配置文件存在不等于远程约束生效 | C01 验收前 |
@@ -50,14 +50,14 @@ C01 可先交付本地基线。若远程权限、命名空间或公开前核对�
 
 ## S0 的可执行交付
 
-1. C01 按[工具骨架](https://github.com/changyue1053/MadB/blob/2c47c079dd08832a6ea2d82630cd249784fb6594/docs/architecture/02-modules-and-ports.md)与[Lab 骨架](../validation/02-lab-architecture.md)建立双工程、最小可编译 workspace、依赖检查，以及 Apache-2.0 设计默认所需的实际许可/通知、贡献、轻量 Agent 执行规范和 CI 合入基线；固定真实仓库/包命名空间与人员/设备责任。
+1. C01 按[工具骨架](https://github.com/changyue1053/MadB/blob/bd2fc28dca8e72995ee9bce6330c6b37ad8b557d/docs/architecture/02-modules-and-ports.md)与[Lab 骨架](../validation/02-lab-architecture.md)建立双工程、最小可编译 workspace、依赖检查，以及 Apache-2.0 设计默认所需的实际许可/通知、贡献、轻量 Agent 执行规范和 CI 合入基线；固定真实仓库/包命名空间与人员/设备责任。
 2. C02 固定结构与语义权威、符号身份、精确选择器、默认展开、摘要和最小格式；项目/IR/锁/profile/案例/报告及首链 payload 有可执行正反样本。
 3. C03 完成首链 P01/P02 的工具锁、两种布局及至少一个真实目标的双向调用；P03/P05 等尽早探针，只阻断受影响的后续配置。
 4. E01–E03 通过扩展 schema、注册、握手、必需语义协商和框架探针；使用测试语言身份验证核心依赖不变。
 5. I01 固定模板 schema、文件所有权、Wrapper 与原生 IDE 配方；L01 明确普通入口和机制责任，便利语法通过原型收敛。
-6. 形成[首链六类资产](https://github.com/changyue1053/MadB/blob/2c47c079dd08832a6ea2d82630cd249784fb6594/docs/delivery/04-design-readiness-and-first-route.md)的 S0 部分：作者声明、ABI/生成预期、端口、profile/锁、消费者/独立预期及候选配方。首链集成必须满足 DEC-01 至 DEC-06 的设计与格式准入。
+6. 形成[首链六类资产](https://github.com/changyue1053/MadB/blob/bd2fc28dca8e72995ee9bce6330c6b37ad8b557d/docs/delivery/04-design-readiness-and-first-route.md)的 S0 部分：作者声明、ABI/生成预期、端口、profile/锁、消费者/独立预期及候选配方。首链集成必须满足 DEC-01 至 DEC-06 的设计与格式准入。
 
-S0 包含真实原型和探针，不要求预先实现完整工具，也不等待所有语言的注解或属性封装器定名。高风险探针的证据与阻断范围由[风险登记](https://github.com/changyue1053/MadB/blob/2c47c079dd08832a6ea2d82630cd249784fb6594/docs/delivery/03-decisions-and-risks.md)维护。
+S0 包含真实原型和探针，不要求预先实现完整工具，也不等待所有语言的注解或属性封装器定名。高风险探针的证据与阻断范围由[风险登记](https://github.com/changyue1053/MadB/blob/bd2fc28dca8e72995ee9bce6330c6b37ad8b557d/docs/delivery/03-decisions-and-risks.md)维护。
 
 ## 工作线与交付责任
 
@@ -98,3 +98,36 @@ S6 保留全部既定扩展：NativeCoroutines/SKIE、官方 Swift export、ANI�
 C01 登记六个核心 crate 及实际启用的构建成员，建立代码检查和架构依赖负例；此时不以空目录或成功空实现宣称后端可用。C02/E01/E02 固定模型、格式、扩展清单和进程契约；C04 实现应用端口、组合根、任务执行与受控 host。C05 再贯通 Rust/C 适配器、公开候选和两个真实消费者，C09/C10 提供其 S1 所需验证与打包能力。
 
 新增语言或便利层沿既定 sdk、adapter、helper 和模板边界接入，先检查是否复用已有实现。各工作包的具体依赖与验收仍只在实施目录维护；骨架落地不增加任务、完成率或认证。
+
+## C03 交接与后续准入
+
+[C03 记录](https://github.com/changyue1053/MadB/blob/bd2fc28dca8e72995ee9bce6330c6b37ad8b557d/docs/reviews/2026-10-24-c03-native-probes.md)按 P01/P02 保存实际结果，目录状态仍是唯一权威。首链的 C04/C05 不等待其他语言探针全部完成；P03/P05 由对应工作包尽早进入受控复现，模板修复先验证旧路径失败，再验证新路径。
+
+C04 接收 C02 格式/契约和 C03 的真实锁/生成形状，完成宿主读取/执行端口、任务图、冻结输入、生成事务与缓存；C05 在这些端口上接入实际编译器来源 reader、语言生成器、完整资源协议和独立 Lab。C03 的 stateless 试验不能充当 C05 生命周期验收，也不代表 S0 其他必需工作已通过。
+
+## C04 整包交付
+
+C04 在六个历史子范围上完成整包编排。历史实现与当时的验证范围分别见[只读查询](https://github.com/changyue1053/MadB/blob/bd2fc28dca8e72995ee9bce6330c6b37ad8b557d/docs/reviews/2026-10-24-c04-readonly-queries.md)、[受控进程](https://github.com/changyue1053/MadB/blob/bd2fc28dca8e72995ee9bce6330c6b37ad8b557d/docs/reviews/2026-10-24-c04-process-execution.md)、[固定输入](https://github.com/changyue1053/MadB/blob/bd2fc28dca8e72995ee9bce6330c6b37ad8b557d/docs/reviews/2026-10-24-c04-frozen-inputs.md)、[单任务结果](https://github.com/changyue1053/MadB/blob/bd2fc28dca8e72995ee9bce6330c6b37ad8b557d/docs/reviews/2026-10-24-c04-task-results.md)、[静态 DAG](https://github.com/changyue1053/MadB/blob/bd2fc28dca8e72995ee9bce6330c6b37ad8b557d/docs/reviews/2026-10-24-c04-dag-execution.md)及[输入观察](https://github.com/changyue1053/MadB/blob/bd2fc28dca8e72995ee9bce6330c6b37ad8b557d/docs/reviews/2026-10-24-c04-input-observations.md)。这些历史记录不单独代表整包完成；当前验收见[整包记录](https://github.com/changyue1053/MadB/blob/bd2fc28dca8e72995ee9bce6330c6b37ad8b557d/docs/reviews/2026-10-24-c04-complete-package.md)，状态以任务目录为准。
+
+| C04 验收 | 整包实现与证明 |
+|---|---|
+| 固定快照与模块隔离 | app 用例/端口、contracts 严格转换、host 受控 IO、CLI 组合根；真实依赖方向负例 |
+| 只读查询与生成检查 | 显式 metadata 准备不要求已有 IR；`generate --check` 在自有临时目录复算，验证实际文件与身份，不修复有效输出 |
+| 三层提交与固定消费 | Source/Build/Candidate、真实父批次证据、compile/link/run 完整构建、固定批次和祖先租约；新源码使旧 build/candidate current 失效 |
+| 同域并发、取消与恢复 | owner 认领、短锁/CAS、输入最终复核、取消与索引替换线性化；真实多进程并发、迟到结果、重复提交、崩溃点和租约回收测试 |
+| 完整输入与缓存 | 受限 freestanding Clang 真实依赖发现；工具/目标/宏/环境/传递头/缺失条件/搜索成员纳入身份；显式准备及后续绑定、命中复核和损坏隔离重建 |
+| CLI 和独立消费 | 正式 generate/build/package、SIGINT/SIGTERM 取消、完整进程诊断；真实编译/链接/运行及独立候选消费者 |
+
+完整门禁执行全部旧回归、新整包集成测试和文档/HTML 投影检查；远程 CI 绑定具体提交，不能从本地结果推导 Linux 通过。
+
+C04 的缓存资格限于已有完整输入证明的原生配置；未知脚本与未支持参数保持不可缓存。进程终止恢复不代表断电或网络文件系统认证，保留目录不能冒充完整后代清理证明。
+
+C05 接入实际编译器来源 reader、语言生成器、资源/线程/取消协议及独立 MadB-Lab 消费验收；复用 C04 端口，不以 fixture、候选生成或部分构建替代 SDK 认证。
+
+## C05 首链实施范围与证据边界
+
+首链通过 `scripts/install_native_tools.py` 安装锁定工具，由 `scripts/build_first_route.py` 串起真实声明读取、生成、构建与候选提交。实际适配器和独立 SDK 落点见[模块规范](https://github.com/changyue1053/MadB/blob/bd2fc28dca8e72995ee9bce6330c6b37ad8b557d/docs/architecture/02-modules-and-ports.md)；实现仅接收首链已知 roles 与编译器验证的声明，不推导任意 Rust/C 语义。工具端 `madb-native-finalize` 复用现有策略解析、来源与摘要规则，不成为公开 SDK 的运行依赖；只读查询继续不触发准备或生成。
+
+交付三个独立候选：C→Rust 的未插桩 Release、单独 test-support profile，以及 Rust→C 的 C 库和公开 Rust 包装。C04 的静态 DAG 需要先显式 prepare 实际输出身份，再在冻结输入下重新编译、链接、运行并核对；准备结果和候选生成都不单独证明验收。默认生产入口要求干净检出；开发用 `--allow-dirty` 产物标为 provisional，不能用于正式 Lab 验收。
+
+首链内部 adapter 配置由 read/lock 固定，profile 的 `backend_config` 保持 `null`；公开工具链记录去除宿主路径。Linux native observed profile 与 Apple 冻结工具链按各自真实目标取证，互不推导认证。独立 Lab 只接收公开候选，在无工具源码及开发缓存的新工程中运行两个直接消费者；整包完成仍要求目录中的全部 acceptance 和绑定最终候选的实际报告，此处不更新工作包状态。
