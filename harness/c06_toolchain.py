@@ -17,6 +17,24 @@ def _stream_digest(path: Path) -> str:
     return "sha256:" + digest.hexdigest()
 
 
+def _symlink_record(path: Path, root: Path) -> dict:
+    """Keep link text and missing-target state without accepting loops or escape."""
+    try:
+        # Unlike strict=False on Python 3.14, ALLOW_MISSING still rejects loops
+        # and permission failures. A bundled optional header may be absent.
+        resolved = Path(os.path.realpath(path, strict=os.path.ALLOW_MISSING))
+        if not resolved.is_relative_to(root.resolve(strict=True)):
+            raise CandidateError("ArtifactMismatch", "tool symlink escapes its declared root")
+        record = {"path": path.relative_to(root).as_posix(), "symlink": os.readlink(path)}
+        try:
+            resolved.stat()
+        except FileNotFoundError:
+            record["target_missing"] = True
+        return record
+    except OSError as error:
+        raise CandidateError("ArtifactMismatch", "tool symlink cannot be resolved safely") from error
+
+
 def verify_installation(root: Path, requirement: dict) -> dict:
     root = root.resolve(strict=True)
     receipt_path = root / "receipt.json"
@@ -43,9 +61,8 @@ def verify_installation(root: Path, requirement: dict) -> dict:
                 raise CandidateError("ArtifactMismatch", "duplicate compiler inventory entry")
             expected.add(relative); path = component_root / relative
             if "symlink" in item:
-                if (not path.is_symlink() or os.readlink(path) != item["symlink"]
-                        or not path.resolve().is_relative_to(component_root.resolve())):
-                    raise CandidateError("ArtifactMismatch", "compiler symlink changed or escaped its component")
+                if not path.is_symlink() or _symlink_record(path, component_root) != item:
+                    raise CandidateError("ArtifactMismatch", "compiler symlink text or missing-target state changed")
             elif (not path.is_file() or path.is_symlink() or path.stat().st_size != item["size"]
                   or _stream_digest(path) != item["sha256"]
                   or bool(path.stat().st_mode & 0o111) != item["executable"]):
@@ -83,9 +100,7 @@ def tree_identity(root: Path) -> dict:
     for path in sorted(root.rglob("*")):
         relative = path.relative_to(root).as_posix()
         if path.is_symlink():
-            if not path.resolve().is_relative_to(root):
-                raise CandidateError("ArtifactMismatch", "Apple tool tree symlink escapes its root")
-            records.append({"path": relative, "symlink": os.readlink(path)})
+            records.append(_symlink_record(path, root))
         elif path.is_file():
             records.append({"path": relative, "sha256": _stream_digest(path), "size": path.stat().st_size,
                             "executable": bool(path.stat().st_mode & 0o111)})

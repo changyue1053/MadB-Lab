@@ -221,6 +221,34 @@ class C06ManagedToolChecks(unittest.TestCase):
         (cache / "untrusted.klib").write_bytes(b"unrecorded")
         with self.assertRaises(CandidateError): verify_installation(self.root, self.requirement)
 
+    def test_declared_internal_missing_header_is_preserved_until_target_appears(self):
+        link = self.root / "compiler/PrivateHeaders"
+        link.symlink_to("optional-headers")
+        self.receipt["components"]["compiler"]["files"].append(
+            {"path": "PrivateHeaders", "symlink": "optional-headers", "target_missing": True})
+        self.save(); verify_installation(self.root, self.requirement)
+        # An empty directory adds no file inventory entries, but resolves a
+        # formerly missing target. This must still invalidate the receipt.
+        (self.root / "compiler/optional-headers").mkdir()
+        with self.assertRaises(CandidateError): verify_installation(self.root, self.requirement)
+
+    def test_missing_header_link_cannot_be_retargeted_to_another_missing_path(self):
+        link = self.root / "compiler/PrivateHeaders"; link.symlink_to("missing-a")
+        self.receipt["components"]["compiler"]["files"].append(
+            {"path": "PrivateHeaders", "symlink": "missing-a", "target_missing": True})
+        self.save(); verify_installation(self.root, self.requirement)
+        link.unlink(); link.symlink_to("missing-b")
+        with self.assertRaises(CandidateError): verify_installation(self.root, self.requirement)
+
+    def test_managed_symlink_loop_is_not_a_permitted_missing_target(self):
+        (self.root / "compiler/a").symlink_to("b")
+        (self.root / "compiler/b").symlink_to("a")
+        self.receipt["components"]["compiler"]["files"].extend([
+            {"path": "a", "symlink": "b", "target_missing": True},
+            {"path": "b", "symlink": "a", "target_missing": True}])
+        self.save()
+        with self.assertRaises(CandidateError): verify_installation(self.root, self.requirement)
+
     def test_compiler_symlink_must_stay_inside_its_component(self):
         (self.root / "outside").write_text("outside")
         link = self.root / "compiler/link"
@@ -248,6 +276,25 @@ class C06AppleToolChecks(unittest.TestCase):
             self.assertNotEqual(before["sha256"], changed["sha256"])
             header.chmod(0o755)
             self.assertNotEqual(changed["sha256"], tree_identity(root)["sha256"])
+
+    def test_missing_framework_header_link_affects_tree_identity(self):
+        with tempfile.TemporaryDirectory() as temporary:
+            root = Path(temporary)
+            (root / "PrivateHeaders").symlink_to("optional-headers")
+            missing = tree_identity(root)
+            self.assertEqual(missing["entries"], 1)
+            (root / "optional-headers").mkdir()
+            present = tree_identity(root)
+            self.assertEqual(present["entries"], 1)
+            self.assertNotEqual(missing["sha256"], present["sha256"])
+
+    def test_missing_external_target_and_internal_loop_are_rejected(self):
+        with tempfile.TemporaryDirectory() as temporary:
+            root = Path(temporary) / "sdk"; root.mkdir()
+            link = root / "PrivateHeaders"; link.symlink_to("../absent")
+            with self.assertRaises(CandidateError): tree_identity(root)
+            link.unlink(); link.symlink_to("loop"); (root / "loop").symlink_to("PrivateHeaders")
+            with self.assertRaises(CandidateError): tree_identity(root)
 
     def test_sdk_tree_symlink_cannot_read_outside_declared_root(self):
         with tempfile.TemporaryDirectory() as temporary:
