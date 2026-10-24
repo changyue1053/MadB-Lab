@@ -1,0 +1,67 @@
+{
+  "schema": "madb.case/1",
+  "id": "c05.packaging.integrity",
+  "kind": "template",
+  "problem_ids": [
+    "VERIFY-002",
+    "DIST-001"
+  ],
+  "source_ids": [],
+  "selector": null,
+  "requires": {
+    "features": [],
+    "environment": []
+  },
+  "fixture": {
+    "path": "harness/runners/first_route.py",
+    "sha256": "sha256:a1ea06805c8180588b46b3a924d350601b83b4bef6200551b7b9c0b87f959a92",
+    "size": 30655,
+    "schema": "madb.lab-source/1"
+  },
+  "setup": [
+    {
+      "id": "install",
+      "action": "environment",
+      "entrypoint": "isolated-public-candidate",
+      "arguments": []
+    }
+  ],
+  "steps": [
+    {
+      "id": "execute",
+      "action": "call",
+      "entrypoint": "tamper-installed-candidate-copy",
+      "arguments": []
+    }
+  ],
+  "assertions": [
+    {
+      "observation": "CRIT-12",
+      "operator": "equals",
+      "expected": [
+        {
+          "kind": "string",
+          "value": "changed actual file bytes rejected before execution; original remains intact"
+        }
+      ]
+    }
+  ],
+  "expected_result": {
+    "kind": "rejection",
+    "code": "ArtifactMismatch",
+    "stage": "identity"
+  },
+  "cleanup": [
+    {
+      "id": "close-and-release",
+      "action": "cleanup",
+      "entrypoint": "verify-resource-baseline",
+      "arguments": []
+    }
+  ],
+  "timeout_policy": {
+    "timeout_ms": 30000,
+    "on_timeout": "error",
+    "recovery": "isolate"
+  }
+}

@@ -1,0 +1,65 @@
+{
+  "schema": "madb.case/1",
+  "id": "c05.rust-to-c.abi-mismatch",
+  "kind": "template",
+  "problem_ids": [
+    "COMP-001",
+    "BUILD-003"
+  ],
+  "source_ids": [],
+  "selector": null,
+  "requires": {
+    "features": [],
+    "environment": []
+  },
+  "fixture": {
+    "path": "consumers/rust/src/main.rs",
+    "sha256": "sha256:df736bbd1ebc941f36f906e98416fc58bb10d5da443f925a82ee15a21e7f9728",
+    "size": 1018,
+    "schema": "madb.lab-source/1"
+  },
+  "setup": [
+    {
+      "id": "install",
+      "action": "environment",
+      "entrypoint": "isolated-public-candidate",
+      "arguments": []
+    }
+  ],
+  "steps": [
+    {
+      "id": "execute",
+      "action": "call",
+      "entrypoint": "abi-mismatch",
+      "arguments": []
+    }
+  ],
+  "assertions": [
+    {
+      "observation": "CRIT-12",
+      "operator": "equals",
+      "expected": [
+        {
+          "kind": "string",
+          "value": "independent wrong C library produces AbiMismatch before business"
+        }
+      ]
+    }
+  ],
+  "expected_result": {
+    "kind": "success"
+  },
+  "cleanup": [
+    {
+      "id": "close-and-release",
+      "action": "cleanup",
+      "entrypoint": "verify-resource-baseline",
+      "arguments": []
+    }
+  ],
+  "timeout_policy": {
+    "timeout_ms": 30000,
+    "on_timeout": "error",
+    "recovery": "isolate"
+  }
+}

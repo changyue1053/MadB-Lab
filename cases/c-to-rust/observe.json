@@ -1,0 +1,66 @@
+{
+  "schema": "madb.case/1",
+  "id": "c05.c-to-rust.observe",
+  "kind": "template",
+  "problem_ids": [
+    "LIFE-002",
+    "LIFE-004",
+    "THR-004"
+  ],
+  "source_ids": [],
+  "selector": null,
+  "requires": {
+    "features": [],
+    "environment": []
+  },
+  "fixture": {
+    "path": "consumers/c/main.c",
+    "sha256": "sha256:e7a03f22b1119e1d1ec9cb7b162017e9a5d6e26b12e6afe22cd684719045a0af",
+    "size": 16443,
+    "schema": "madb.lab-source/1"
+  },
+  "setup": [
+    {
+      "id": "install",
+      "action": "environment",
+      "entrypoint": "isolated-public-candidate",
+      "arguments": []
+    }
+  ],
+  "steps": [
+    {
+      "id": "execute",
+      "action": "call",
+      "entrypoint": "observe",
+      "arguments": []
+    }
+  ],
+  "assertions": [
+    {
+      "observation": "observe.reentry",
+      "operator": "equals",
+      "expected": [
+        {
+          "kind": "string",
+          "value": "sync sequence1 state0; callback close succeeds and await WouldDeadlock"
+        }
+      ]
+    }
+  ],
+  "expected_result": {
+    "kind": "success"
+  },
+  "cleanup": [
+    {
+      "id": "close-and-release",
+      "action": "cleanup",
+      "entrypoint": "verify-resource-baseline",
+      "arguments": []
+    }
+  ],
+  "timeout_policy": {
+    "timeout_ms": 30000,
+    "on_timeout": "error",
+    "recovery": "isolate"
+  }
+}
