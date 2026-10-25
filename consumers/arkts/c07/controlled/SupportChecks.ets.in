@@ -3,14 +3,21 @@
 import { Runtime, Engine, Operation, testObserve, testObserveFacade, testInspect,
   testObserveOperation } from @MADB_PUBLIC_MODULE@;
 import { check, nextTurn } from './Assertions';
+import { EXPECTED_OBSERVATION_PREFIX } from './ProbeConfig';
 export type Emit = (label: string, values: number[]) => void;
 
+export function observationKey(key: string): void {
+  check(key.startsWith(EXPECTED_OBSERVATION_PREFIX) && key.length > EXPECTED_OBSERVATION_PREFIX.length,
+        'actual-route-artifact-observation-key');
+}
 export function frame(values: number[], label: string): number[] {
-  check(values.length === 156, label + ':length');
+  check(values.length === 178, label + ':length');
   for (let i: number = 0; i < values.length; i++) {
     check(Number.isFinite(values[i]) && Math.floor(values[i]) === values[i], label + ':integer:' + String(i));
   }
-  check(values[0] === 1 && values[54] === 1, label + ':format');
+  check(values[0] === 1 && values[54] === 1 && values[156] === 1, label + ':format');
+  const illegal: number[] = [158,159,160,161,169,170];
+  for (let i: number=0;i<illegal.length;i++) { check(values[illegal[i]]===0,label+':illegal-api:'+String(illegal[i])); }
   check(values[55] >= 0 && values[55] <= 2, label + ':read-mode');
   return values;
 }
@@ -42,6 +49,7 @@ export async function gate(runtime: Runtime, operation: Operation, phase: number
 }
 export async function finalClosed(runtime: Runtime, key: string, deadline: number,
                                   emit: Emit): Promise<void> {
+  observationKey(key);
   while (true) {
     const f: number[] = frame(testInspect(key), 'closed-static');
     if (f[1] === 3 && f[55] === 2) {

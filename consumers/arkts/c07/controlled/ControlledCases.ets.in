@@ -6,6 +6,7 @@ import { Runtime, Engine, Operation, Subscription, Snapshot, openRuntime,
 import { check, snapshot, throwsCode, rejectsSnapshot, rejectsVoid, nextTurn } from './Assertions';
 import { Emit, observed, facade, gate, finalClosed } from './SupportChecks';
 import { runAdditional } from './AdditionalCases';
+import { runCompletionCase } from './CompletionCases';
 import { runWorkerExit } from './WorkerExitCase';
 import { runFaultExit } from './FaultExitCase';
 import { runSharedWaiters } from './SharedWaiterCases';
@@ -200,7 +201,7 @@ export async function runControlledCase(name: string, emit: Emit, timeoutMs: num
   else if (name === 'state-entered') { await stateAndEntered(runtime, engine, deadline, emit); }
   else if (name === 'fanout-state') { await fanoutFailure(runtime, engine, 0, deadline, emit); }
   else if (name === 'fanout-events') { await fanoutFailure(runtime, engine, 1, deadline, emit); }
-  else { check(await runSharedWaiters(name, runtime, engine, deadline, emit) || await runAdditional(name, runtime, engine, deadline, emit) || await runFailure(name, runtime, engine, deadline, emit), 'known-additional-case'); }
+  else { check(await runCompletionCase(name, runtime, engine, deadline, emit) || await runSharedWaiters(name, runtime, engine, deadline, emit) || await runAdditional(name, runtime, engine, deadline, emit) || await runFailure(name, runtime, engine, deadline, emit), 'known-additional-case'); }
   await runtime.close(); await finalClosed(runtime, key, deadline, emit);
   emit('case-complete', [1]);
 }

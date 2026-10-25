@@ -1,7 +1,7 @@
 import worker, { MessageEvents } from '@ohos.worker';
 import { testInspect } from @MADB_PUBLIC_MODULE@;
 import { check, nextTurn } from './Assertions';
-import { Emit, frame } from './SupportChecks';
+import { Emit, frame, observationKey } from './SupportChecks';
 export async function runWorkerExit(emit: Emit, timeoutMs: number): Promise<void> {
   const child = new worker.ThreadWorker('entry/ets/workers/FullExitWorker.ets');
   let key: string = ''; let failure: string = ''; let exitCode: number = -1;
@@ -16,6 +16,7 @@ export async function runWorkerExit(emit: Emit, timeoutMs: number): Promise<void
   while (key.length === 0) {
     check(failure.length === 0, 'worker-start:' + failure); await nextTurn(deadline, 'worker-ready');
   }
+  observationKey(key);
   child.postMessage('EXIT');
   while (true) {
     check(failure.length === 0, 'worker-exit:' + failure);

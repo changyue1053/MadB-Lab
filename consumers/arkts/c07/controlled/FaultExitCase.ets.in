@@ -1,7 +1,7 @@
 import worker, { MessageEvents } from '@ohos.worker';
 import { testInspect } from @MADB_PUBLIC_MODULE@;
 import { check, nextTurn } from './Assertions';
-import { Emit, frame } from './SupportChecks';
+import { Emit, frame, observationKey } from './SupportChecks';
 export async function runFaultExit(name: string, emit: Emit, timeoutMs: number): Promise<void> {
   const child = new worker.ThreadWorker('entry/ets/workers/FaultExitWorker.ets');
   let key: string = ''; let failure: string = ''; let exitCode: number = -1;
@@ -13,6 +13,7 @@ export async function runFaultExit(name: string, emit: Emit, timeoutMs: number):
   child.onexit = (value: number): void => { exitCode = value; };
   child.postMessage(name); const deadline: number = Date.now() + timeoutMs;
   while (key.length === 0) { check(failure.length === 0, 'fault-worker:' + failure); await nextTurn(deadline,'fault-ready'); }
+  observationKey(key);
   const residual: number[] = frame(testInspect(key),'parent-sees-native-residual');
   check(residual[1] !== 3 && residual[55] === 0 && residual[13] === 1 && residual[14] === 1, 'parent-cannot-call-residual-closed');
   emit('parent-fault-residual', residual); child.postMessage('EXIT');

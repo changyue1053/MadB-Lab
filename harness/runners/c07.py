@@ -15,6 +15,8 @@ from c07_candidate import verify_candidate
 from c07_contract import ROUTES, SOURCE, case_requirements
 from c07_execution import ExecutionError, Session, ref, write_json
 from c07_generation import run_generation
+from c07_controlled_execution import run_companion
+from c07_companion_cases import assess_group
 from check_cases import errors as case_errors
 from check_repository import dependency_errors, snapshot_errors
 from runners.first_route import instantiated_case, lab_source_identity
@@ -80,6 +82,8 @@ def main(argv=None):
     parser.add_argument("--madb-sha256")
     parser.add_argument("--finalizer-image", type=Path)
     parser.add_argument("--finalizer-sha256")
+    parser.add_argument("--rust-configuration", type=Path)
+    parser.add_argument("--rust-configuration-sha256")
     parser.add_argument("--lab-revision")
     parser.add_argument("--producer-revision")
     args = parser.parse_args(argv)
@@ -91,8 +95,13 @@ def main(argv=None):
                          args.madb_image, args.madb_sha256, args.finalizer_image, args.finalizer_sha256)
     if any(generation_inputs) and not all(generation_inputs):
         parser.error("generation requires the public CLI, author fixtures, CLI inventory and both pinned MadB tool images")
-    if args.generation_only and (not all(generation_inputs) or args.companion or args.route != "c"):
-        parser.error("--generation-only currently requires all public generation inputs and ordinary --route c")
+    if args.generation_only and (not all(generation_inputs) or args.companion or args.route not in ("c", "cpp", "rust")):
+        parser.error("--generation-only currently requires all public generation inputs and ordinary --route c/cpp/rust")
+    rust_inputs = (args.rust_configuration, args.rust_configuration_sha256)
+    if any(rust_inputs) and (args.route != "rust" or not all(rust_inputs)):
+        parser.error("Rust generation configuration and pin require --route rust and both inputs")
+    if all(generation_inputs) and args.route == "rust" and not all(rust_inputs):
+        parser.error("Rust generation requires its public configuration and SHA-256 pin")
     if not args.generation_only:
         if not args.target or any(char.isspace() or ord(char) < 32 for char in args.target) or args.target.startswith("-"):
             parser.error("--target must name one explicit target")
@@ -122,6 +131,7 @@ def main(argv=None):
             "required_scope": candidate["scope"], "embedded_identity_binding": candidate["identity_binding"], "lab_source_digest": source_digest})
         execution_error, observed, target, session = None, None, {}, None
         generation, generation_error = None, None
+        controlled = None
         begin = time.monotonic()
         if not args.companion:
             try:
@@ -146,6 +156,13 @@ def main(argv=None):
                         session.stop()
                     except (OSError, RuntimeError) as error:
                         execution_error = (execution_error + "; " if execution_error else "") + "test recovery stop failed: " + str(error)
+        if args.companion:
+            try:
+                controlled = run_companion(args, candidate)
+                target = controlled.get("target", {})
+                write_json(args.output / "controlled-results.json", controlled)
+            except (OSError, RuntimeError, ValueError, KeyError) as error:
+                execution_error = str(error)
         duration = int((time.monotonic() - begin) * 1000)
         if generation is not None and duration >= 600000:
             generation_error = "overall generation watchdog expired including final tool closure check"
@@ -155,7 +172,7 @@ def main(argv=None):
             raise CandidateError("ArtifactMismatch", "candidate was replaced during execution")
         if lab_source_identity(ROOT, revision, args.allow_dirty)[2] != source_digest:
             raise CandidateError("ArtifactMismatch", "Lab source changed during execution")
-        command_refs = [ref(path, args.output) for path in sorted((args.output / "commands").glob("*.json"))]
+        command_refs = [ref(path, args.output) for path in sorted(args.output.rglob("commands/*.json"))]
         write_json(args.output / "command-manifest.json", {"commands": command_refs})
         archive_refs = [ref(path, args.output) for path in sorted(args.output.iterdir()) if path.is_file()]
         results = []
@@ -165,7 +182,17 @@ def main(argv=None):
             write_json(case_path, case)
             name = requirement["matrix_id"]
             if args.companion:
-                status, reason = "blocked", "candidate-only controlled runner wiring and complete per-case oracle are not yet implemented; development observations are not transferred"
+                if execution_error:
+                    status, reason = "error", execution_error
+                elif not registered_fixture(requirement):
+                    status, reason = "blocked", "required controlled fixture is not registered"
+                elif controlled:
+                    assessment = assess_group(name, route=args.route, candidate_digest=candidate["manifest"]["candidate_digest"],
+                                              run_id=controlled["run_id"], observations=controlled["observations"])
+                    status, reason = assessment["status"], assessment["reason"]
+                else:
+                    status, reason = "blocked", "no controlled candidate observations"
+
             elif not registered_fixture(requirement):
                 status, reason = "blocked", "required executable case fixture is not registered"
             elif name == "generation":
@@ -186,7 +213,11 @@ def main(argv=None):
             else:
                 status, reason = "passed", "exact candidate HAR was independently installed, Release-obfuscated, and actual ordinary consumer assertions matched on " + args.target_kind
             cleanup = "complete" if name == "generation" and generation else "not-run" if status == "blocked" else "complete" if observed and session.stopped else "failed"
-            results.append(record(case, digest, status, reason, duration=duration,
+            if args.companion and controlled:
+                used = [controlled["observations"].get(key) for key in assessment.get("scenarios", ())] if not execution_error and registered_fixture(requirement) else []
+                cleanup = "complete" if used and all(item and item.get("cleanup") == "complete" for item in used) else "not-run"
+            case_duration = sum(item["observation"].get("duration_ms", 0) for item in used if item) if args.companion and controlled else duration
+            results.append(record(case, digest, status, reason, duration=case_duration,
                 attachments=archive_refs + [ref(case_path, args.output)], cleanup=cleanup,
                 evidence_level="host-run" if name == "generation" else "target-run"))
         catalog = b"".join(path.relative_to(ROOT).as_posix().encode() + b"\0" + path.read_bytes() for path in sorted((ROOT / "cases").rglob("*.json")))

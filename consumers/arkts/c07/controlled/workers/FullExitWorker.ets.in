@@ -21,7 +21,7 @@ async function start(): Promise<void> {
     const f: number[] = testObserve(r);
     if (f[58] === 1) {
       const o: number[] = testObserveOperation(op);
-      check(f.length === 156 && f[0] === 1 && f[55] === 1 && f[56] === 1 && f[59] === 0 && f[60] === 0 && f[13] === 1 && f[14] === 1, 'worker-real-work-held');
+      check(f.length === 178 && f[156] === 1 && f[158] === 0 && f[159] === 0 && f[160] === 0 && f[161] === 0 && f[0] === 1 && f[55] === 1 && f[56] === 1 && f[59] === 0 && f[60] === 0 && f[13] === 1 && f[14] === 1, 'worker-real-work-held');
       check(o.length === 10 && o[1] === 0 && o[3] === 1 && o[5] === 1, 'worker-terminal-unclaimed');
       check(f[62] > 0 && f[63] > 0 && f[62] !== f[63], 'worker-business-not-env-thread');
       emit('worker-gate-held', f); ready = true;
