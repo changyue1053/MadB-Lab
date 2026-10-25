@@ -6,6 +6,8 @@ import { Runtime, Engine, Operation, Subscription, Snapshot, openRuntime,
 import { check, snapshot, throwsCode, rejectsSnapshot, rejectsVoid, nextTurn } from './Assertions';
 import { Emit, observed, facade, gate, finalClosed } from './SupportChecks';
 import { runAdditional } from './AdditionalCases';
+import { runAdmissionDelivery, runEngineGeneration } from './AdmissionDeliveryCases';
+import { runDiagnostic } from './DiagnosticCases';
 import { runCompletionCase } from './CompletionCases';
 import { runWorkerExit } from './WorkerExitCase';
 import { runFaultExit } from './FaultExitCase';
@@ -184,6 +186,8 @@ async function fanoutFailure(runtime: Runtime, engine: Engine, stream: number,
 }
 
 export async function runControlledCase(name: string, emit: Emit, timeoutMs: number): Promise<void> {
+  if (name === 'delivery-and-handle-admission') { await runAdmissionDelivery(emit, timeoutMs); return; }
+  if (name === 'engine-generation') { await runEngineGeneration(emit, timeoutMs); return; }
   if (name === 'partial-open') { await runPartialOpen(emit, timeoutMs); return; }
   if (name === 'fault-before-guard' || name === 'fault-after-accepted') { await runFaultExit(name.substring(6), emit, timeoutMs); return; }
   if (name === 'worker-env-exit') { await runWorkerExit(emit, timeoutMs); return; }
@@ -201,6 +205,7 @@ export async function runControlledCase(name: string, emit: Emit, timeoutMs: num
   else if (name === 'state-entered') { await stateAndEntered(runtime, engine, deadline, emit); }
   else if (name === 'fanout-state') { await fanoutFailure(runtime, engine, 0, deadline, emit); }
   else if (name === 'fanout-events') { await fanoutFailure(runtime, engine, 1, deadline, emit); }
+  else if (name === 'live-cleanup-threads' || name === 'child-ownership-baseline') { await runDiagnostic(name, runtime, engine, deadline, emit); }
   else { check(await runCompletionCase(name, runtime, engine, deadline, emit) || await runSharedWaiters(name, runtime, engine, deadline, emit) || await runAdditional(name, runtime, engine, deadline, emit) || await runFailure(name, runtime, engine, deadline, emit), 'known-additional-case'); }
   await runtime.close(); await finalClosed(runtime, key, deadline, emit);
   emit('case-complete', [1]);

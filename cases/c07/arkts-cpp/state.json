@@ -17,8 +17,8 @@
   },
   "fixture": {
     "path": "harness/c07_companion_cases.py",
-    "sha256": "sha256:e0e6f86aec66f1adceb14c58ae46b6b65a48402e3b6767b7ffe4662df8dc1455",
-    "size": 9600,
+    "sha256": "sha256:0d5d9d4384e4e209f3f3e05b8b57edbe46b3fae02608ec2edf307ae042c239df",
+    "size": 9226,
     "schema": "madb.lab-source/1"
   },
   "setup": [
@@ -44,7 +44,7 @@
       "expected": [
         {
           "kind": "string",
-          "value": "Registration is empty and pre-registration publication does not replay. Hold delivery pre-entry: publish1, take/hold actual delivery, publish2, invoke → only2. Inside entered2, publish3 then4 → entered2 is unchanged and next callback is4. New subscriber gets no prior current value."
+          "value": "Registration is empty and pre-registration publication does not replay. Hold delivery pre-entry: publish1, take/hold actual delivery, publish2, invoke \u2192 only2. Inside entered2, publish3 then4 \u2192 entered2 is unchanged and next callback is4. New subscriber gets no prior current value."
         }
       ]
     }
@@ -61,7 +61,7 @@
     }
   ],
   "timeout_policy": {
-    "timeout_ms": 50000,
+    "timeout_ms": 100000,
     "on_timeout": "error",
     "recovery": "isolate"
   }

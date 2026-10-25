@@ -48,7 +48,7 @@ export async function gate(runtime: Runtime, operation: Operation, phase: number
   }
 }
 export async function finalClosed(runtime: Runtime, key: string, deadline: number,
-                                  emit: Emit): Promise<void> {
+                                  emit: Emit, generationCount: number = 1): Promise<void> {
   observationKey(key);
   while (true) {
     const f: number[] = frame(testInspect(key), 'closed-static');
@@ -61,7 +61,7 @@ export async function finalClosed(runtime: Runtime, key: string, deadline: numbe
       const created: number[] = [38,40,42,44,46,48,50,52];
       for (let i: number = 0; i < created.length; i++) { check(f[created[i]] === f[created[i]+1], 'paired-native:' + String(created[i])); }
       check(f[44] === 1 && f[45] === 1 && f[40] === 1 && f[41] === 1, 'real-finalizer-context-ack');
-      check(f[65] === 1 && f[66] === 1 && f[67] === 1 && f[68] === 1 && f[69] === 1 && f[70] === 1, 'physical-thread-stages');
+      check(f[65] === generationCount && f[66] === generationCount && f[67] === generationCount && f[68] === generationCount && f[69] === generationCount && f[70] === generationCount, 'physical-thread-stages');
       check(f[71] < f[72] && f[72] < f[73] && f[73] < f[75] && f[74] < f[75] && f[75] < f[76], 'join-includes-tls');
       check(f[62] > 0 && f[63] > 0 && f[64] > 0, 'actual-thread-witnesses');
       // Historical numeric tids can be reused after exit. Compare worker/owner only at the live work gate; final join/TLS order proves completion.

@@ -1,0 +1,8 @@
+import worker, {MessageEvents} from '@ohos.worker';
+import {Runtime,openRuntime,testExportKey} from @MADB_PUBLIC_MODULE@;
+let current:Runtime|undefined=undefined;
+worker.workerPort.onmessage=(event:MessageEvents):void=>{
+ const command:string=event.data as string;
+ if(command==='OPEN') {try{const r:Runtime=openRuntime();current=r;worker.workerPort.postMessage('KEY '+testExportKey(r));}catch(error){worker.workerPort.postMessage('ERROR '+(error as Error).message);}}
+ else if(command==='CLOSE'&&current!==undefined){const r:Runtime=current;r.close().then(()=>{worker.workerPort.close();}).catch((error:Error)=>{worker.workerPort.postMessage('ERROR '+error.message);});}
+};

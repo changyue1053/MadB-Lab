@@ -7,11 +7,14 @@ import unittest
 
 sys.path.insert(0, str(Path(__file__).resolve().parents[1]))
 import c07_companion_observations as oracle
+from c07_admission_observations import BOOTSTRAP_FIELDS, DELIVERY_FIELDS
 
 
 def contracts():
     # Explicit mock public layout input. There is no producer source dependency.
     return {
+        "bootstrap-totals-layout.json": {"format":1,"length":16,"fields":{str(i):v for i,v in enumerate(BOOTSTRAP_FIELDS)}},
+        "ports-layout.json": {"delivery":{"format":1,"length":8,"fields":{str(i):v for i,v in enumerate(DELIVERY_FIELDS)}}},
         "runtime-frame-layout.json": {str(i): name for i, name in enumerate(oracle.RUNTIME_FIELDS)},
         "test-frame-layout.json": {"native_prefix_length": 54, "test_length": 48, "total_length": 178,
             "legacy_total_length": 156, "hook_entry_offset": 102, "hook_entry_length": 54,

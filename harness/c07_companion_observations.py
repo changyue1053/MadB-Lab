@@ -7,6 +7,9 @@ import json
 import re
 from c07_completion_observations import SCENARIOS as COMPLETION_SCENARIOS, GATED as COMPLETION_GATED, predicates as completion_predicates
 
+from c07_admission_observations import SCENARIOS as ADMISSION_SCENARIOS, GATED as ADMISSION_GATED, TWO_GENERATIONS, predicates as admission_predicates, validate_contracts as admission_contracts
+from c07_diagnostic_observations import SCENARIOS as DIAGNOSTIC_SCENARIOS, GATED as DIAGNOSTIC_GATED, predicates as diagnostic_predicates
+
 MAX_SAFE = 2**53 - 1
 RUNTIME_FIELDS = """Format Phase BusinessEntries ScratchLive Operations Subscriptions
 EventTickets StateTickets Sources Entered Bytes Waiters Admissions Work Executors
@@ -76,12 +79,16 @@ SCENARIOS = {
         "parent-fault-residual": "native", "worker-exit-request": "native"},
 }
 SCENARIOS.update(COMPLETION_SCENARIOS)
+SCENARIOS.update(ADMISSION_SCENARIOS)
+SCENARIOS.update(DIAGNOSTIC_SCENARIOS)
 WORKER_CASES = {"worker-env-exit", "fault-before-guard", "fault-after-accepted"}
 GATED_CASES = {"full-waiters", "settling-reentry", "terminal-cancel", "terminal-success",
     "terminal-domain", "claim-rollback", "bytes-scratch", "operations-capacity",
     "mixed-waiters-engine-close", "pending-sub-close-denied", "result-capacity-retry",
     "after-guard", "dropped-promise", "fault-before-guard", "fault-after-accepted"}
 GATED_CASES.update(COMPLETION_GATED)
+GATED_CASES.update(ADMISSION_GATED)
+GATED_CASES.update(DIAGNOSTIC_GATED)
 ZERO_OWNERS = (2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 18, 19, 20, 21, 22,
                23, 24, 25, 26, 28, 29, 35, 37, 77)
 PAIRS = (33, 38, 40, 42, 44, 46, 48, 50, 52)
@@ -135,7 +142,7 @@ def _frame_error(values, kind):
         return None
     if kind in ("one", "zero"):
         return None if values == ([1] if kind == "one" else [0]) else "wrong scalar marker"
-    length = {"native": 178, "facade": 15, "operation": 10, "hook": 54, "local": 12, "process": 10}[kind]
+    length = {"native": 178, "facade": 15, "operation": 10, "hook": 54, "local": 12, "process": 10, "bootstrap": 16, "delivery": 8}[kind]
     if len(values) != length or any(v < 0 for v in values) or kind != "process" and values[0] != 1:
         return "wrong length, format or negative counter"
     if kind == "native":
@@ -160,7 +167,7 @@ def _predicates(case, frames):
 
     final = frames["physical-closed"]
     equal("physical-closed", {1: 3, 16: 1, 17: 1, 40: 1, 41: 1, 44: 1, 45: 1, 55: 2,
-                               **{i: 0 for i in ZERO_OWNERS}, **{i: 1 for i in range(65, 71)}})
+                               **{i: 0 for i in ZERO_OWNERS}, **{i: (2 if case in TWO_GENERATIONS else 1) for i in range(65, 71)}})
     need(all(final[i] == final[i + 1] for i in PAIRS), "physical cumulative owners are unpaired")
     need(0 < final[71] < final[72] < final[73] < final[75] < final[76] and
          0 < final[74] < final[75], "physical join does not include TLS/executor completion")
@@ -257,6 +264,8 @@ def _predicates(case, frames):
         need(frames["fault-settlement-counts"] == ([0, 1] if before else [1, 0]), "fault settled incorrectly or more than once")
     if case in COMPLETION_SCENARIOS:
         problems.extend(completion_predicates(case, frames))
+    problems.extend(admission_predicates(case, frames))
+    problems.extend(diagnostic_predicates(case, frames))
     return problems
 
 
@@ -271,6 +280,8 @@ def parse_controlled(raw, *, nonce, pid, case, route, contracts):
         return result
     problems = result["problems"]
     problems.extend(validate_contracts(contracts))
+    if case in ADMISSION_SCENARIOS:
+        problems.extend(admission_contracts(contracts))
     if not isinstance(nonce, str) or not re.fullmatch(r"[A-Za-z0-9_-]+", nonce):
         problems.append("invalid explicit nonce")
     if result["pid"] is None or result["pid"] <= 0:

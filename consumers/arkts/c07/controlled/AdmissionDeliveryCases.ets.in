@@ -1,0 +1,91 @@
+import worker, { MessageEvents } from '@ohos.worker';
+import { Runtime, Engine, Operation, Subscription, Snapshot, openRuntime, testObserve, testExportKey,
+ testDeliveryGate, testHandleAdmission, testBootstrapTotals, testObserveFacade, testArmWork, testReleaseWork, testAfterSettlement } from @MADB_PUBLIC_MODULE@;
+import { check, nextTurn, throwsCode, code, rejectsSnapshot } from './Assertions';
+import { Emit, frame, finalClosed, gate } from './SupportChecks';
+function delivery(f: number[], label: string): number[] {
+ check(f.length === 8 && f[0] === 1, label + ':format');
+ for (let i: number=0;i<f.length;i++) { check(Number.isSafeInteger(f[i]) && f[i]>=0,label+':range'); }
+ return f;
+}
+export async function runAdmissionDelivery(emit: Emit, timeoutMs: number): Promise<void> {
+ const deadline: number=Date.now()+timeoutMs;
+ const before: number[]=testBootstrapTotals(); check(before.length===16&&before[0]===1,'bootstrap-before');
+ const r: Runtime=openRuntime(); let e: Engine=r.connect(); const key: string=testExportKey(r);
+ emit('open',testObserve(r));
+ while(testObserve(r)[65]!==1) { await nextTurn(deadline,'worker-start'); }
+ const opened: number[]=testBootstrapTotals(); emit('bootstrap-before',before);emit('bootstrap-open',opened);
+ for(let i:number=1;i<=2;i++) {check(opened[i]===before[i]+1,'actual-open:'+String(i));}
+ for(let i:number=3;i<=5;i++) {check(opened[i]===before[i],'no-identity-rejection');}
+ for(let i:number=6;i<=10;i++) {check(opened[i]===before[i]+1,'actual-owner-created:'+String(i));}
+ check(opened[12]===before[12]+1&&opened[14]===before[14]+1,'actual-tsfn-hook-created');
+ const values: number[]=[];
+ const sub: Subscription=e.observeState((s: Snapshot):void=>{values.push(s.value);});
+ delivery(testDeliveryGate(sub,0),'arm');e.publishState({value:1,text:'first'});
+ while(testDeliveryGate(sub,1)[2]!==1){await nextTurn(deadline,'real-delivery-held');}
+ const held: number[]=delivery(testDeliveryGate(sub,1),'held');const heldFrame:number[]=frame(testObserve(r),'held-frame');
+ emit('delivery-before-assert',held);emit('core-before-assert',heldFrame);emit('callback-count-before-assert',[values.length]);
+ check(held[1]===0&&held[2]===1&&held[3]===0&&held[5]===1&&held[6]===0&&values.length===0,'actual-preentry-lease');
+ check(heldFrame[7]===1&&heldFrame[9]===0,'one-pending-zero-entered');
+ e.publishState({value:2,text:'latest'});
+ const replaced:number[]=frame(testObserve(r),'replaced');check(replaced[7]===1&&replaced[9]===0&&values.length===0,'replace-held-pending');
+ emit('delivery-held',held);emit('state-replaced',replaced);
+ delivery(testDeliveryGate(sub,2),'release');
+ while(values.length===0){await nextTurn(deadline,'latest-callback');}
+ check(values.length===1&&values[0]===2,'only-latest-delivered');
+ const delivered:number[]=delivery(testDeliveryGate(sub,1),'delivered');check(delivered[6]===1,'real-invoke-count');emit('delivery-invoked',delivered);emit('state-values',values);await sub.close();
+ const stoppedValues:number[]=[];const stopped:Subscription=e.observeState((s:Snapshot):void=>{stoppedValues.push(s.value);});
+ testDeliveryGate(stopped,0);e.publishState({value:3,text:'stop-before-enter'});
+ while(testDeliveryGate(stopped,1)[2]!==1){await nextTurn(deadline,'second-delivery-held');}
+ stopped.requestStop();let closed:boolean=false;const closing:Promise<void>=stopped.close().then(()=>{closed=true;});
+ await nextTurn(deadline,'stop-pending');check(!closed&&stoppedValues.length===0,'held-lease-delays-close');emit('stop-delivery-held',testDeliveryGate(stopped,1));
+ emit('stop-release-return',testDeliveryGate(stopped,2));
+ const stopDeadline:number=Date.now()+2000;
+ while(!closed&&Date.now()<stopDeadline){await nextTurn(deadline,'stop-release-drain');}
+ if(!closed){emit('stop-release-stalled-gate',testDeliveryGate(stopped,1));emit('stop-release-stalled-core',testObserve(r));}
+ check(closed,'released-delivery-must-unblock-close');await closing;check(closed&&stoppedValues.length===0,'no-callback-after-stop');emit('stop-preentry',[1,0]);
+ await e.close();emit('after-engine-close',testObserve(r));emit('after-engine-close-facade',testObserveFacade(r));try{e=r.connect();}catch(error){emit('connect-failed-native',testObserve(r));emit('connect-failed-facade',testObserveFacade(r));throw (error as Error);}const baseline:number[]=frame(testObserve(r),'handle-baseline');
+ testHandleAdmission(e,0,'');
+ const errors:string[]=['InvalidHandle','InvalidHandleRetired','InvalidHandle','InvalidHandle','InvalidHandle'];
+ for(let i:number=1;i<=5;i++){throwsCode(()=>{testHandleAdmission(e,i,'');},errors[i-1],'handle:'+String(i));}
+ const after:number[]=frame(testObserve(r),'handle-after');
+ for(let i:number=4;i<=14;i++){check(after[i]===baseline[i],'handle-no-core-admission:'+String(i));}
+ check(after[33]===baseline[33]&&after[36]===baseline[36],'handle-no-provider-work');emit('handle-baseline',baseline);emit('handle-after',after);emit('handle-rejections',[1,1,1,1,1]);
+ const child=new worker.ThreadWorker('entry/ets/workers/ForeignKeyWorker.ets');let foreign:string='';let failure:string='';let exited:number=-1;
+ child.onmessage=(event:MessageEvents):void=>{const text:string=event.data as string;if(text.startsWith('KEY ')){foreign=text.substring(4);}else if(text.startsWith('ERROR ')){failure=text;}};
+ child.onexit=(code:number):void=>{exited=code;};child.postMessage('OPEN');
+ while(foreign.length===0){check(failure.length===0,failure);await nextTurn(deadline,'foreign-env-open');}
+ throwsCode(()=>{testHandleAdmission(e,6,foreign);},'WrongEnv','real-foreign-key');emit('foreign-handle',[1]);child.postMessage('CLOSE');
+ while(exited===-1){check(failure.length===0,failure);await nextTurn(deadline,'foreign-env-close');}check(exited===0,'foreign-normal-exit');
+ await r.close();await finalClosed(r,key,deadline,emit,2);
+ const final:number[]=frame(testObserve(r),'final-observer');check(final[157]>0&&final[158]===0&&final[159]===0&&final[160]===0&&final[161]===0,'no-illegal-api-after-negatives');
+ emit('observer-local',final.slice(156,168));emit('bootstrap-final',testBootstrapTotals());emit('case-complete',[1]);
+}
+
+export async function runEngineGeneration(emit: Emit, timeoutMs: number): Promise<void> {
+ const deadline: number=Date.now()+timeoutMs;
+ const runtime: Runtime=openRuntime();const first:Engine=runtime.connect();const key:string=testExportKey(runtime);
+ emit('open',testObserve(runtime));
+ throwsCode(()=>{runtime.connect();},'Closing','second-operational-engine');
+ testArmWork(first,1);const operation:Operation=first.startOperation({value:41,text:'generation-held'});
+ await gate(runtime,operation,1,deadline,emit);
+ let settling:boolean=false;
+ testAfterSettlement(runtime,():void=>{
+  settling=true;const js:number[]=testObserveFacade(runtime);check(js[2]===1,'generation-real-settling');
+  throwsCode(()=>{runtime.connect();},'Closing','generation-still-settling');
+  emit('generation-settling',js);emit('generation-settling-native',testObserve(runtime));
+ });
+ const result:Promise<void>=rejectsSnapshot(()=>operation.result(),'Cancelled','generation-cancelled');
+ first.requestClose();throwsCode(()=>{runtime.connect();},'Closing','generation-real-work-not-exited');
+ const requested:number[]=testObserve(runtime);check(requested[13]===1&&requested[14]===1&&requested[17]===0,'generation-held-native-work');
+ emit('generation-close-requested',requested);emit('generation-close-facade',testObserveFacade(runtime));
+ testReleaseWork(first);await result;check(settling,'generation-resolver-observed');
+ let current:Engine|undefined=undefined;
+ while(current===undefined){try{current=runtime.connect();}catch(error){check(code(error as Error)==='Closing','generation-recovery-error');}if(current===undefined){await nextTurn(deadline,'generation-native-retirement');}}
+ const second:Engine=current as Engine;const reopened:number[]=testObserve(runtime);emit('generation-reopened',reopened);
+ check(reopened[50]===2&&reopened[51]===1&&reopened[69]===1&&reopened[70]===1,'old-engine-really-joined-and-retired');
+ await first.close();throwsCode(()=>{first.roundtrip({value:1,text:'old'});},'Closed','old-engine-tombstone');
+ const after:number[]=testObserve(runtime);check(after[11]===0&&after[19]===0,'old-close-value-only');emit('generation-old-close',after);
+ const value:Snapshot=second.roundtrip({value:2,text:'new'});check(value.value===2&&value.text==='new','new-generation-business');
+ await runtime.close();await finalClosed(runtime,key,deadline,emit,2);emit('case-complete',[1]);
+}

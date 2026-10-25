@@ -17,7 +17,8 @@ def companion_contracts(candidate):
                  for item in candidate["manifest"][section]}
     paths = {"runtime-frame-layout.json": "generated/contract/frame-layout.json",
              **{name: "generated/contract/test/" + name for name in
-                ("test-frame-layout.json", "observer-layout.json", "facade-frame-layout.json")}}
+                ("test-frame-layout.json", "observer-layout.json", "facade-frame-layout.json",
+                 "bootstrap-totals-layout.json", "ports-layout.json")}}
     if not set(paths.values()).issubset(inventory):
         raise CandidateError("ArtifactMismatch", "companion layout is not an explicit candidate file")
     contracts = {name: read_json(candidate["root"] / path) for name, path in paths.items()}

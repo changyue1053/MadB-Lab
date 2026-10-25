@@ -24,7 +24,7 @@ GROUPS = {
         "gaps": (),
     },
     "worker-and-domain": {
-        "scenarios": ("terminal-success", "terminal-domain"),
+        "scenarios": ("terminal-success", "terminal-domain", "live-cleanup-threads"),
         "gaps": ("Bind computation/free to the actual route implementation and record the required live cleanup-thread witness separately from historical thread IDs.",),
     },
     "terminal-winner": {
@@ -46,8 +46,8 @@ GROUPS = {
         "gaps": ("Explicit listener-reference lifetime observations across source-held, pending and entered phases, followed by explicit-close release, are not yet wired.",),
     },
     "state": {
-        "scenarios": ("state-entered",),
-        "gaps": ("Hold an actual taken delivery before entry, replace its state, and verify the new subscriber does not receive prior current state; same-stack pending replacement is insufficient.",),
+        "scenarios": ("state-entered", "delivery-and-handle-admission"),
+        "gaps": (),
     },
     "event-fifo-and-atomic": {"scenarios": ("event-atomic", "state-entered"), "gaps": ()},
     "fanout-allocation": {"scenarios": ("fanout-state", "fanout-events"), "gaps": ()},
@@ -78,18 +78,18 @@ GROUPS = {
         "gaps": (),
     },
     "request-only-retirement": {
-        "scenarios": ('request-only-observed',),
-        "gaps": ('Request-only Engine generation retirement/reuse with true join remains to be wired; this scenario proves sixteen subscriptions and the immutable failed-subscription tombstone.',),
+        "scenarios": ("request-only-observed", "engine-generation"),
+        "gaps": (),
     },
     "generation-and-handles": {
-        "scenarios": (),
-        "gaps": ("Wire actual generation drain/reuse plus public malformed, wrong-kind, wrong-env, wrong-generation and uint64-overflow handle fixtures with unchanged pre-work baselines.",),
+        "scenarios": ("delivery-and-handle-admission", "engine-generation"),
+        "gaps": (),
     },
     "runtime-close-full": {"scenarios": ("full-waiters", "mixed-waiters-engine-close"), "gaps": ()},
     "env-exit-full": {"scenarios": ("worker-env-exit",), "gaps": ()},
     "route-ownership": {
         "scenarios": ("terminal-success", "terminal-domain", "operations-capacity", "subscriptions-capacity",
-                      "nonnull-owned-error", "partial-open", "fault-before-guard", "fault-after-accepted", "worker-env-exit"),
+                      "nonnull-owned-error", "partial-open", "fault-before-guard", "fault-after-accepted", "worker-env-exit", "child-ownership-baseline"),
         "gaps": ("Bind the actual route implementation/destructor/free inventory, including Rust frontend evidence where applicable, and baseline-preserving child cleanup to the runtime-zero observations.",),
     },
 }

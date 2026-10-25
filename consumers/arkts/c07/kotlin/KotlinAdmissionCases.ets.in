@@ -98,7 +98,7 @@ export async function runKotlinAdmission(emit: Emit, timeoutMs: number): Promise
   emit('initial-admission', initial);
   check(initial.length === 13 && initial[0] === 0 && initial[4] === 0 && initial[6] === 0,
     'fresh-no-kotlin-load');
-  const child = new worker.ThreadWorker('entry/ets/kotlin/workers/WorkerFirst.ets');
+  const child = new worker.ThreadWorker('entry/ets/workers/KotlinWorkerFirst.ets');
   let childResult: string = ''; let exitCode: number = -1;
   child.onmessage = (event: MessageEvents): void => { childResult = event.data as string; };
   child.onexit = (value: number): void => { exitCode = value; };
