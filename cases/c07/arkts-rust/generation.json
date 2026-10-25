@@ -1,0 +1,68 @@
+{
+  "schema": "madb.case/1",
+  "id": "c07.arkts-rust.generation",
+  "kind": "template",
+  "problem_ids": [
+    "CAP-002",
+    "CAP-003",
+    "CAP-004",
+    "GEN-001",
+    "TYPE-008"
+  ],
+  "source_ids": [],
+  "selector": null,
+  "requires": {
+    "features": [],
+    "environment": []
+  },
+  "fixture": {
+    "path": "harness/c07_generation.py",
+    "sha256": "sha256:aa26b23ab87826cefd1f0c01712443acaff2bd5e1ff9b291b6e02a8225eb18a0",
+    "size": 19108,
+    "schema": "madb.lab-source/1"
+  },
+  "setup": [
+    {
+      "id": "public-generator",
+      "action": "environment",
+      "entrypoint": "explicit-public-cli-and-author-fixtures",
+      "arguments": []
+    }
+  ],
+  "steps": [
+    {
+      "id": "execute",
+      "action": "call",
+      "entrypoint": "run_generation",
+      "arguments": []
+    }
+  ],
+  "assertions": [
+    {
+      "observation": "generation",
+      "operator": "equals",
+      "expected": [
+        {
+          "kind": "string",
+          "value": "Actual C/Clang, C++ bridge, napi-ohos and KSP declaration evidence as applicable. Rename a declared symbol and observe generated/public output change. Unsupported async listener and cross-thread synchronous return fail before output commit with source location; no arbitrary all-types requirement."
+        }
+      ]
+    }
+  ],
+  "expected_result": {
+    "kind": "success"
+  },
+  "cleanup": [
+    {
+      "id": "close",
+      "action": "cleanup",
+      "entrypoint": "preserve-fresh-source-and-rejection-output",
+      "arguments": []
+    }
+  ],
+  "timeout_policy": {
+    "timeout_ms": 600000,
+    "on_timeout": "error",
+    "recovery": "isolate"
+  }
+}
