@@ -4,11 +4,12 @@ Source text, tool images and generation receipts remain bound by candidate file
 and build identities. This module compares protocol facts, never producer code.
 """
 from candidate import CandidateError, read_json, semantic_digest
+from c07_diagnostic_abi import reconstruct
 
 PROVENANCE_KEYS = frozenset(("location", "source", "schema", "authority", "compilerApiVersion",
                              "imports", "tools", "tool", "sdkDependencies", "dependencies"))
 BACKENDS = frozenset(("napi-ohos", "napi-sys-ohos", "napi-build-ohos", "napi-derive-ohos", "napi-derive-backend-ohos"))
-ROLE_KEYS = ("values", "calls", "slots", "limits", "error_channel", "value_slots", "test_types", "execution_domain")
+ROLE_KEYS = ("values", "calls", "slots", "limits", "error_channel", "value_slots", "test_types", "execution_domain", "runtime_reopen")
 
 
 def semantic_facts(value):
@@ -40,11 +41,16 @@ def abi_document(contract, declarations, policy):
             "notification_interfaces": evidence["frontend_policy"]["notification_interfaces"],
             "parameters": evidence["frontend_policy"]["parameters"],
             "execution_domain": policy["execution_domain"]}
-    return {"logical": logical, "physical": physical,
-            "runtime_roles": {name: policy[name] for name in ROLE_KEYS if name in policy}}
+    if "diagnostics" in declarations:
+        physical["diagnostics"] = declarations["diagnostics"]["protocols"]
+    roles = {name: policy[name] for name in ROLE_KEYS if name in policy}
+    if "value_slots" in roles:
+        roles["value_slots"] = {name: {key: value for key, value in slot.items() if key != "layout"}
+                                for name, slot in roles["value_slots"].items()}
+    return {"logical": logical, "physical": physical, "runtime_roles": roles}
 
 
-def verify_abi(candidate, route):
+def verify_abi(candidate, route, *, companion=False):
     root = candidate["root"]
     declarations = read_json(root / "declarations.json")
     policy = read_json(root / "generated/contract/runtime-policy.json")
@@ -52,6 +58,12 @@ def verify_abi(candidate, route):
     expected = {"kotlin"} if route == "kotlin" else {"gateway", "c_seam"} | ({"rust"} if route == "rust" else set())
     if "public" not in declarations or present != expected:
         raise CandidateError("AbiMismatch", "ABI authorities do not match the selected route")
+    if companion:
+        actual_protocols = reconstruct(candidate, route, declarations.get("diagnostics"))
+        declarations = dict(declarations)
+        declarations["diagnostics"] = {"protocols": actual_protocols}
+    elif "diagnostics" in declarations:
+        raise CandidateError("AbiMismatch", "ordinary candidate contains test diagnostic authorities")
     try:
         value = abi_document(candidate["contract"], declarations, policy)
         actual = semantic_digest("madb.c07-abi/1", value)

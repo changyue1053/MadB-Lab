@@ -1,0 +1,2302 @@
+{
+  "status": "pending-independent-review",
+  "producer_revision": null,
+  "scope": "Finite C07 C/Cpp/Rust original and composed source review inventory; same source/compiler/object/link/HAR binding is necessary and does not replace controlled target execution.",
+  "original_bytes_in_candidate": false,
+  "replay_scope": "Original sources and patches are not shipped by current candidates. Candidate checks align frozen references to this independently approved Lab review; no independent candidate-only patch replay is claimed.",
+  "review_notes": "expected/c07/route-ownership-review.md",
+  "source_files": [
+    {
+      "path": "sdk/arkts/native-gateway/include/codec.hpp",
+      "sha256": "sha256:5ef359714bc88fa67cc3e9facde832c23709689f22c7574b3dcdd7d7782781cf",
+      "size": 5972
+    },
+    {
+      "path": "sdk/arkts/native-gateway/include/handle.hpp",
+      "sha256": "sha256:dd31c74e72c28b9d7f3472f8e9a412c1f3d3fa8ce22675e720a0a8cbbd9c8aa4",
+      "size": 2118
+    },
+    {
+      "path": "sdk/arkts/native-gateway/include/runtime.hpp",
+      "sha256": "sha256:88e4b119b86a084ad9cae092a82892de1a2ff2d660d316a39021a778f92894d9",
+      "size": 3482
+    },
+    {
+      "path": "sdk/arkts/native-gateway/src/api.cpp",
+      "sha256": "sha256:080f1103a118f987778be6586ba9ac75ecea7c0b4aab3e3ab5bd0dbd2b59a0af",
+      "size": 19841
+    },
+    {
+      "path": "sdk/arkts/native-gateway/src/runtime.cpp",
+      "sha256": "sha256:6204bafcbf8ad4019f63a37a074c23818478ec83aae91a6953af076368eb1bef",
+      "size": 22917
+    },
+    {
+      "path": "sdk/arkts/native-gateway/Index.d.ts",
+      "sha256": "sha256:82dea1d77e3c5ed42554ed5a496e2cf4daadc6ae24cce71df420469d01eb11e2",
+      "size": 1163
+    },
+    {
+      "path": "sdk/arkts/facade/Boundary.ets.in",
+      "sha256": "sha256:4579b9115511dddcdc1e0fd12a8d4f510997858ecc203e49f82b0403dd2a573e",
+      "size": 24699
+    },
+    {
+      "path": "sdk/arkts/facade/RuntimeFrame.ets",
+      "sha256": "sha256:a5eacf4b6b7aa7fdd886e1cc19ab3147517f96b60f19b4074df243de66e98492",
+      "size": 1583
+    },
+    {
+      "path": "sdk/arkts/facade/frame-layout.json",
+      "sha256": "sha256:ea14c35161fe8eb6e977a5f9a7a7f63956917a10a4ae1c07e9562718dc30be69",
+      "size": 1298
+    },
+    {
+      "path": "sdk/arkts/native-runtime/include/protocol.hpp",
+      "sha256": "sha256:2cbd2e55884f5078f0c4fcdde18f6a26a1a308846581b88ad4db8726e12a4f8f",
+      "size": 8580
+    },
+    {
+      "path": "sdk/arkts/native-runtime/include/worker.hpp",
+      "sha256": "sha256:7d3cf854c5ff94eb03b985602bc274a777c77d348623e12e9cdc2985746ef9a1",
+      "size": 1638
+    },
+    {
+      "path": "sdk/arkts/native-runtime/include/provider_abi.h",
+      "sha256": "sha256:39828fb09200a11e92d4ce3118f285cd5342afb2b01d49a3bc4e2a6ca44ec41d",
+      "size": 2237
+    },
+    {
+      "path": "sdk/arkts/native-runtime/include/provider_port.hpp",
+      "sha256": "sha256:b35a99585b30559b5b2261f2d5925badf69b531686a38123b6936f9195112e08",
+      "size": 1958
+    },
+    {
+      "path": "sdk/arkts/native-runtime/include/validate_snapshot.h",
+      "sha256": "sha256:62f29e469fab77b80b2eb015e9a66d65830c25e49bc3453d9ee91950be22cde7",
+      "size": 1178
+    },
+    {
+      "path": "sdk/arkts/native-runtime/src/protocol.cpp",
+      "sha256": "sha256:eb3978d2dda0e2ac1c67c485a4b74d66bf9b4a3155934ab895245fb23a0bcc25",
+      "size": 38825
+    },
+    {
+      "path": "sdk/arkts/native-runtime/src/worker.cpp",
+      "sha256": "sha256:65c5d66f096688c808c9bdd041382227107afb94e29a1f74fcb3b7728cf6fd22",
+      "size": 5023
+    },
+    {
+      "path": "sdk/c/arkts-provider/src/provider.c",
+      "sha256": "sha256:136969a8e0b8376ca4089dd0d2795b2a54681bf7f97f841a78bfcc8de28d322e",
+      "size": 3721
+    },
+    {
+      "path": "adapters/toolchains/arkts/native.py",
+      "sha256": "sha256:89a0881e70cab335b0bc4b024152dc503a32f9adba7e4c99fdf0a786f3372976",
+      "size": 13361
+    },
+    {
+      "path": "adapters/toolchains/arkts/preflight.py",
+      "sha256": "sha256:ca8b53d7a791c891cac035ddc3059c88867caa9b80c2e67d8944fc64aa1462c3",
+      "size": 17672
+    },
+    {
+      "path": "adapters/toolchains/arkts/worker.py",
+      "sha256": "sha256:362009ab4ee1c3915f1b0e95a16f0262375a6ee4b6767989f1293e52348b54a4",
+      "size": 18352
+    },
+    {
+      "path": "adapters/toolchains/arkts/project.py",
+      "sha256": "sha256:2289a845114507884fe52f58174ac715e7d9859b08831d469f6e930a689edd8c",
+      "size": 28338
+    },
+    {
+      "path": "adapters/generators/arkts/driver.py",
+      "sha256": "sha256:3447d7fa1bc9a820ee6ed5360495d57390abcb44cda09819e0377484721b6361",
+      "size": 27096
+    },
+    {
+      "path": "adapters/toolchains/arkts/tools.py",
+      "sha256": "sha256:2c312568f648dc2c15362c4f0a41a9738238efdd1ab0d7f7e7ba7d90ff4b4ddf",
+      "size": 15971
+    },
+    {
+      "path": "adapters/toolchains/common/documents.py",
+      "sha256": "sha256:948d928ebe53f509390c354f3bf8934f1f6040c7c7400857903192f8df13433c",
+      "size": 3790
+    },
+    {
+      "path": "sdk/arkts/test-support/native/companion.patch",
+      "sha256": "sha256:77f393099559d158b35d6b420511dc09c8facf700c3fc2611db80f59ba76f500",
+      "size": 37403
+    },
+    {
+      "path": "sdk/arkts/test-support/native/baseline.json",
+      "sha256": "sha256:93e160b63eb77acf00ab83148cfddfd16eb7e3dd1605bf21ffba8d2fe82e6176",
+      "size": 1158
+    },
+    {
+      "path": "sdk/arkts/test-support/native/support.hpp",
+      "sha256": "sha256:595f2e0f17be0197faa8783b1079abca78e53d80f6f6e4fee3aa7f5c30d09ac1",
+      "size": 2761
+    },
+    {
+      "path": "sdk/arkts/test-support/native/support_state.hpp",
+      "sha256": "sha256:e79294202ff3132d22da2ffcdbba8b93d51213b2741e99aaf92513b7a31da3ff",
+      "size": 1270
+    },
+    {
+      "path": "sdk/arkts/test-support/native/support.cpp",
+      "sha256": "sha256:68d5b599ae1c092404ebe169faf6647fb274ce5781d99854594a46b616aeb603",
+      "size": 7937
+    },
+    {
+      "path": "sdk/arkts/test-support/native/observer.hpp",
+      "sha256": "sha256:9c6de7b24689756ad2ce3af9c16cf7e414f8ef64c1a812a462e1e70c601b6f2f",
+      "size": 7196
+    },
+    {
+      "path": "sdk/arkts/test-support/native/observer.cpp",
+      "sha256": "sha256:db715cc103d9279a36c6118e862f3f884d90c25214e63c7393d8cf3dc8810453",
+      "size": 8289
+    },
+    {
+      "path": "sdk/arkts/test-support/native/observer_inventory.py",
+      "sha256": "sha256:bf887cc03d97c6b4708bba7446b9a14e97446439a9070f617d47d364b32f0c3e",
+      "size": 7620
+    },
+    {
+      "path": "sdk/arkts/test-support/native/memory.hpp",
+      "sha256": "sha256:7b20de6a94ea7a79c5edaa3dd0b5552713295deef61bf5c3d13d144ace965fb6",
+      "size": 2652
+    },
+    {
+      "path": "sdk/arkts/test-support/native/memory_hook.h",
+      "sha256": "sha256:adb1be75a884a3d5d793389c3cc02937e3534ec888ae05c07a6cab2b3cefd2d9",
+      "size": 816
+    },
+    {
+      "path": "sdk/arkts/test-support/native/memory.cpp",
+      "sha256": "sha256:9b4df8c950046222e1dd69e9dd7185b98885c17704b364020a0fa5318c428f04",
+      "size": 6954
+    },
+    {
+      "path": "sdk/arkts/test-support/native/memory-runtime.patch",
+      "sha256": "sha256:7ca092cc6d3b126da572a0283d1ef4a5afc67e67e2ae26fc6c343e9ddecc5441",
+      "size": 1936
+    },
+    {
+      "path": "sdk/arkts/test-support/native/memory-runtime-baseline.json",
+      "sha256": "sha256:917e91c24a7cb8e422ddd63e105c18b4d86db2d6927ceb3df939f159e9b9f628",
+      "size": 244
+    },
+    {
+      "path": "sdk/arkts/test-support/facade/companion.patch",
+      "sha256": "sha256:8a91fec1a76005a22c0b5f43273229eda9dca1823bf4a1be6e5abff7743f168e",
+      "size": 11202
+    },
+    {
+      "path": "sdk/arkts/test-support/facade/baseline.json",
+      "sha256": "sha256:1e655e99bbd277d7585a467ca6c52c33f146983b64daca682039c7fe354be0d9",
+      "size": 234
+    },
+    {
+      "path": "sdk/arkts/test-support/facade/TestFrame.ets",
+      "sha256": "sha256:513468bc8e5727d6de97bdc235bb80d4a39023dda8839c160ceb2924de95a31e",
+      "size": 1313
+    },
+    {
+      "path": "sdk/arkts/test-support/facade/FacadeFrame.ets",
+      "sha256": "sha256:f16ad7ffea907b4d053d803d1e46598f0c2a628102c6f105c14e3dadccaa1c46",
+      "size": 403
+    },
+    {
+      "path": "sdk/arkts/test-support/contracts/support.d.ts",
+      "sha256": "sha256:6c19c5b45a77cc66d3a101aa66f2ecdd1722ca050443ca7a517db3406ee6cc75",
+      "size": 984
+    },
+    {
+      "path": "sdk/arkts/test-support/contracts/test-frame-layout.json",
+      "sha256": "sha256:f978c3ace6e4c441fa7fb454fe8873fe4cd97bb819aff875b2433c63021c8efa",
+      "size": 2254
+    },
+    {
+      "path": "sdk/arkts/test-support/contracts/facade-frame-layout.json",
+      "sha256": "sha256:08f962959584269144477f7c23363925fa9764099901dd60752e3a9c0eca672a",
+      "size": 628
+    },
+    {
+      "path": "sdk/arkts/test-support/contracts/diagnostic-units-v1.json",
+      "sha256": "sha256:0cb1053696fe4fffdf5f9d62aebe0f8651d3a8b41c3eb5bbdc3c960f3f8a980d",
+      "size": 2137
+    },
+    {
+      "path": "sdk/arkts/test-support/contracts/PORTS.md",
+      "sha256": "sha256:6fa062e1b985549a0310d0f07da271868d3dac6b70fbf4a7a2669b950dfdfbcd",
+      "size": 10252
+    },
+    {
+      "path": "sdk/arkts/test-support/contracts/bootstrap-totals-layout.json",
+      "sha256": "sha256:d02b603cb6921c7dbd8561f7998598975c59a11ebe45937ba3fcf950905bcc68",
+      "size": 1620
+    },
+    {
+      "path": "sdk/arkts/test-support/contracts/ports-layout.json",
+      "sha256": "sha256:688f497e5503e12fb457ad2db36aca6a513a2b9afa604d3e8c758d6ba3951026",
+      "size": 1872
+    },
+    {
+      "path": "sdk/arkts/test-support/contracts/observer-layout.json",
+      "sha256": "sha256:5b966ed88affc1f09c7e6a488ba4aee58899c2ac91d41c39cd0e0fa9169d8a4f",
+      "size": 1273
+    },
+    {
+      "path": "sdk/arkts/test-support/contracts/memory-layout.json",
+      "sha256": "sha256:6271eb17e07ad46d68bc12c5711091e3ecdeafdbfdf58c1b28dd23e39846c1e0",
+      "size": 3482
+    },
+    {
+      "path": "sdk/arkts/test-support/contracts/subscription-state-layout.json",
+      "sha256": "sha256:b968473172952f5b893553ee6ab44439e32f25744d6a9affb880c7996a078a03",
+      "size": 951
+    },
+    {
+      "path": "sdk/arkts/test-support/native/memory-provider-c.patch",
+      "sha256": "sha256:2281b33d5217a3ec337a1c18fc4f8db62c097f38f8cc295a9887f2243b4c6ad3",
+      "size": 1965
+    },
+    {
+      "path": "sdk/arkts/test-support/native/memory-provider-c-baseline.json",
+      "sha256": "sha256:73f69edd491451b7e596019db4230dbd06f28ed4a02d7ef156f94d7b67295fc4",
+      "size": 242
+    },
+    {
+      "path": "sdk/cpp/arkts-provider/src/provider.cpp",
+      "sha256": "sha256:304ecbfb5ac3523cd98ba472aad365a967f8cc00de9ac4b511c8da49230b85de",
+      "size": 4470
+    },
+    {
+      "path": "sdk/arkts/test-support/native/memory-provider-cpp.patch",
+      "sha256": "sha256:1bb166cf289599ffad432d3555d0b63b37b79ed0123eff5b2ac254be89c5e3b6",
+      "size": 2639
+    },
+    {
+      "path": "sdk/arkts/test-support/native/memory-provider-cpp-baseline.json",
+      "sha256": "sha256:caf50394823e164afbe999a68ca7f725646929251bb08f43bf2f7cfd59a09771",
+      "size": 246
+    },
+    {
+      "path": "sdk/rust/arkts-provider/src/lib.rs",
+      "sha256": "sha256:abce5ea60aedb40ab509b90c28e39f6964c55d7ea72ab1d7b8d8c17540266122",
+      "size": 12482
+    },
+    {
+      "path": "sdk/rust/arkts-bridge/Cargo.toml",
+      "sha256": "sha256:f5e3b69e0b2056168faf2db10c2a1c8fba566afbcd715f4b60cf352244fc9976",
+      "size": 554
+    },
+    {
+      "path": "sdk/rust/arkts-bridge/Cargo.lock",
+      "sha256": "sha256:89ec1e24b5298fb93afc888d25a992244de1578aead695542dd86b3bfbcaf4f9",
+      "size": 7658
+    },
+    {
+      "path": "sdk/rust/arkts-bridge/build.rs",
+      "sha256": "sha256:831696e257170e9a58400f9c54278b62c41747ca2aecd9e7f1e9424d2a0e8b4b",
+      "size": 1752
+    },
+    {
+      "path": "sdk/rust/arkts-bridge/frontend-features.json",
+      "sha256": "sha256:b8211680968892c4c6f2b979025efc18ebfadf48edde63cc4066b21247327073",
+      "size": 975
+    },
+    {
+      "path": "sdk/rust/arkts-bridge/src/lib.rs",
+      "sha256": "sha256:d1c98a3bdffedd7fa687258cb4d0a42fab9a00c0ad35e4cf0d4c9e091fb52685",
+      "size": 8854
+    },
+    {
+      "path": "adapters/generators/arkts/rust_frontend.py",
+      "sha256": "sha256:5998cd7c28ac25573d9106165040092154c91463b4c6fef96e1d7b0b0fc92b1d",
+      "size": 6004
+    },
+    {
+      "path": "adapters/toolchains/arkts/rust.py",
+      "sha256": "sha256:8ce45b24774ce0be978aa70304344eb0028456555b09ef55405f960b280dc2cc",
+      "size": 19537
+    },
+    {
+      "path": "adapters/toolchains/arkts/rust_metadata.py",
+      "sha256": "sha256:e5d0959c9ba9a592c55515981cd2961b99f577757046c8b657f8885146058134",
+      "size": 8634
+    },
+    {
+      "path": "adapters/toolchains/arkts/rust_dependencies.py",
+      "sha256": "sha256:9d6d2301a2810d418f1de8dff3612df5f9256858e0a4b14829461716540d6a37",
+      "size": 10807
+    },
+    {
+      "path": "adapters/toolchains/arkts/rust_tools.py",
+      "sha256": "sha256:8168be278b9b9d9829c65a2155852f4b6178e9f1b2fa4d77984c3d24b9dce61e",
+      "size": 7983
+    },
+    {
+      "path": "adapters/toolchains/arkts/rust_inventory.py",
+      "sha256": "sha256:a37eeff51afc0993f445034150dd2b756a6b06abd86072394998494d57432038",
+      "size": 5088
+    },
+    {
+      "path": "adapters/toolchains/arkts/rust_observer.py",
+      "sha256": "sha256:d1550411fd14d8d0964bcdaaeced9a051fbd436f975773e49c0cbf550d4065f7",
+      "size": 4132
+    }
+  ],
+  "records": [
+    {
+      "route": "c",
+      "variant": "ordinary",
+      "original_inputs": [
+        "adapters/generators/arkts/driver.py",
+        "adapters/toolchains/arkts/native.py",
+        "adapters/toolchains/arkts/preflight.py",
+        "adapters/toolchains/arkts/project.py",
+        "adapters/toolchains/arkts/tools.py",
+        "adapters/toolchains/arkts/worker.py",
+        "adapters/toolchains/common/documents.py",
+        "sdk/arkts/facade/Boundary.ets.in",
+        "sdk/arkts/facade/RuntimeFrame.ets",
+        "sdk/arkts/facade/frame-layout.json",
+        "sdk/arkts/native-gateway/Index.d.ts",
+        "sdk/arkts/native-gateway/include/codec.hpp",
+        "sdk/arkts/native-gateway/include/handle.hpp",
+        "sdk/arkts/native-gateway/include/runtime.hpp",
+        "sdk/arkts/native-gateway/src/api.cpp",
+        "sdk/arkts/native-gateway/src/runtime.cpp",
+        "sdk/arkts/native-runtime/include/protocol.hpp",
+        "sdk/arkts/native-runtime/include/provider_abi.h",
+        "sdk/arkts/native-runtime/include/provider_port.hpp",
+        "sdk/arkts/native-runtime/include/validate_snapshot.h",
+        "sdk/arkts/native-runtime/include/worker.hpp",
+        "sdk/arkts/native-runtime/src/protocol.cpp",
+        "sdk/arkts/native-runtime/src/worker.cpp",
+        "sdk/c/arkts-provider/src/provider.c"
+      ],
+      "derived_inputs": [
+        "derived/native/include/codec.hpp",
+        "derived/native/include/handle.hpp",
+        "derived/native/include/runtime.hpp",
+        "derived/native/src/api.cpp",
+        "derived/native/src/runtime.cpp",
+        "derived/native/worker/worker.cpp",
+        "derived/native/Index.d.ts",
+        "derived/native/Boundary.ets.in"
+      ],
+      "generated_inputs": [
+        "generated/native/frame.generated.hpp",
+        "generated/native/exports.generated.inc"
+      ],
+      "references": [
+        {
+          "path": "derived/native/include/codec.hpp",
+          "sha256": "sha256:5ef359714bc88fa67cc3e9facde832c23709689f22c7574b3dcdd7d7782781cf",
+          "size": 5972
+        },
+        {
+          "path": "derived/native/include/handle.hpp",
+          "sha256": "sha256:dd31c74e72c28b9d7f3472f8e9a412c1f3d3fa8ce22675e720a0a8cbbd9c8aa4",
+          "size": 2118
+        },
+        {
+          "path": "derived/native/include/runtime.hpp",
+          "sha256": "sha256:88e4b119b86a084ad9cae092a82892de1a2ff2d660d316a39021a778f92894d9",
+          "size": 3482
+        },
+        {
+          "path": "derived/native/src/api.cpp",
+          "sha256": "sha256:080f1103a118f987778be6586ba9ac75ecea7c0b4aab3e3ab5bd0dbd2b59a0af",
+          "size": 19841
+        },
+        {
+          "path": "derived/native/src/runtime.cpp",
+          "sha256": "sha256:6204bafcbf8ad4019f63a37a074c23818478ec83aae91a6953af076368eb1bef",
+          "size": 22917
+        },
+        {
+          "path": "derived/native/worker/worker.cpp",
+          "sha256": "sha256:65c5d66f096688c808c9bdd041382227107afb94e29a1f74fcb3b7728cf6fd22",
+          "size": 5023
+        },
+        {
+          "path": "derived/native/Index.d.ts",
+          "sha256": "sha256:82dea1d77e3c5ed42554ed5a496e2cf4daadc6ae24cce71df420469d01eb11e2",
+          "size": 1163
+        },
+        {
+          "path": "derived/native/Boundary.ets.in",
+          "sha256": "sha256:4579b9115511dddcdc1e0fd12a8d4f510997858ecc203e49f82b0403dd2a573e",
+          "size": 24699
+        },
+        {
+          "path": "generated/native/frame.generated.hpp",
+          "sha256": "sha256:8f8bee6b97b2df43e4b01a1c0c91d25dd23d6b407bfc2f637230facc404a29b3",
+          "size": 995
+        },
+        {
+          "path": "generated/native/exports.generated.inc",
+          "sha256": "sha256:d233c80434a0ecf540f7fe8213cbeb11b9e213b90c59b4003dd1d9524977536b",
+          "size": 1362
+        }
+      ],
+      "units": [
+        {
+          "name": "protocol",
+          "source": "sdk/arkts/native-runtime/src/protocol.cpp",
+          "language": "cpp",
+          "required_dependencies": [
+            "sdk/arkts/native-runtime/src/protocol.cpp",
+            "sdk/arkts/native-runtime/include/protocol.hpp"
+          ]
+        },
+        {
+          "name": "worker",
+          "source": "derived/native/worker/worker.cpp",
+          "language": "cpp",
+          "required_dependencies": [
+            "derived/native/worker/worker.cpp",
+            "sdk/arkts/native-runtime/include/worker.hpp"
+          ]
+        },
+        {
+          "name": "runtime",
+          "source": "derived/native/src/runtime.cpp",
+          "language": "cpp",
+          "required_dependencies": [
+            "derived/native/src/runtime.cpp",
+            "sdk/arkts/native-runtime/include/provider_port.hpp"
+          ]
+        },
+        {
+          "name": "api",
+          "source": "derived/native/src/api.cpp",
+          "language": "cpp",
+          "required_dependencies": [
+            "derived/native/src/api.cpp",
+            "generated/native/identity.generated.hpp"
+          ]
+        },
+        {
+          "name": "provider",
+          "source": "sdk/c/arkts-provider/src/provider.c",
+          "language": "c",
+          "required_dependencies": [
+            "sdk/c/arkts-provider/src/provider.c",
+            "sdk/arkts/native-runtime/include/provider_abi.h",
+            "sdk/arkts/native-runtime/include/validate_snapshot.h"
+          ]
+        }
+      ],
+      "derivations": [],
+      "methods": [
+        [
+          "runtimeOpen",
+          2
+        ],
+        [
+          "connect",
+          1
+        ],
+        [
+          "roundtrip",
+          3
+        ],
+        [
+          "submit",
+          3
+        ],
+        [
+          "cancel",
+          1
+        ],
+        [
+          "observe",
+          2
+        ],
+        [
+          "publish",
+          4
+        ],
+        [
+          "requestClose",
+          1
+        ],
+        [
+          "claimResult",
+          2
+        ],
+        [
+          "watchClose",
+          2
+        ],
+        [
+          "tryTake",
+          2
+        ],
+        [
+          "deliver",
+          1
+        ],
+        [
+          "requestRuntimeClose",
+          1
+        ],
+        [
+          "pollRuntime",
+          1
+        ],
+        [
+          "consumeRuntimeReceipt",
+          1
+        ],
+        [
+          "audit",
+          1
+        ]
+      ]
+    },
+    {
+      "route": "c",
+      "variant": "test",
+      "original_inputs": [
+        "adapters/generators/arkts/driver.py",
+        "adapters/toolchains/arkts/native.py",
+        "adapters/toolchains/arkts/preflight.py",
+        "adapters/toolchains/arkts/project.py",
+        "adapters/toolchains/arkts/tools.py",
+        "adapters/toolchains/arkts/worker.py",
+        "adapters/toolchains/common/documents.py",
+        "sdk/arkts/facade/Boundary.ets.in",
+        "sdk/arkts/facade/RuntimeFrame.ets",
+        "sdk/arkts/facade/frame-layout.json",
+        "sdk/arkts/native-gateway/Index.d.ts",
+        "sdk/arkts/native-gateway/include/codec.hpp",
+        "sdk/arkts/native-gateway/include/handle.hpp",
+        "sdk/arkts/native-gateway/include/runtime.hpp",
+        "sdk/arkts/native-gateway/src/api.cpp",
+        "sdk/arkts/native-gateway/src/runtime.cpp",
+        "sdk/arkts/native-runtime/include/protocol.hpp",
+        "sdk/arkts/native-runtime/include/provider_abi.h",
+        "sdk/arkts/native-runtime/include/provider_port.hpp",
+        "sdk/arkts/native-runtime/include/validate_snapshot.h",
+        "sdk/arkts/native-runtime/include/worker.hpp",
+        "sdk/arkts/native-runtime/src/protocol.cpp",
+        "sdk/arkts/native-runtime/src/worker.cpp",
+        "sdk/arkts/test-support/contracts/PORTS.md",
+        "sdk/arkts/test-support/contracts/bootstrap-totals-layout.json",
+        "sdk/arkts/test-support/contracts/diagnostic-units-v1.json",
+        "sdk/arkts/test-support/contracts/facade-frame-layout.json",
+        "sdk/arkts/test-support/contracts/memory-layout.json",
+        "sdk/arkts/test-support/contracts/observer-layout.json",
+        "sdk/arkts/test-support/contracts/ports-layout.json",
+        "sdk/arkts/test-support/contracts/subscription-state-layout.json",
+        "sdk/arkts/test-support/contracts/support.d.ts",
+        "sdk/arkts/test-support/contracts/test-frame-layout.json",
+        "sdk/arkts/test-support/facade/FacadeFrame.ets",
+        "sdk/arkts/test-support/facade/TestFrame.ets",
+        "sdk/arkts/test-support/facade/baseline.json",
+        "sdk/arkts/test-support/facade/companion.patch",
+        "sdk/arkts/test-support/native/baseline.json",
+        "sdk/arkts/test-support/native/companion.patch",
+        "sdk/arkts/test-support/native/memory-provider-c-baseline.json",
+        "sdk/arkts/test-support/native/memory-provider-c.patch",
+        "sdk/arkts/test-support/native/memory-runtime-baseline.json",
+        "sdk/arkts/test-support/native/memory-runtime.patch",
+        "sdk/arkts/test-support/native/memory.cpp",
+        "sdk/arkts/test-support/native/memory.hpp",
+        "sdk/arkts/test-support/native/memory_hook.h",
+        "sdk/arkts/test-support/native/observer.cpp",
+        "sdk/arkts/test-support/native/observer.hpp",
+        "sdk/arkts/test-support/native/observer_inventory.py",
+        "sdk/arkts/test-support/native/support.cpp",
+        "sdk/arkts/test-support/native/support.hpp",
+        "sdk/arkts/test-support/native/support_state.hpp",
+        "sdk/c/arkts-provider/src/provider.c"
+      ],
+      "derived_inputs": [
+        "derived/native/Boundary.ets.in",
+        "derived/native/Index.d.ts",
+        "derived/native/include/codec.hpp",
+        "derived/native/include/handle.hpp",
+        "derived/native/include/memory.hpp",
+        "derived/native/include/memory_hook.h",
+        "derived/native/include/observer.hpp",
+        "derived/native/include/runtime.hpp",
+        "derived/native/include/support.hpp",
+        "derived/native/include/support_state.hpp",
+        "derived/native/provider/provider.c",
+        "derived/native/runtime/protocol.cpp",
+        "derived/native/src/api.cpp",
+        "derived/native/src/memory.cpp",
+        "derived/native/src/observer.cpp",
+        "derived/native/src/runtime.cpp",
+        "derived/native/src/support.cpp",
+        "derived/native/worker/worker.cpp"
+      ],
+      "generated_inputs": [
+        "generated/native/frame.generated.hpp",
+        "generated/native/exports.generated.inc",
+        "generated/native/test-frame.generated.hpp"
+      ],
+      "references": [
+        {
+          "path": "derived/native/Boundary.ets.in",
+          "sha256": "sha256:0ec522c79d1a8fdc2975806d8c5e8e51da082cf177e0bb12d1073c1381518250",
+          "size": 32361
+        },
+        {
+          "path": "derived/native/Index.d.ts",
+          "sha256": "sha256:3619a2879eb79cbda3434f7d6646d10802dcf80452d58f61503ea9324bf27631",
+          "size": 2024
+        },
+        {
+          "path": "derived/native/include/codec.hpp",
+          "sha256": "sha256:13a19ed24250b9031a6827b7d438be6321a3935399606410fca50faad43cfa55",
+          "size": 6175
+        },
+        {
+          "path": "derived/native/include/handle.hpp",
+          "sha256": "sha256:dd31c74e72c28b9d7f3472f8e9a412c1f3d3fa8ce22675e720a0a8cbbd9c8aa4",
+          "size": 2118
+        },
+        {
+          "path": "derived/native/include/memory.hpp",
+          "sha256": "sha256:7b20de6a94ea7a79c5edaa3dd0b5552713295deef61bf5c3d13d144ace965fb6",
+          "size": 2652
+        },
+        {
+          "path": "derived/native/include/memory_hook.h",
+          "sha256": "sha256:adb1be75a884a3d5d793389c3cc02937e3534ec888ae05c07a6cab2b3cefd2d9",
+          "size": 816
+        },
+        {
+          "path": "derived/native/include/observer.hpp",
+          "sha256": "sha256:9c6de7b24689756ad2ce3af9c16cf7e414f8ef64c1a812a462e1e70c601b6f2f",
+          "size": 7196
+        },
+        {
+          "path": "derived/native/include/runtime.hpp",
+          "sha256": "sha256:b7667ce1901fed4933155c24f14da29bd0ffa4168bd2507c401700d28513db32",
+          "size": 4059
+        },
+        {
+          "path": "derived/native/include/support.hpp",
+          "sha256": "sha256:595f2e0f17be0197faa8783b1079abca78e53d80f6f6e4fee3aa7f5c30d09ac1",
+          "size": 2761
+        },
+        {
+          "path": "derived/native/include/support_state.hpp",
+          "sha256": "sha256:e79294202ff3132d22da2ffcdbba8b93d51213b2741e99aaf92513b7a31da3ff",
+          "size": 1270
+        },
+        {
+          "path": "derived/native/provider/provider.c",
+          "sha256": "sha256:1e6ef0260e4bfac1d49c2cb67770dbf9fa699be186ed9a2a6679bfdd529ac43c",
+          "size": 4631
+        },
+        {
+          "path": "derived/native/runtime/protocol.cpp",
+          "sha256": "sha256:cca120ddfa3f1ab22a1fc2b25bebc2433cfcac84a97aff751ac1a8b88a5dfcc7",
+          "size": 39415
+        },
+        {
+          "path": "derived/native/src/api.cpp",
+          "sha256": "sha256:293c29ec2d8f8cd4642a8429abe8a81d021e6a9513a4df6be3d6aaf2e8090f7d",
+          "size": 31723
+        },
+        {
+          "path": "derived/native/src/memory.cpp",
+          "sha256": "sha256:9b4df8c950046222e1dd69e9dd7185b98885c17704b364020a0fa5318c428f04",
+          "size": 6954
+        },
+        {
+          "path": "derived/native/src/observer.cpp",
+          "sha256": "sha256:db715cc103d9279a36c6118e862f3f884d90c25214e63c7393d8cf3dc8810453",
+          "size": 8289
+        },
+        {
+          "path": "derived/native/src/runtime.cpp",
+          "sha256": "sha256:ab9d245b57c1cf5fdbadf4d7f9d020c3fb216705123c6e1ac45a9df61b36dadc",
+          "size": 32324
+        },
+        {
+          "path": "derived/native/src/support.cpp",
+          "sha256": "sha256:68d5b599ae1c092404ebe169faf6647fb274ce5781d99854594a46b616aeb603",
+          "size": 7937
+        },
+        {
+          "path": "derived/native/worker/worker.cpp",
+          "sha256": "sha256:2e798c13630f1761366b8fdbdd9dfde737c3031dd41d94b4a4ab49e2dc93dac0",
+          "size": 5710
+        },
+        {
+          "path": "generated/native/frame.generated.hpp",
+          "sha256": "sha256:8f8bee6b97b2df43e4b01a1c0c91d25dd23d6b407bfc2f637230facc404a29b3",
+          "size": 995
+        },
+        {
+          "path": "generated/native/exports.generated.inc",
+          "sha256": "sha256:742d41bcc33ec2bd92e18fb6c91859ee4866c87e3eb80d1f9c76b6db4762e775",
+          "size": 2898
+        },
+        {
+          "path": "generated/native/test-frame.generated.hpp",
+          "sha256": "sha256:c9055c1a0512ce6d4c7ce90689eba2f5fdb82a591638af6d2d29361ca96a156e",
+          "size": 1017
+        }
+      ],
+      "units": [
+        {
+          "name": "protocol",
+          "source": "derived/native/runtime/protocol.cpp",
+          "language": "cpp",
+          "required_dependencies": [
+            "derived/native/runtime/protocol.cpp",
+            "sdk/arkts/native-runtime/include/protocol.hpp",
+            "derived/native/include/memory.hpp"
+          ]
+        },
+        {
+          "name": "worker",
+          "source": "derived/native/worker/worker.cpp",
+          "language": "cpp",
+          "required_dependencies": [
+            "derived/native/worker/worker.cpp",
+            "sdk/arkts/native-runtime/include/worker.hpp"
+          ]
+        },
+        {
+          "name": "runtime",
+          "source": "derived/native/src/runtime.cpp",
+          "language": "cpp",
+          "required_dependencies": [
+            "derived/native/src/runtime.cpp",
+            "sdk/arkts/native-runtime/include/provider_port.hpp",
+            "derived/native/include/memory.hpp"
+          ]
+        },
+        {
+          "name": "api",
+          "source": "derived/native/src/api.cpp",
+          "language": "cpp",
+          "required_dependencies": [
+            "derived/native/src/api.cpp",
+            "generated/native/identity.generated.hpp"
+          ]
+        },
+        {
+          "name": "support",
+          "source": "derived/native/src/support.cpp",
+          "language": "cpp",
+          "required_dependencies": [
+            "derived/native/src/support.cpp"
+          ]
+        },
+        {
+          "name": "observer",
+          "source": "derived/native/src/observer.cpp",
+          "language": "cpp",
+          "required_dependencies": [
+            "derived/native/src/observer.cpp"
+          ]
+        },
+        {
+          "name": "memory",
+          "source": "derived/native/src/memory.cpp",
+          "language": "cpp",
+          "required_dependencies": [
+            "derived/native/src/memory.cpp",
+            "derived/native/include/memory.hpp"
+          ]
+        },
+        {
+          "name": "provider",
+          "source": "derived/native/provider/provider.c",
+          "language": "c",
+          "required_dependencies": [
+            "derived/native/provider/provider.c",
+            "sdk/arkts/native-runtime/include/provider_abi.h",
+            "sdk/arkts/native-runtime/include/validate_snapshot.h",
+            "derived/native/include/memory_hook.h"
+          ]
+        }
+      ],
+      "derivations": [
+        {
+          "original": "sdk/arkts/native-runtime/src/protocol.cpp",
+          "patch": "sdk/arkts/test-support/native/memory-runtime.patch",
+          "baseline": "sdk/arkts/test-support/native/memory-runtime-baseline.json",
+          "result": "derived/native/runtime/protocol.cpp",
+          "base_sha256": "sha256:eb3978d2dda0e2ac1c67c485a4b74d66bf9b4a3155934ab895245fb23a0bcc25",
+          "result_sha256": "sha256:cca120ddfa3f1ab22a1fc2b25bebc2433cfcac84a97aff751ac1a8b88a5dfcc7"
+        },
+        {
+          "original": "sdk/c/arkts-provider/src/provider.c",
+          "patch": "sdk/arkts/test-support/native/memory-provider-c.patch",
+          "baseline": "sdk/arkts/test-support/native/memory-provider-c-baseline.json",
+          "result": "derived/native/provider/provider.c",
+          "base_sha256": "sha256:136969a8e0b8376ca4089dd0d2795b2a54681bf7f97f841a78bfcc8de28d322e",
+          "result_sha256": "sha256:1e6ef0260e4bfac1d49c2cb67770dbf9fa699be186ed9a2a6679bfdd529ac43c"
+        }
+      ],
+      "methods": [
+        [
+          "runtimeOpen",
+          2
+        ],
+        [
+          "connect",
+          1
+        ],
+        [
+          "roundtrip",
+          3
+        ],
+        [
+          "submit",
+          3
+        ],
+        [
+          "cancel",
+          1
+        ],
+        [
+          "observe",
+          2
+        ],
+        [
+          "publish",
+          4
+        ],
+        [
+          "requestClose",
+          1
+        ],
+        [
+          "claimResult",
+          2
+        ],
+        [
+          "watchClose",
+          2
+        ],
+        [
+          "tryTake",
+          2
+        ],
+        [
+          "deliver",
+          1
+        ],
+        [
+          "requestRuntimeClose",
+          1
+        ],
+        [
+          "pollRuntime",
+          1
+        ],
+        [
+          "consumeRuntimeReceipt",
+          1
+        ],
+        [
+          "audit",
+          1
+        ],
+        [
+          "testArmWork",
+          2
+        ],
+        [
+          "testReleaseWork",
+          1
+        ],
+        [
+          "testHoldPublication",
+          4
+        ],
+        [
+          "testReleasePublication",
+          2
+        ],
+        [
+          "testFailClone",
+          3
+        ],
+        [
+          "testFailCompletion",
+          2
+        ],
+        [
+          "testObserve",
+          1
+        ],
+        [
+          "testExportKey",
+          1
+        ],
+        [
+          "testInspect",
+          1
+        ],
+        [
+          "testObserveOperation",
+          1
+        ],
+        [
+          "testArmPartialOpenFailure",
+          0
+        ],
+        [
+          "testLastAdmissionAudit",
+          0
+        ],
+        [
+          "testDeliveryGate",
+          2
+        ],
+        [
+          "testHandleAdmission",
+          3
+        ],
+        [
+          "testBootstrapTotals",
+          0
+        ],
+        [
+          "testMemory",
+          1
+        ]
+      ]
+    },
+    {
+      "route": "cpp",
+      "variant": "ordinary",
+      "original_inputs": [
+        "adapters/generators/arkts/driver.py",
+        "adapters/toolchains/arkts/native.py",
+        "adapters/toolchains/arkts/preflight.py",
+        "adapters/toolchains/arkts/project.py",
+        "adapters/toolchains/arkts/tools.py",
+        "adapters/toolchains/arkts/worker.py",
+        "adapters/toolchains/common/documents.py",
+        "sdk/arkts/facade/Boundary.ets.in",
+        "sdk/arkts/facade/RuntimeFrame.ets",
+        "sdk/arkts/facade/frame-layout.json",
+        "sdk/arkts/native-gateway/Index.d.ts",
+        "sdk/arkts/native-gateway/include/codec.hpp",
+        "sdk/arkts/native-gateway/include/handle.hpp",
+        "sdk/arkts/native-gateway/include/runtime.hpp",
+        "sdk/arkts/native-gateway/src/api.cpp",
+        "sdk/arkts/native-gateway/src/runtime.cpp",
+        "sdk/arkts/native-runtime/include/protocol.hpp",
+        "sdk/arkts/native-runtime/include/provider_abi.h",
+        "sdk/arkts/native-runtime/include/provider_port.hpp",
+        "sdk/arkts/native-runtime/include/validate_snapshot.h",
+        "sdk/arkts/native-runtime/include/worker.hpp",
+        "sdk/arkts/native-runtime/src/protocol.cpp",
+        "sdk/arkts/native-runtime/src/worker.cpp",
+        "sdk/cpp/arkts-provider/src/provider.cpp"
+      ],
+      "derived_inputs": [
+        "derived/native/include/codec.hpp",
+        "derived/native/include/handle.hpp",
+        "derived/native/include/runtime.hpp",
+        "derived/native/src/api.cpp",
+        "derived/native/src/runtime.cpp",
+        "derived/native/worker/worker.cpp",
+        "derived/native/Index.d.ts",
+        "derived/native/Boundary.ets.in"
+      ],
+      "generated_inputs": [
+        "generated/native/frame.generated.hpp",
+        "generated/native/exports.generated.inc"
+      ],
+      "references": [
+        {
+          "path": "derived/native/include/codec.hpp",
+          "sha256": "sha256:5ef359714bc88fa67cc3e9facde832c23709689f22c7574b3dcdd7d7782781cf",
+          "size": 5972
+        },
+        {
+          "path": "derived/native/include/handle.hpp",
+          "sha256": "sha256:dd31c74e72c28b9d7f3472f8e9a412c1f3d3fa8ce22675e720a0a8cbbd9c8aa4",
+          "size": 2118
+        },
+        {
+          "path": "derived/native/include/runtime.hpp",
+          "sha256": "sha256:88e4b119b86a084ad9cae092a82892de1a2ff2d660d316a39021a778f92894d9",
+          "size": 3482
+        },
+        {
+          "path": "derived/native/src/api.cpp",
+          "sha256": "sha256:080f1103a118f987778be6586ba9ac75ecea7c0b4aab3e3ab5bd0dbd2b59a0af",
+          "size": 19841
+        },
+        {
+          "path": "derived/native/src/runtime.cpp",
+          "sha256": "sha256:6204bafcbf8ad4019f63a37a074c23818478ec83aae91a6953af076368eb1bef",
+          "size": 22917
+        },
+        {
+          "path": "derived/native/worker/worker.cpp",
+          "sha256": "sha256:65c5d66f096688c808c9bdd041382227107afb94e29a1f74fcb3b7728cf6fd22",
+          "size": 5023
+        },
+        {
+          "path": "derived/native/Index.d.ts",
+          "sha256": "sha256:82dea1d77e3c5ed42554ed5a496e2cf4daadc6ae24cce71df420469d01eb11e2",
+          "size": 1163
+        },
+        {
+          "path": "derived/native/Boundary.ets.in",
+          "sha256": "sha256:4579b9115511dddcdc1e0fd12a8d4f510997858ecc203e49f82b0403dd2a573e",
+          "size": 24699
+        },
+        {
+          "path": "generated/native/frame.generated.hpp",
+          "sha256": "sha256:8f8bee6b97b2df43e4b01a1c0c91d25dd23d6b407bfc2f637230facc404a29b3",
+          "size": 995
+        },
+        {
+          "path": "generated/native/exports.generated.inc",
+          "sha256": "sha256:d233c80434a0ecf540f7fe8213cbeb11b9e213b90c59b4003dd1d9524977536b",
+          "size": 1362
+        }
+      ],
+      "units": [
+        {
+          "name": "protocol",
+          "source": "sdk/arkts/native-runtime/src/protocol.cpp",
+          "language": "cpp",
+          "required_dependencies": [
+            "sdk/arkts/native-runtime/src/protocol.cpp",
+            "sdk/arkts/native-runtime/include/protocol.hpp"
+          ]
+        },
+        {
+          "name": "worker",
+          "source": "derived/native/worker/worker.cpp",
+          "language": "cpp",
+          "required_dependencies": [
+            "derived/native/worker/worker.cpp",
+            "sdk/arkts/native-runtime/include/worker.hpp"
+          ]
+        },
+        {
+          "name": "runtime",
+          "source": "derived/native/src/runtime.cpp",
+          "language": "cpp",
+          "required_dependencies": [
+            "derived/native/src/runtime.cpp",
+            "sdk/arkts/native-runtime/include/provider_port.hpp"
+          ]
+        },
+        {
+          "name": "api",
+          "source": "derived/native/src/api.cpp",
+          "language": "cpp",
+          "required_dependencies": [
+            "derived/native/src/api.cpp",
+            "generated/native/identity.generated.hpp"
+          ]
+        },
+        {
+          "name": "provider",
+          "source": "sdk/cpp/arkts-provider/src/provider.cpp",
+          "language": "cpp",
+          "required_dependencies": [
+            "sdk/cpp/arkts-provider/src/provider.cpp",
+            "sdk/arkts/native-runtime/include/provider_abi.h",
+            "sdk/arkts/native-runtime/include/validate_snapshot.h"
+          ]
+        }
+      ],
+      "derivations": [],
+      "methods": [
+        [
+          "runtimeOpen",
+          2
+        ],
+        [
+          "connect",
+          1
+        ],
+        [
+          "roundtrip",
+          3
+        ],
+        [
+          "submit",
+          3
+        ],
+        [
+          "cancel",
+          1
+        ],
+        [
+          "observe",
+          2
+        ],
+        [
+          "publish",
+          4
+        ],
+        [
+          "requestClose",
+          1
+        ],
+        [
+          "claimResult",
+          2
+        ],
+        [
+          "watchClose",
+          2
+        ],
+        [
+          "tryTake",
+          2
+        ],
+        [
+          "deliver",
+          1
+        ],
+        [
+          "requestRuntimeClose",
+          1
+        ],
+        [
+          "pollRuntime",
+          1
+        ],
+        [
+          "consumeRuntimeReceipt",
+          1
+        ],
+        [
+          "audit",
+          1
+        ]
+      ]
+    },
+    {
+      "route": "cpp",
+      "variant": "test",
+      "original_inputs": [
+        "adapters/generators/arkts/driver.py",
+        "adapters/toolchains/arkts/native.py",
+        "adapters/toolchains/arkts/preflight.py",
+        "adapters/toolchains/arkts/project.py",
+        "adapters/toolchains/arkts/tools.py",
+        "adapters/toolchains/arkts/worker.py",
+        "adapters/toolchains/common/documents.py",
+        "sdk/arkts/facade/Boundary.ets.in",
+        "sdk/arkts/facade/RuntimeFrame.ets",
+        "sdk/arkts/facade/frame-layout.json",
+        "sdk/arkts/native-gateway/Index.d.ts",
+        "sdk/arkts/native-gateway/include/codec.hpp",
+        "sdk/arkts/native-gateway/include/handle.hpp",
+        "sdk/arkts/native-gateway/include/runtime.hpp",
+        "sdk/arkts/native-gateway/src/api.cpp",
+        "sdk/arkts/native-gateway/src/runtime.cpp",
+        "sdk/arkts/native-runtime/include/protocol.hpp",
+        "sdk/arkts/native-runtime/include/provider_abi.h",
+        "sdk/arkts/native-runtime/include/provider_port.hpp",
+        "sdk/arkts/native-runtime/include/validate_snapshot.h",
+        "sdk/arkts/native-runtime/include/worker.hpp",
+        "sdk/arkts/native-runtime/src/protocol.cpp",
+        "sdk/arkts/native-runtime/src/worker.cpp",
+        "sdk/arkts/test-support/contracts/PORTS.md",
+        "sdk/arkts/test-support/contracts/bootstrap-totals-layout.json",
+        "sdk/arkts/test-support/contracts/diagnostic-units-v1.json",
+        "sdk/arkts/test-support/contracts/facade-frame-layout.json",
+        "sdk/arkts/test-support/contracts/memory-layout.json",
+        "sdk/arkts/test-support/contracts/observer-layout.json",
+        "sdk/arkts/test-support/contracts/ports-layout.json",
+        "sdk/arkts/test-support/contracts/subscription-state-layout.json",
+        "sdk/arkts/test-support/contracts/support.d.ts",
+        "sdk/arkts/test-support/contracts/test-frame-layout.json",
+        "sdk/arkts/test-support/facade/FacadeFrame.ets",
+        "sdk/arkts/test-support/facade/TestFrame.ets",
+        "sdk/arkts/test-support/facade/baseline.json",
+        "sdk/arkts/test-support/facade/companion.patch",
+        "sdk/arkts/test-support/native/baseline.json",
+        "sdk/arkts/test-support/native/companion.patch",
+        "sdk/arkts/test-support/native/memory-provider-cpp-baseline.json",
+        "sdk/arkts/test-support/native/memory-provider-cpp.patch",
+        "sdk/arkts/test-support/native/memory-runtime-baseline.json",
+        "sdk/arkts/test-support/native/memory-runtime.patch",
+        "sdk/arkts/test-support/native/memory.cpp",
+        "sdk/arkts/test-support/native/memory.hpp",
+        "sdk/arkts/test-support/native/memory_hook.h",
+        "sdk/arkts/test-support/native/observer.cpp",
+        "sdk/arkts/test-support/native/observer.hpp",
+        "sdk/arkts/test-support/native/observer_inventory.py",
+        "sdk/arkts/test-support/native/support.cpp",
+        "sdk/arkts/test-support/native/support.hpp",
+        "sdk/arkts/test-support/native/support_state.hpp",
+        "sdk/cpp/arkts-provider/src/provider.cpp"
+      ],
+      "derived_inputs": [
+        "derived/native/Boundary.ets.in",
+        "derived/native/Index.d.ts",
+        "derived/native/include/codec.hpp",
+        "derived/native/include/handle.hpp",
+        "derived/native/include/memory.hpp",
+        "derived/native/include/memory_hook.h",
+        "derived/native/include/observer.hpp",
+        "derived/native/include/runtime.hpp",
+        "derived/native/include/support.hpp",
+        "derived/native/include/support_state.hpp",
+        "derived/native/provider/provider.cpp",
+        "derived/native/runtime/protocol.cpp",
+        "derived/native/src/api.cpp",
+        "derived/native/src/memory.cpp",
+        "derived/native/src/observer.cpp",
+        "derived/native/src/runtime.cpp",
+        "derived/native/src/support.cpp",
+        "derived/native/worker/worker.cpp"
+      ],
+      "generated_inputs": [
+        "generated/native/frame.generated.hpp",
+        "generated/native/exports.generated.inc",
+        "generated/native/test-frame.generated.hpp"
+      ],
+      "references": [
+        {
+          "path": "derived/native/Boundary.ets.in",
+          "sha256": "sha256:0ec522c79d1a8fdc2975806d8c5e8e51da082cf177e0bb12d1073c1381518250",
+          "size": 32361
+        },
+        {
+          "path": "derived/native/Index.d.ts",
+          "sha256": "sha256:3619a2879eb79cbda3434f7d6646d10802dcf80452d58f61503ea9324bf27631",
+          "size": 2024
+        },
+        {
+          "path": "derived/native/include/codec.hpp",
+          "sha256": "sha256:13a19ed24250b9031a6827b7d438be6321a3935399606410fca50faad43cfa55",
+          "size": 6175
+        },
+        {
+          "path": "derived/native/include/handle.hpp",
+          "sha256": "sha256:dd31c74e72c28b9d7f3472f8e9a412c1f3d3fa8ce22675e720a0a8cbbd9c8aa4",
+          "size": 2118
+        },
+        {
+          "path": "derived/native/include/memory.hpp",
+          "sha256": "sha256:7b20de6a94ea7a79c5edaa3dd0b5552713295deef61bf5c3d13d144ace965fb6",
+          "size": 2652
+        },
+        {
+          "path": "derived/native/include/memory_hook.h",
+          "sha256": "sha256:adb1be75a884a3d5d793389c3cc02937e3534ec888ae05c07a6cab2b3cefd2d9",
+          "size": 816
+        },
+        {
+          "path": "derived/native/include/observer.hpp",
+          "sha256": "sha256:9c6de7b24689756ad2ce3af9c16cf7e414f8ef64c1a812a462e1e70c601b6f2f",
+          "size": 7196
+        },
+        {
+          "path": "derived/native/include/runtime.hpp",
+          "sha256": "sha256:b7667ce1901fed4933155c24f14da29bd0ffa4168bd2507c401700d28513db32",
+          "size": 4059
+        },
+        {
+          "path": "derived/native/include/support.hpp",
+          "sha256": "sha256:595f2e0f17be0197faa8783b1079abca78e53d80f6f6e4fee3aa7f5c30d09ac1",
+          "size": 2761
+        },
+        {
+          "path": "derived/native/include/support_state.hpp",
+          "sha256": "sha256:e79294202ff3132d22da2ffcdbba8b93d51213b2741e99aaf92513b7a31da3ff",
+          "size": 1270
+        },
+        {
+          "path": "derived/native/provider/provider.cpp",
+          "sha256": "sha256:22b193cb1113a4081e54bb2c85b471a2290ab063727ba5d43e9a46c4a182a212",
+          "size": 5746
+        },
+        {
+          "path": "derived/native/runtime/protocol.cpp",
+          "sha256": "sha256:cca120ddfa3f1ab22a1fc2b25bebc2433cfcac84a97aff751ac1a8b88a5dfcc7",
+          "size": 39415
+        },
+        {
+          "path": "derived/native/src/api.cpp",
+          "sha256": "sha256:293c29ec2d8f8cd4642a8429abe8a81d021e6a9513a4df6be3d6aaf2e8090f7d",
+          "size": 31723
+        },
+        {
+          "path": "derived/native/src/memory.cpp",
+          "sha256": "sha256:9b4df8c950046222e1dd69e9dd7185b98885c17704b364020a0fa5318c428f04",
+          "size": 6954
+        },
+        {
+          "path": "derived/native/src/observer.cpp",
+          "sha256": "sha256:db715cc103d9279a36c6118e862f3f884d90c25214e63c7393d8cf3dc8810453",
+          "size": 8289
+        },
+        {
+          "path": "derived/native/src/runtime.cpp",
+          "sha256": "sha256:ab9d245b57c1cf5fdbadf4d7f9d020c3fb216705123c6e1ac45a9df61b36dadc",
+          "size": 32324
+        },
+        {
+          "path": "derived/native/src/support.cpp",
+          "sha256": "sha256:68d5b599ae1c092404ebe169faf6647fb274ce5781d99854594a46b616aeb603",
+          "size": 7937
+        },
+        {
+          "path": "derived/native/worker/worker.cpp",
+          "sha256": "sha256:2e798c13630f1761366b8fdbdd9dfde737c3031dd41d94b4a4ab49e2dc93dac0",
+          "size": 5710
+        },
+        {
+          "path": "generated/native/frame.generated.hpp",
+          "sha256": "sha256:8f8bee6b97b2df43e4b01a1c0c91d25dd23d6b407bfc2f637230facc404a29b3",
+          "size": 995
+        },
+        {
+          "path": "generated/native/exports.generated.inc",
+          "sha256": "sha256:742d41bcc33ec2bd92e18fb6c91859ee4866c87e3eb80d1f9c76b6db4762e775",
+          "size": 2898
+        },
+        {
+          "path": "generated/native/test-frame.generated.hpp",
+          "sha256": "sha256:c9055c1a0512ce6d4c7ce90689eba2f5fdb82a591638af6d2d29361ca96a156e",
+          "size": 1017
+        }
+      ],
+      "units": [
+        {
+          "name": "protocol",
+          "source": "derived/native/runtime/protocol.cpp",
+          "language": "cpp",
+          "required_dependencies": [
+            "derived/native/runtime/protocol.cpp",
+            "sdk/arkts/native-runtime/include/protocol.hpp",
+            "derived/native/include/memory.hpp"
+          ]
+        },
+        {
+          "name": "worker",
+          "source": "derived/native/worker/worker.cpp",
+          "language": "cpp",
+          "required_dependencies": [
+            "derived/native/worker/worker.cpp",
+            "sdk/arkts/native-runtime/include/worker.hpp"
+          ]
+        },
+        {
+          "name": "runtime",
+          "source": "derived/native/src/runtime.cpp",
+          "language": "cpp",
+          "required_dependencies": [
+            "derived/native/src/runtime.cpp",
+            "sdk/arkts/native-runtime/include/provider_port.hpp",
+            "derived/native/include/memory.hpp"
+          ]
+        },
+        {
+          "name": "api",
+          "source": "derived/native/src/api.cpp",
+          "language": "cpp",
+          "required_dependencies": [
+            "derived/native/src/api.cpp",
+            "generated/native/identity.generated.hpp"
+          ]
+        },
+        {
+          "name": "support",
+          "source": "derived/native/src/support.cpp",
+          "language": "cpp",
+          "required_dependencies": [
+            "derived/native/src/support.cpp"
+          ]
+        },
+        {
+          "name": "observer",
+          "source": "derived/native/src/observer.cpp",
+          "language": "cpp",
+          "required_dependencies": [
+            "derived/native/src/observer.cpp"
+          ]
+        },
+        {
+          "name": "memory",
+          "source": "derived/native/src/memory.cpp",
+          "language": "cpp",
+          "required_dependencies": [
+            "derived/native/src/memory.cpp",
+            "derived/native/include/memory.hpp"
+          ]
+        },
+        {
+          "name": "provider",
+          "source": "derived/native/provider/provider.cpp",
+          "language": "cpp",
+          "required_dependencies": [
+            "derived/native/provider/provider.cpp",
+            "sdk/arkts/native-runtime/include/provider_abi.h",
+            "sdk/arkts/native-runtime/include/validate_snapshot.h",
+            "derived/native/include/memory_hook.h"
+          ]
+        }
+      ],
+      "derivations": [
+        {
+          "original": "sdk/arkts/native-runtime/src/protocol.cpp",
+          "patch": "sdk/arkts/test-support/native/memory-runtime.patch",
+          "baseline": "sdk/arkts/test-support/native/memory-runtime-baseline.json",
+          "result": "derived/native/runtime/protocol.cpp",
+          "base_sha256": "sha256:eb3978d2dda0e2ac1c67c485a4b74d66bf9b4a3155934ab895245fb23a0bcc25",
+          "result_sha256": "sha256:cca120ddfa3f1ab22a1fc2b25bebc2433cfcac84a97aff751ac1a8b88a5dfcc7"
+        },
+        {
+          "original": "sdk/cpp/arkts-provider/src/provider.cpp",
+          "patch": "sdk/arkts/test-support/native/memory-provider-cpp.patch",
+          "baseline": "sdk/arkts/test-support/native/memory-provider-cpp-baseline.json",
+          "result": "derived/native/provider/provider.cpp",
+          "base_sha256": "sha256:304ecbfb5ac3523cd98ba472aad365a967f8cc00de9ac4b511c8da49230b85de",
+          "result_sha256": "sha256:22b193cb1113a4081e54bb2c85b471a2290ab063727ba5d43e9a46c4a182a212"
+        }
+      ],
+      "methods": [
+        [
+          "runtimeOpen",
+          2
+        ],
+        [
+          "connect",
+          1
+        ],
+        [
+          "roundtrip",
+          3
+        ],
+        [
+          "submit",
+          3
+        ],
+        [
+          "cancel",
+          1
+        ],
+        [
+          "observe",
+          2
+        ],
+        [
+          "publish",
+          4
+        ],
+        [
+          "requestClose",
+          1
+        ],
+        [
+          "claimResult",
+          2
+        ],
+        [
+          "watchClose",
+          2
+        ],
+        [
+          "tryTake",
+          2
+        ],
+        [
+          "deliver",
+          1
+        ],
+        [
+          "requestRuntimeClose",
+          1
+        ],
+        [
+          "pollRuntime",
+          1
+        ],
+        [
+          "consumeRuntimeReceipt",
+          1
+        ],
+        [
+          "audit",
+          1
+        ],
+        [
+          "testArmWork",
+          2
+        ],
+        [
+          "testReleaseWork",
+          1
+        ],
+        [
+          "testHoldPublication",
+          4
+        ],
+        [
+          "testReleasePublication",
+          2
+        ],
+        [
+          "testFailClone",
+          3
+        ],
+        [
+          "testFailCompletion",
+          2
+        ],
+        [
+          "testObserve",
+          1
+        ],
+        [
+          "testExportKey",
+          1
+        ],
+        [
+          "testInspect",
+          1
+        ],
+        [
+          "testObserveOperation",
+          1
+        ],
+        [
+          "testArmPartialOpenFailure",
+          0
+        ],
+        [
+          "testLastAdmissionAudit",
+          0
+        ],
+        [
+          "testDeliveryGate",
+          2
+        ],
+        [
+          "testHandleAdmission",
+          3
+        ],
+        [
+          "testBootstrapTotals",
+          0
+        ],
+        [
+          "testMemory",
+          1
+        ]
+      ]
+    },
+    {
+      "route": "rust",
+      "variant": "ordinary",
+      "original_inputs": [
+        "adapters/generators/arkts/driver.py",
+        "adapters/generators/arkts/rust_frontend.py",
+        "adapters/toolchains/arkts/native.py",
+        "adapters/toolchains/arkts/preflight.py",
+        "adapters/toolchains/arkts/project.py",
+        "adapters/toolchains/arkts/rust.py",
+        "adapters/toolchains/arkts/rust_dependencies.py",
+        "adapters/toolchains/arkts/rust_inventory.py",
+        "adapters/toolchains/arkts/rust_metadata.py",
+        "adapters/toolchains/arkts/rust_observer.py",
+        "adapters/toolchains/arkts/rust_tools.py",
+        "adapters/toolchains/arkts/tools.py",
+        "adapters/toolchains/arkts/worker.py",
+        "adapters/toolchains/common/documents.py",
+        "sdk/arkts/facade/Boundary.ets.in",
+        "sdk/arkts/facade/RuntimeFrame.ets",
+        "sdk/arkts/facade/frame-layout.json",
+        "sdk/arkts/native-gateway/Index.d.ts",
+        "sdk/arkts/native-gateway/include/codec.hpp",
+        "sdk/arkts/native-gateway/include/handle.hpp",
+        "sdk/arkts/native-gateway/include/runtime.hpp",
+        "sdk/arkts/native-gateway/src/api.cpp",
+        "sdk/arkts/native-gateway/src/runtime.cpp",
+        "sdk/arkts/native-runtime/include/protocol.hpp",
+        "sdk/arkts/native-runtime/include/provider_abi.h",
+        "sdk/arkts/native-runtime/include/provider_port.hpp",
+        "sdk/arkts/native-runtime/include/validate_snapshot.h",
+        "sdk/arkts/native-runtime/include/worker.hpp",
+        "sdk/arkts/native-runtime/src/protocol.cpp",
+        "sdk/arkts/native-runtime/src/worker.cpp",
+        "sdk/rust/arkts-bridge/Cargo.lock",
+        "sdk/rust/arkts-bridge/Cargo.toml",
+        "sdk/rust/arkts-bridge/build.rs",
+        "sdk/rust/arkts-bridge/frontend-features.json",
+        "sdk/rust/arkts-bridge/src/lib.rs",
+        "sdk/rust/arkts-provider/src/lib.rs"
+      ],
+      "derived_inputs": [
+        "derived/native/include/codec.hpp",
+        "derived/native/include/handle.hpp",
+        "derived/native/include/runtime.hpp",
+        "derived/native/src/api.cpp",
+        "derived/native/src/runtime.cpp",
+        "derived/native/worker/worker.cpp",
+        "derived/native/Index.d.ts",
+        "derived/native/Boundary.ets.in",
+        "derived/native/rust-raw/api.cpp",
+        "derived/native/rust-raw/runtime_ffi.h",
+        "derived/native/rust-raw/runtime_ffi.cpp"
+      ],
+      "generated_inputs": [
+        "generated/native/frame.generated.hpp",
+        "generated/native/exports.generated.inc"
+      ],
+      "references": [
+        {
+          "path": "derived/native/include/codec.hpp",
+          "sha256": "sha256:5ef359714bc88fa67cc3e9facde832c23709689f22c7574b3dcdd7d7782781cf",
+          "size": 5972
+        },
+        {
+          "path": "derived/native/include/handle.hpp",
+          "sha256": "sha256:dd31c74e72c28b9d7f3472f8e9a412c1f3d3fa8ce22675e720a0a8cbbd9c8aa4",
+          "size": 2118
+        },
+        {
+          "path": "derived/native/include/runtime.hpp",
+          "sha256": "sha256:88e4b119b86a084ad9cae092a82892de1a2ff2d660d316a39021a778f92894d9",
+          "size": 3482
+        },
+        {
+          "path": "derived/native/src/api.cpp",
+          "sha256": "sha256:080f1103a118f987778be6586ba9ac75ecea7c0b4aab3e3ab5bd0dbd2b59a0af",
+          "size": 19841
+        },
+        {
+          "path": "derived/native/src/runtime.cpp",
+          "sha256": "sha256:6204bafcbf8ad4019f63a37a074c23818478ec83aae91a6953af076368eb1bef",
+          "size": 22917
+        },
+        {
+          "path": "derived/native/worker/worker.cpp",
+          "sha256": "sha256:65c5d66f096688c808c9bdd041382227107afb94e29a1f74fcb3b7728cf6fd22",
+          "size": 5023
+        },
+        {
+          "path": "derived/native/Index.d.ts",
+          "sha256": "sha256:82dea1d77e3c5ed42554ed5a496e2cf4daadc6ae24cce71df420469d01eb11e2",
+          "size": 1163
+        },
+        {
+          "path": "derived/native/Boundary.ets.in",
+          "sha256": "sha256:4579b9115511dddcdc1e0fd12a8d4f510997858ecc203e49f82b0403dd2a573e",
+          "size": 24699
+        },
+        {
+          "path": "derived/native/rust-raw/api.cpp",
+          "sha256": "sha256:8da472315ffe5560a5f9e963a409c735bfa139d6918c93e21b07d7b5277467d2",
+          "size": 19061
+        },
+        {
+          "path": "derived/native/rust-raw/runtime_ffi.h",
+          "sha256": "sha256:66648c719796646079c449e72cee401f28f8e1e9c602c442a8db0120815ebdb8",
+          "size": 513
+        },
+        {
+          "path": "derived/native/rust-raw/runtime_ffi.cpp",
+          "sha256": "sha256:3431d2d43fb6c8ab3a7ea594348f9e1b3bf4e05f1c4aea6943568dea0ac47c53",
+          "size": 2928
+        },
+        {
+          "path": "generated/native/frame.generated.hpp",
+          "sha256": "sha256:8f8bee6b97b2df43e4b01a1c0c91d25dd23d6b407bfc2f637230facc404a29b3",
+          "size": 995
+        },
+        {
+          "path": "generated/native/exports.generated.inc",
+          "sha256": "sha256:d233c80434a0ecf540f7fe8213cbeb11b9e213b90c59b4003dd1d9524977536b",
+          "size": 1362
+        }
+      ],
+      "units": [
+        {
+          "name": "protocol",
+          "source": "sdk/arkts/native-runtime/src/protocol.cpp",
+          "language": "cpp",
+          "required_dependencies": [
+            "sdk/arkts/native-runtime/src/protocol.cpp",
+            "sdk/arkts/native-runtime/include/protocol.hpp"
+          ]
+        },
+        {
+          "name": "worker",
+          "source": "derived/native/worker/worker.cpp",
+          "language": "cpp",
+          "required_dependencies": [
+            "derived/native/worker/worker.cpp",
+            "sdk/arkts/native-runtime/include/worker.hpp"
+          ]
+        },
+        {
+          "name": "runtime",
+          "source": "derived/native/src/runtime.cpp",
+          "language": "cpp",
+          "required_dependencies": [
+            "derived/native/src/runtime.cpp",
+            "sdk/arkts/native-runtime/include/provider_port.hpp"
+          ]
+        },
+        {
+          "name": "api",
+          "source": "derived/native/rust-raw/api.cpp",
+          "language": "cpp",
+          "required_dependencies": [
+            "derived/native/rust-raw/api.cpp",
+            "generated/native/identity.generated.hpp"
+          ]
+        },
+        {
+          "name": "runtime-ffi",
+          "source": "derived/native/rust-raw/runtime_ffi.cpp",
+          "language": "cpp",
+          "required_dependencies": [
+            "derived/native/rust-raw/runtime_ffi.cpp"
+          ]
+        }
+      ],
+      "derivations": [],
+      "methods": [
+        [
+          "runtimeOpen",
+          2
+        ],
+        [
+          "connect",
+          1
+        ],
+        [
+          "roundtrip",
+          3
+        ],
+        [
+          "submit",
+          3
+        ],
+        [
+          "cancel",
+          1
+        ],
+        [
+          "observe",
+          2
+        ],
+        [
+          "publish",
+          4
+        ],
+        [
+          "requestClose",
+          1
+        ],
+        [
+          "claimResult",
+          2
+        ],
+        [
+          "watchClose",
+          2
+        ],
+        [
+          "tryTake",
+          2
+        ],
+        [
+          "deliver",
+          1
+        ],
+        [
+          "requestRuntimeClose",
+          1
+        ],
+        [
+          "pollRuntime",
+          1
+        ],
+        [
+          "consumeRuntimeReceipt",
+          1
+        ],
+        [
+          "audit",
+          1
+        ]
+      ]
+    },
+    {
+      "route": "rust",
+      "variant": "test",
+      "original_inputs": [
+        "adapters/generators/arkts/driver.py",
+        "adapters/generators/arkts/rust_frontend.py",
+        "adapters/toolchains/arkts/native.py",
+        "adapters/toolchains/arkts/preflight.py",
+        "adapters/toolchains/arkts/project.py",
+        "adapters/toolchains/arkts/rust.py",
+        "adapters/toolchains/arkts/rust_dependencies.py",
+        "adapters/toolchains/arkts/rust_inventory.py",
+        "adapters/toolchains/arkts/rust_metadata.py",
+        "adapters/toolchains/arkts/rust_observer.py",
+        "adapters/toolchains/arkts/rust_tools.py",
+        "adapters/toolchains/arkts/tools.py",
+        "adapters/toolchains/arkts/worker.py",
+        "adapters/toolchains/common/documents.py",
+        "sdk/arkts/facade/Boundary.ets.in",
+        "sdk/arkts/facade/RuntimeFrame.ets",
+        "sdk/arkts/facade/frame-layout.json",
+        "sdk/arkts/native-gateway/Index.d.ts",
+        "sdk/arkts/native-gateway/include/codec.hpp",
+        "sdk/arkts/native-gateway/include/handle.hpp",
+        "sdk/arkts/native-gateway/include/runtime.hpp",
+        "sdk/arkts/native-gateway/src/api.cpp",
+        "sdk/arkts/native-gateway/src/runtime.cpp",
+        "sdk/arkts/native-runtime/include/protocol.hpp",
+        "sdk/arkts/native-runtime/include/provider_abi.h",
+        "sdk/arkts/native-runtime/include/provider_port.hpp",
+        "sdk/arkts/native-runtime/include/validate_snapshot.h",
+        "sdk/arkts/native-runtime/include/worker.hpp",
+        "sdk/arkts/native-runtime/src/protocol.cpp",
+        "sdk/arkts/native-runtime/src/worker.cpp",
+        "sdk/arkts/test-support/contracts/PORTS.md",
+        "sdk/arkts/test-support/contracts/bootstrap-totals-layout.json",
+        "sdk/arkts/test-support/contracts/diagnostic-units-v1.json",
+        "sdk/arkts/test-support/contracts/facade-frame-layout.json",
+        "sdk/arkts/test-support/contracts/memory-layout.json",
+        "sdk/arkts/test-support/contracts/observer-layout.json",
+        "sdk/arkts/test-support/contracts/ports-layout.json",
+        "sdk/arkts/test-support/contracts/subscription-state-layout.json",
+        "sdk/arkts/test-support/contracts/support.d.ts",
+        "sdk/arkts/test-support/contracts/test-frame-layout.json",
+        "sdk/arkts/test-support/facade/FacadeFrame.ets",
+        "sdk/arkts/test-support/facade/TestFrame.ets",
+        "sdk/arkts/test-support/facade/baseline.json",
+        "sdk/arkts/test-support/facade/companion.patch",
+        "sdk/arkts/test-support/native/baseline.json",
+        "sdk/arkts/test-support/native/companion.patch",
+        "sdk/arkts/test-support/native/memory-runtime-baseline.json",
+        "sdk/arkts/test-support/native/memory-runtime.patch",
+        "sdk/arkts/test-support/native/memory.cpp",
+        "sdk/arkts/test-support/native/memory.hpp",
+        "sdk/arkts/test-support/native/memory_hook.h",
+        "sdk/arkts/test-support/native/observer.cpp",
+        "sdk/arkts/test-support/native/observer.hpp",
+        "sdk/arkts/test-support/native/observer_inventory.py",
+        "sdk/arkts/test-support/native/support.cpp",
+        "sdk/arkts/test-support/native/support.hpp",
+        "sdk/arkts/test-support/native/support_state.hpp",
+        "sdk/rust/arkts-bridge/Cargo.lock",
+        "sdk/rust/arkts-bridge/Cargo.toml",
+        "sdk/rust/arkts-bridge/build.rs",
+        "sdk/rust/arkts-bridge/frontend-features.json",
+        "sdk/rust/arkts-bridge/src/lib.rs",
+        "sdk/rust/arkts-provider/src/lib.rs"
+      ],
+      "derived_inputs": [
+        "derived/native/Boundary.ets.in",
+        "derived/native/Index.d.ts",
+        "derived/native/include/codec.hpp",
+        "derived/native/include/handle.hpp",
+        "derived/native/include/memory.hpp",
+        "derived/native/include/memory_hook.h",
+        "derived/native/include/observer.hpp",
+        "derived/native/include/runtime.hpp",
+        "derived/native/include/support.hpp",
+        "derived/native/include/support_state.hpp",
+        "derived/native/runtime/protocol.cpp",
+        "derived/native/src/api.cpp",
+        "derived/native/src/memory.cpp",
+        "derived/native/src/observer.cpp",
+        "derived/native/src/runtime.cpp",
+        "derived/native/src/support.cpp",
+        "derived/native/worker/worker.cpp",
+        "derived/native/rust-raw/api.cpp",
+        "derived/native/rust-raw/runtime_ffi.h",
+        "derived/native/rust-raw/runtime_ffi.cpp"
+      ],
+      "generated_inputs": [
+        "generated/native/frame.generated.hpp",
+        "generated/native/exports.generated.inc",
+        "generated/native/test-frame.generated.hpp"
+      ],
+      "references": [
+        {
+          "path": "derived/native/Boundary.ets.in",
+          "sha256": "sha256:0ec522c79d1a8fdc2975806d8c5e8e51da082cf177e0bb12d1073c1381518250",
+          "size": 32361
+        },
+        {
+          "path": "derived/native/Index.d.ts",
+          "sha256": "sha256:3619a2879eb79cbda3434f7d6646d10802dcf80452d58f61503ea9324bf27631",
+          "size": 2024
+        },
+        {
+          "path": "derived/native/include/codec.hpp",
+          "sha256": "sha256:13a19ed24250b9031a6827b7d438be6321a3935399606410fca50faad43cfa55",
+          "size": 6175
+        },
+        {
+          "path": "derived/native/include/handle.hpp",
+          "sha256": "sha256:dd31c74e72c28b9d7f3472f8e9a412c1f3d3fa8ce22675e720a0a8cbbd9c8aa4",
+          "size": 2118
+        },
+        {
+          "path": "derived/native/include/memory.hpp",
+          "sha256": "sha256:7b20de6a94ea7a79c5edaa3dd0b5552713295deef61bf5c3d13d144ace965fb6",
+          "size": 2652
+        },
+        {
+          "path": "derived/native/include/memory_hook.h",
+          "sha256": "sha256:adb1be75a884a3d5d793389c3cc02937e3534ec888ae05c07a6cab2b3cefd2d9",
+          "size": 816
+        },
+        {
+          "path": "derived/native/include/observer.hpp",
+          "sha256": "sha256:9c6de7b24689756ad2ce3af9c16cf7e414f8ef64c1a812a462e1e70c601b6f2f",
+          "size": 7196
+        },
+        {
+          "path": "derived/native/include/runtime.hpp",
+          "sha256": "sha256:b7667ce1901fed4933155c24f14da29bd0ffa4168bd2507c401700d28513db32",
+          "size": 4059
+        },
+        {
+          "path": "derived/native/include/support.hpp",
+          "sha256": "sha256:595f2e0f17be0197faa8783b1079abca78e53d80f6f6e4fee3aa7f5c30d09ac1",
+          "size": 2761
+        },
+        {
+          "path": "derived/native/include/support_state.hpp",
+          "sha256": "sha256:e79294202ff3132d22da2ffcdbba8b93d51213b2741e99aaf92513b7a31da3ff",
+          "size": 1270
+        },
+        {
+          "path": "derived/native/runtime/protocol.cpp",
+          "sha256": "sha256:cca120ddfa3f1ab22a1fc2b25bebc2433cfcac84a97aff751ac1a8b88a5dfcc7",
+          "size": 39415
+        },
+        {
+          "path": "derived/native/src/api.cpp",
+          "sha256": "sha256:293c29ec2d8f8cd4642a8429abe8a81d021e6a9513a4df6be3d6aaf2e8090f7d",
+          "size": 31723
+        },
+        {
+          "path": "derived/native/src/memory.cpp",
+          "sha256": "sha256:9b4df8c950046222e1dd69e9dd7185b98885c17704b364020a0fa5318c428f04",
+          "size": 6954
+        },
+        {
+          "path": "derived/native/src/observer.cpp",
+          "sha256": "sha256:db715cc103d9279a36c6118e862f3f884d90c25214e63c7393d8cf3dc8810453",
+          "size": 8289
+        },
+        {
+          "path": "derived/native/src/runtime.cpp",
+          "sha256": "sha256:ab9d245b57c1cf5fdbadf4d7f9d020c3fb216705123c6e1ac45a9df61b36dadc",
+          "size": 32324
+        },
+        {
+          "path": "derived/native/src/support.cpp",
+          "sha256": "sha256:68d5b599ae1c092404ebe169faf6647fb274ce5781d99854594a46b616aeb603",
+          "size": 7937
+        },
+        {
+          "path": "derived/native/worker/worker.cpp",
+          "sha256": "sha256:2e798c13630f1761366b8fdbdd9dfde737c3031dd41d94b4a4ab49e2dc93dac0",
+          "size": 5710
+        },
+        {
+          "path": "derived/native/rust-raw/api.cpp",
+          "sha256": "sha256:049b83fc315b9b11e6238a95f27807f007a5c9b76822f7b77744a8a062d8389b",
+          "size": 30742
+        },
+        {
+          "path": "derived/native/rust-raw/runtime_ffi.h",
+          "sha256": "sha256:66648c719796646079c449e72cee401f28f8e1e9c602c442a8db0120815ebdb8",
+          "size": 513
+        },
+        {
+          "path": "derived/native/rust-raw/runtime_ffi.cpp",
+          "sha256": "sha256:525da6b7cdab8be3825a80f533a22469faa5d3658ebf8b6e0e3a135657ffcfe3",
+          "size": 5388
+        },
+        {
+          "path": "generated/native/frame.generated.hpp",
+          "sha256": "sha256:8f8bee6b97b2df43e4b01a1c0c91d25dd23d6b407bfc2f637230facc404a29b3",
+          "size": 995
+        },
+        {
+          "path": "generated/native/exports.generated.inc",
+          "sha256": "sha256:742d41bcc33ec2bd92e18fb6c91859ee4866c87e3eb80d1f9c76b6db4762e775",
+          "size": 2898
+        },
+        {
+          "path": "generated/native/test-frame.generated.hpp",
+          "sha256": "sha256:c9055c1a0512ce6d4c7ce90689eba2f5fdb82a591638af6d2d29361ca96a156e",
+          "size": 1017
+        }
+      ],
+      "units": [
+        {
+          "name": "protocol",
+          "source": "derived/native/runtime/protocol.cpp",
+          "language": "cpp",
+          "required_dependencies": [
+            "derived/native/runtime/protocol.cpp",
+            "sdk/arkts/native-runtime/include/protocol.hpp",
+            "derived/native/include/memory.hpp"
+          ]
+        },
+        {
+          "name": "worker",
+          "source": "derived/native/worker/worker.cpp",
+          "language": "cpp",
+          "required_dependencies": [
+            "derived/native/worker/worker.cpp",
+            "sdk/arkts/native-runtime/include/worker.hpp"
+          ]
+        },
+        {
+          "name": "runtime",
+          "source": "derived/native/src/runtime.cpp",
+          "language": "cpp",
+          "required_dependencies": [
+            "derived/native/src/runtime.cpp",
+            "sdk/arkts/native-runtime/include/provider_port.hpp",
+            "derived/native/include/memory.hpp"
+          ]
+        },
+        {
+          "name": "api",
+          "source": "derived/native/rust-raw/api.cpp",
+          "language": "cpp",
+          "required_dependencies": [
+            "derived/native/rust-raw/api.cpp",
+            "generated/native/identity.generated.hpp"
+          ]
+        },
+        {
+          "name": "support",
+          "source": "derived/native/src/support.cpp",
+          "language": "cpp",
+          "required_dependencies": [
+            "derived/native/src/support.cpp"
+          ]
+        },
+        {
+          "name": "observer",
+          "source": "derived/native/src/observer.cpp",
+          "language": "cpp",
+          "required_dependencies": [
+            "derived/native/src/observer.cpp"
+          ]
+        },
+        {
+          "name": "memory",
+          "source": "derived/native/src/memory.cpp",
+          "language": "cpp",
+          "required_dependencies": [
+            "derived/native/src/memory.cpp",
+            "derived/native/include/memory.hpp"
+          ]
+        },
+        {
+          "name": "runtime-ffi",
+          "source": "derived/native/rust-raw/runtime_ffi.cpp",
+          "language": "cpp",
+          "required_dependencies": [
+            "derived/native/rust-raw/runtime_ffi.cpp"
+          ]
+        }
+      ],
+      "derivations": [
+        {
+          "original": "sdk/arkts/native-runtime/src/protocol.cpp",
+          "patch": "sdk/arkts/test-support/native/memory-runtime.patch",
+          "baseline": "sdk/arkts/test-support/native/memory-runtime-baseline.json",
+          "result": "derived/native/runtime/protocol.cpp",
+          "base_sha256": "sha256:eb3978d2dda0e2ac1c67c485a4b74d66bf9b4a3155934ab895245fb23a0bcc25",
+          "result_sha256": "sha256:cca120ddfa3f1ab22a1fc2b25bebc2433cfcac84a97aff751ac1a8b88a5dfcc7"
+        }
+      ],
+      "methods": [
+        [
+          "runtimeOpen",
+          2
+        ],
+        [
+          "connect",
+          1
+        ],
+        [
+          "roundtrip",
+          3
+        ],
+        [
+          "submit",
+          3
+        ],
+        [
+          "cancel",
+          1
+        ],
+        [
+          "observe",
+          2
+        ],
+        [
+          "publish",
+          4
+        ],
+        [
+          "requestClose",
+          1
+        ],
+        [
+          "claimResult",
+          2
+        ],
+        [
+          "watchClose",
+          2
+        ],
+        [
+          "tryTake",
+          2
+        ],
+        [
+          "deliver",
+          1
+        ],
+        [
+          "requestRuntimeClose",
+          1
+        ],
+        [
+          "pollRuntime",
+          1
+        ],
+        [
+          "consumeRuntimeReceipt",
+          1
+        ],
+        [
+          "audit",
+          1
+        ],
+        [
+          "testArmWork",
+          2
+        ],
+        [
+          "testReleaseWork",
+          1
+        ],
+        [
+          "testHoldPublication",
+          4
+        ],
+        [
+          "testReleasePublication",
+          2
+        ],
+        [
+          "testFailClone",
+          3
+        ],
+        [
+          "testFailCompletion",
+          2
+        ],
+        [
+          "testObserve",
+          1
+        ],
+        [
+          "testExportKey",
+          1
+        ],
+        [
+          "testInspect",
+          1
+        ],
+        [
+          "testObserveOperation",
+          1
+        ],
+        [
+          "testArmPartialOpenFailure",
+          0
+        ],
+        [
+          "testLastAdmissionAudit",
+          0
+        ],
+        [
+          "testDeliveryGate",
+          2
+        ],
+        [
+          "testHandleAdmission",
+          3
+        ],
+        [
+          "testBootstrapTotals",
+          0
+        ],
+        [
+          "testMemory",
+          1
+        ]
+      ]
+    }
+  ],
+  "rust_frontend_upstream": [
+    {
+      "path": "napi-ohos-1.2.0/src/bindgen_runtime/callback_info.rs",
+      "sha256": "sha256:7f664a860bdf81a8f0dfe3ef82dae4b817f2acef073978a16924541e6ed56529",
+      "size": 8922
+    },
+    {
+      "path": "napi-ohos-1.2.0/src/js_values/unknown.rs",
+      "sha256": "sha256:c0012569c801c546d6c19d56bbdb2e1496b0b5ab4a980b54bf50951ca46e2961",
+      "size": 4946
+    },
+    {
+      "path": "napi-ohos-1.2.0/src/bindgen_runtime/js_values.rs",
+      "sha256": "sha256:13722bb4d43771024559006f6e31c670eb40c285dd8d0bd403c9425a6e75b013",
+      "size": 13198
+    },
+    {
+      "path": "napi-ohos-1.2.0/src/bindgen_runtime/module_register.rs",
+      "sha256": "sha256:f728b54cd79b76c0d388a2add9c5e880cafa4b13107065cfb7db1e5ebf12ed7e",
+      "size": 21346
+    },
+    {
+      "path": "napi-ohos-1.2.0/src/error.rs",
+      "sha256": "sha256:4a531ae86facf40642456c6e7d661f303967d9a3c77f2b915f8cf9b75c51e248",
+      "size": 21400
+    }
+  ],
+  "reviewed_native_baseline_revision": "adb602e028c51910575bcc0ff1b0857080bfa144"
+}

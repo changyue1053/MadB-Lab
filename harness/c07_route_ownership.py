@@ -7,6 +7,7 @@ All inputs are candidate members; no neighboring producer checkout is imported.
 import re
 
 from candidate import CandidateError, file_digest, read_json
+from c07_source_review import verify_source_review
 
 PROVIDERS = {
     "c": ("sdk/c/arkts-provider/src/provider.c", "c17", "clang"),
@@ -76,7 +77,25 @@ def verify_route_ownership(candidate):
 
     source, standard, compiler = PROVIDERS[route]
     lock = document("madb.lock")
-    source_ref = _ref(_one([item for item in lock["inputs"] if item["path"] == source], "locked route provider source"))
+    original_source_ref = _ref(_one([item for item in lock["inputs"] if item["path"] == source], "locked route provider source"))
+    # The C3 companion deliberately compiles the strict memory-instrumented
+    # provider. Preserve both original and derived references; never infer the
+    # compiled source merely by changing an expected path.
+    derived = "derived/native/provider/provider." + route
+    compiled = [row["arguments"][row["arguments"].index("-c") + 1] for row in compile_rows
+                if isinstance(row.get("arguments"), list) and "-c" in row["arguments"]]
+    if route in ("c", "cpp") and any(path.endswith("/inputs/" + derived) for path in compiled):
+        _require(not any(path.endswith("/inputs/" + source) for path in compiled), "ordinary and derived provider both compiled")
+        composition = document("generated/contract/composition.json")
+        _require(composition.get("route") == route and composition.get("variant") == "test" and
+                 _ref(_one([v for v in composition["original_inputs"] if v["path"] == source], "original provider composition")) == original_source_ref,
+                 "derived provider lost its original source binding")
+        source = derived
+        source_ref = _ref(_one([v for v in lock["inputs"] if v["path"] == source], "locked derived provider"))
+        _require(_ref(_one([v for v in composition["derived_inputs"] if v["path"] == source], "derived provider composition")) == source_ref,
+                 "compiled derived provider differs from composition")
+    else:
+        source_ref = original_source_ref
     header = data("generated/native/identity.generated.hpp")
     header = re.sub(rb"//[^\n]*", b"", re.sub(rb"/\*.*?\*/", b"", header, flags=re.S))
     factories = re.findall(rb"GatewayProviderCreate\s*=\s*::(mp_[a-z]+_create)\s*;", header)
@@ -132,9 +151,11 @@ def verify_route_ownership(candidate):
         details = {"gateway_archive": archive, "macro_exports": len(exports),
                    "frontend_evidence": inventory["rust-symbols.json"],
                    "frontend_scope": "separate published macro/import evidence; gateway dynamic counters do not cover it"}
+    source_review = verify_source_review(candidate, lock, compile_rows, link_rows, objects, inventory, data, document, tool)
     return {"status": "bound", "candidate_digest": manifest["candidate_digest"], "route": route,
             "producer_revision": candidate["provenance"]["producer_revision"], "expected_identity": candidate["identity"]["expected_identity"],
-            "provider_source": source_ref, "native_artifact": linked, "tools": tools, "details": details,
+            "provider_source": source_ref, "original_provider_source": original_source_ref,
+            "source_review": source_review, "native_artifact": linked, "tools": tools, "details": details,
             "inputs": [inventory[name] for name in sorted(used)],
             "scope": "public recorded source/tool/object/link chain and exact admitted native/HAR bytes",
             "limits": ["Source content/destructor semantics require independent source review at the recorded revision/hash.",

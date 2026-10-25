@@ -62,6 +62,25 @@ class RouteOwnershipTests(unittest.TestCase):
         self.assertEqual(result["native_artifact"], self.refs["native/libmodule.so"])
         self.assertTrue(result["limits"])
 
+    def test_companion_compiler_binds_derived_and_preserves_original(self):
+        derived = dict(self.source, path="derived/native/provider/provider.c", sha256="sha256:" + "d" * 64)
+        self.put("madb.lock", {"inputs": [self.source, derived]})
+        self.put("generated/contract/composition.json", {"route": "c", "variant": "test",
+                 "original_inputs": [self.source], "derived_inputs": [derived]})
+        self.compile_rows[0]["arguments"] = [arg.replace(self.source["path"], derived["path"])
+                                                 for arg in self.compile_rows[0]["arguments"]]
+        self.compile_rows[1]["dependencies"] = [dict(derived, origin="frozen-input")]
+        self.put("logs/compile-commands.json", self.compile_rows); self.put("evidence/compile.json", self.compile)
+        self.candidate["manifest"]["files"] = list(self.refs.values())
+        result = verify_route_ownership(self.candidate)
+        self.assertEqual(result["provider_source"], derived)
+        self.assertEqual(result["original_provider_source"], self.source)
+        self.assertEqual(result["source_review"]["status"], "blocked")
+        original_command = self.command("clang", ["clang", "-c", "/frozen/inputs/" + self.source["path"]])
+        self.compile_rows.append(original_command)
+        self.put("logs/compile-commands.json", self.compile_rows); self.put("evidence/compile.json", self.compile)
+        with self.assertRaises(CandidateError): verify_route_ownership(self.candidate)
+
     def test_provider_source_standard_tool_or_failure_cannot_be_relabelled(self):
         for mutation in ("standard", "tool", "exit", "source"):
             with self.subTest(mutation=mutation):

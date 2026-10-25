@@ -134,7 +134,7 @@ def verify_candidate(root: Path, route: str, *, companion=False):
         raise CandidateError("ProfileMismatch", "unknown C07 route")
     policy = ROUTES[route]
     candidate = verify_public_candidate(root, allowed_routes={policy["route"]}, identity_format="arkts")
-    abi_binding = verify_abi(candidate, route)
+    abi_binding = verify_abi(candidate, route, companion=companion)
     profile, manifest = candidate["profile"], candidate["manifest"]
     profile_id = f"c07-{route}-arkts-aarch64-ohos23" + ("-test" if companion else "")
     scope = requirement(profile_id)
