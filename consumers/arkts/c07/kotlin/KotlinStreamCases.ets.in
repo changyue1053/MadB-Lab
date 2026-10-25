@@ -1,0 +1,357 @@
+// Independent consumer of the public test HAR. No producer/private imports.
+import { Runtime, Engine, Subscription, Snapshot, testObserve, testControlFrame,
+  testArmDelivery, testReleaseDelivery, testStagePublication, testFinishPublication,
+  testArmCloneFailure } from @MADB_PUBLIC_MODULE@;
+import { check, nextTurn, snapshot, throwsCode } from '../Assertions';
+
+export type EmitNumbers = (label: string, values: number[]) => void;
+export type EmitControl = (label: string, csv: string) => void;
+
+// Field coordinates are public format 70501/110 and controls format 1/31.
+// Limits/expected traces below are independently specified by ADR-0013.
+function observed(runtime: Runtime, label: string, emit: EmitNumbers): number[] {
+  const raw: number[] = testObserve(runtime);
+  check(raw.length === 110 && raw[0] === 70501, label + ':110-format');
+  for (let i: number = 0; i < raw.length; i++) {
+    check(Number.isSafeInteger(raw[i]) && raw[i] >= 0, label + ':raw-counter');
+  }
+  check(raw[8] === 0, label + ':no-owner-fault');
+  emit(label, raw);
+  return raw;
+}
+function control(runtime: Runtime, label: string, emit: EmitControl): string[] {
+  const raw: string = testControlFrame(runtime);
+  const fields: string[] = raw.split(',');
+  check(fields.length === 31 && fields[0] === '1', label + ':31-format');
+  for (let i: number = 0; i < fields.length; i++) {
+    check(/^(0|[1-9][0-9]*|-1)$/.test(fields[i]), label + ':decimal');
+    check(fields[i] !== '-1' || i === 6, label + ':only-terminal-signed');
+  }
+  // In particular 4/5/8 are never passed through Number or JSON numeric values.
+  emit(label, raw);
+  return fields;
+}
+function small(fields: string[], index: number): number {
+  check(index !== 4 && index !== 5 && index !== 8, 'identity-must-stay-string');
+  const value: number = Number(fields[index]);
+  check(Number.isSafeInteger(value), 'control-counter-range');
+  return value;
+}
+function vector(actual: number[], expected: number[], label: string): void {
+  check(actual.length === expected.length, label + ':length');
+  for (let i: number = 0; i < expected.length; i++) { check(actual[i] === expected[i], label + ':item'); }
+}
+async function until(predicate: () => boolean, deadline: number, label: string): Promise<void> {
+  while (!predicate()) { await nextTurn(deadline, label); }
+}
+async function held(runtime: Runtime, deadline: number, label: string, emit: EmitControl): Promise<void> {
+  await until((): boolean => {
+    const fields: string[] = testControlFrame(runtime).split(',');
+    check(fields.length === 31 && fields[0] === '1', label + ':format');
+    return fields[7] === '2';
+  }, deadline, label);
+  control(runtime, label, emit);
+}
+async function stopAll(subs: Subscription[]): Promise<void> {
+  for (let i: number = 0; i < subs.length; i++) { subs[i].requestStop(); }
+  for (let i: number = 0; i < subs.length; i++) { await subs[i].close(); }
+}
+
+async function latest(runtime: Runtime, engine: Engine, deadline: number,
+                      emit: EmitNumbers, emitControl: EmitControl): Promise<void> {
+  const seen: number[] = [];
+  engine.publishState({ value: 0, text: 'old' }); // no subscription: no replay owner
+  const sub: Subscription = engine.observeState((value: Snapshot): void => {
+    snapshot(value, 2, 'new', 'state-latest-value'); seen.push(value.value);
+  });
+  testArmDelivery(sub);
+  engine.publishState({ value: 1, text: 'old' });
+  await held(runtime, deadline, 'kn-stream-state-held-control', emitControl);
+  check(seen.length === 0, 'state-no-replay-or-preentry-callback');
+  const first: number[] = observed(runtime, 'kn-stream-state-held-native', emit);
+  check(first[29] === 1 && first[31] === 0 && first[27] === 3, 'one-state-preentry-owner');
+  engine.publishState({ value: 2, text: 'new' });
+  const replaced: number[] = observed(runtime, 'kn-stream-state-replaced-native', emit);
+  check(replaced[29] === 1 && replaced[31] === 0 && replaced[27] === 3, 'state-replacement-one-ticket');
+  control(runtime, 'kn-stream-state-replaced-control', emitControl);
+  testReleaseDelivery(sub);
+  emit('kn-stream-state-release-sync', [seen.length]);
+  check(seen.length === 0, 'release-does-not-enter-listener-synchronously');
+  await until((): boolean => seen.length >= 1, deadline, 'state-latest-delivery');
+  vector(seen, [2], 'state-only-latest'); emit('kn-stream-state-trace', seen);
+  const drained: number[] = observed(runtime, 'kn-stream-state-drained-native', emit);
+  check(drained[29] === 0 && drained[27] === 0 && drained[31] === 0, 'state-owner-returned');
+  await sub.close();
+}
+
+async function enteredState(runtime: Runtime, engine: Engine, deadline: number,
+                            emit: EmitNumbers): Promise<void> {
+  const first: number[] = []; const newcomer: number[] = [];
+  let fresh: Subscription | undefined = undefined;
+  const original: Subscription = engine.observeState((value: Snapshot): void => {
+    first.push(value.value);
+    if (value.value === 2) {
+      snapshot(value, 2, 'entered', 'entered-state-original');
+      engine.publishState({ value: 3, text: 'three' });
+      engine.publishState({ value: 4, text: 'four' });
+      fresh = engine.observeState((next: Snapshot): void => { newcomer.push(next.value); });
+      snapshot(value, 2, 'entered', 'entered-copy-survives-reentrant-replacement');
+      const raw: number[] = observed(runtime, 'kn-stream-state-entry-replaced-native', emit);
+      check(raw[29] === 2 && raw[31] === 1 && raw[27] === 11, 'entered-plus-one-latest-state-owner');
+      emit('kn-stream-state-entry-current', [value.value, newcomer.length]);
+    }
+  });
+  engine.publishState({ value: 2, text: 'entered' });
+  await until((): boolean => first.length >= 2, deadline, 'state-entry-latest');
+  vector(first, [2,4], 'entered-independent-next-latest');
+  vector(newcomer, [], 'new-subscription-does-not-replay-state');
+  observed(runtime, 'kn-stream-state-entry-before-next-native', emit);
+  emit('kn-stream-state-entry-before-next', [first.length, newcomer.length]);
+  engine.publishState({ value: 5, text: 'future' });
+  await until((): boolean => first.length >= 3 && newcomer.length >= 1, deadline, 'state-entry-new-publication');
+  vector(first, [2,4,5], 'entered-state-final-sequence');
+  vector(newcomer, [5], 'new-state-subscription-only-future');
+  emit('kn-stream-state-entry-original-trace', first);
+  emit('kn-stream-state-entry-new-trace', newcomer);
+  check(fresh !== undefined, 'new-state-subscription-created');
+  await original.close(); await (fresh as Subscription).close();
+}
+
+async function staging(runtime: Runtime, engine: Engine, deadline: number,
+                       emit: EmitNumbers, emitControl: EmitControl): Promise<void> {
+  const text: string = 'x'.repeat(1024);
+  const seen: number[][] = [[], [], [], []]; const subs: Subscription[] = [];
+  for (let i: number = 0; i < 4; i++) {
+    const recipient: number = i;
+    subs.push(engine.observeState((value: Snapshot): void => {
+      check(value.text === text, 'staging-text-copy'); seen[recipient].push(value.value);
+    }));
+  }
+  engine.publishState({ value: 1, text: text });
+  const before: number[] = observed(runtime, 'kn-stream-staging-full-native', emit);
+  check(before[29] === 4 && before[27] === 4096, 'four-state-copies-fill-byte-budget');
+  throwsCode((): void => { engine.publishState({ value: 2, text: text }); }, 'ResourceExhausted', 'replacement-needs-full-staging');
+  const rejected: number[] = observed(runtime, 'kn-stream-staging-rejected-native', emit);
+  check(rejected[29] === 4 && rejected[27] === 4096 && rejected[9] === before[9] && rejected[10] === before[10], 'replacement-reject-before-clone');
+  await until((): boolean => seen.every((values: number[]): boolean => values.length >= 1), deadline, 'old-state-drain');
+  for (let i: number = 0; i < 4; i++) { vector(seen[i], [1], 'old-state-preserved'); }
+  testStagePublication(engine, 0, { value: 2, text: text });
+  const staged: number[] = observed(runtime, 'kn-stream-staging-held-native', emit);
+  const stageControl: string[] = control(runtime, 'kn-stream-staging-held-control', emitControl);
+  check(staged[27] === 4096 && staged[30] === 4 && small(stageControl, 12) === 1 && small(stageControl, 13) === 4 && small(stageControl, 14) === 4096, 'real-selected-source-staging');
+  testFinishPublication(engine, true);
+  emit('kn-stream-staging-commit-sync', seen.map((values: number[]): number => values.length));
+  check(seen.every((values: number[]): boolean => values.length === 1), 'publication-release-only-schedules');
+  await until((): boolean => seen.every((values: number[]): boolean => values.length >= 2), deadline, 'committed-state-drain');
+  testStagePublication(engine, 0, { value: 3, text: text });
+  control(runtime, 'kn-stream-staging-abort-before-control', emitControl);
+  testFinishPublication(engine, false);
+  const abandoned: number[] = observed(runtime, 'kn-stream-staging-abort-native', emit);
+  control(runtime, 'kn-stream-staging-abort-after-control', emitControl);
+  check(abandoned[27] === 0 && abandoned[30] === 0 && abandoned[29] === 0, 'abandon-returns-staging');
+  engine.publishState({ value: 4, text: text });
+  await until((): boolean => seen.every((values: number[]): boolean => values.length >= 3), deadline, 'state-after-abandon');
+  for (let i: number = 0; i < 4; i++) { vector(seen[i], [1,2,4], 'abandoned-state-never-enqueued'); emit('kn-stream-staging-trace-' + i, seen[i]); }
+  await stopAll(subs);
+}
+
+async function event(runtime: Runtime, engine: Engine, deadline: number,
+                     emit: EmitNumbers, emitControl: EmitControl): Promise<void> {
+  const emptyBefore: number[] = observed(runtime, 'kn-stream-event-empty-before-native', emit);
+  engine.publishEvent({ value: 0, text: 'no-listener' });
+  const emptyAfter: number[] = observed(runtime, 'kn-stream-event-empty-after-native', emit);
+  check(emptyAfter[9] === emptyBefore[9] && emptyAfter[10] === emptyBefore[10] && emptyAfter[27] === 0 && emptyAfter[28] === 0 && emptyAfter[30] === 0, 'event-without-recipients-owns-nothing');
+  const seen: number[] = []; let first: boolean = true;
+  const sub: Subscription = engine.observeEvents((value: Snapshot): void => {
+    check(value.text === '', 'event-text');
+    if (first) {
+      first = false;
+      const entered: number[] = observed(runtime, 'kn-stream-event-entered-native', emit);
+      check(entered[28] === 8 && entered[31] === 1, 'entered-still-owns-eight-event-budget');
+    }
+    seen.push(value.value);
+  });
+  testArmDelivery(sub);
+  for (let i: number = 1; i <= 8; i++) { engine.publishEvent({ value: i, text: '' }); }
+  await held(runtime, deadline, 'kn-stream-event-held-control', emitControl);
+  const full: number[] = observed(runtime, 'kn-stream-event-full-native', emit);
+  check(full[28] === 8 && full[31] === 0 && seen.length === 0, 'held-plus-seven-pending-count-eight');
+  throwsCode((): void => { engine.publishEvent({ value: 9, text: '' }); }, 'ResourceExhausted', 'event-ninth-rejected');
+  const rejected: number[] = observed(runtime, 'kn-stream-event-rejected-native', emit);
+  check(rejected[28] === 8 && rejected[9] === full[9], 'event-rejection-no-new-clone');
+  testReleaseDelivery(sub); emit('kn-stream-event-release-sync', [seen.length]);
+  check(seen.length === 0, 'event-release-asynchronous');
+  await until((): boolean => seen.length >= 8, deadline, 'event-fifo-eight');
+  vector(seen, [1,2,3,4,5,6,7,8], 'event-fifo'); emit('kn-stream-event-trace', seen);
+  await sub.close();
+  const recipients: number[][] = [[], [], []]; const fanout: Subscription[] = [];
+  for (let i: number = 0; i < 3; i++) {
+    const recipient: number = i;
+    fanout.push(engine.observeEvents((value: Snapshot): void => { recipients[recipient].push(value.value); }));
+  }
+  engine.publishEvent({ value: 1, text: 'a' }); engine.publishEvent({ value: 2, text: 'b' });
+  const six: number[] = observed(runtime, 'kn-stream-event-fanout-six-native', emit);
+  check(six[28] === 6, 'three-recipients-times-two');
+  throwsCode((): void => { engine.publishEvent({ value: 3, text: 'c' }); }, 'ResourceExhausted', 'fanout-all-or-none-at-six');
+  const after: number[] = observed(runtime, 'kn-stream-event-fanout-rejected-native', emit);
+  check(after[28] === 6 && after[9] === six[9] && after[27] === six[27], 'no-partial-recipient-allocation');
+  await until((): boolean => recipients.every((values: number[]): boolean => values.length >= 2), deadline, 'event-fanout-drain');
+  for (let i: number = 0; i < 3; i++) { vector(recipients[i], [1,2], 'fanout-fifo'); emit('kn-stream-event-fanout-trace-' + i, recipients[i]); }
+  await stopAll(fanout);
+}
+
+async function eventReentryAndIsolation(runtime: Runtime, engine: Engine, deadline: number,
+                                        emit: EmitNumbers): Promise<void> {
+  const seen: number[][] = [[], []]; const subs: Subscription[] = [];
+  let first: boolean = true; let rejections: number = 0;
+  for (let i: number = 0; i < 2; i++) {
+    const recipient: number = i;
+    subs.push(engine.observeEvents((value: Snapshot): void => {
+      if (first) {
+        first = false;
+        const before: number[] = observed(runtime, 'kn-stream-event-outstanding-entered-native', emit);
+        check(before[28] === 8 && before[31] === 1, 'two-recipients-four-events-still-eight-at-entry');
+        throwsCode((): void => { engine.publishEvent({ value: 9, text: 'reject-both' }); }, 'ResourceExhausted', 'entered-event-budget-includes-current');
+        rejections++;
+        const after: number[] = observed(runtime, 'kn-stream-event-outstanding-rejected-native', emit);
+        check(after[28] === 8 && after[9] === before[9] && after[10] === before[10], 'reentrant-event-rejection-no-partial-clone');
+        snapshot(value, 1, '', 'entered-event-copy-remains-valid');
+      }
+      seen[recipient].push(value.value);
+    }));
+  }
+  for (let i: number = 1; i <= 4; i++) { engine.publishEvent({ value: i, text: '' }); }
+  await until((): boolean => seen.every((values: number[]): boolean => values.length >= 4), deadline, 'event-two-recipient-drain');
+  for (let i: number = 0; i < 2; i++) { vector(seen[i], [1,2,3,4], 'reentrant-event-admission-all-or-none'); emit('kn-stream-event-outstanding-trace-' + i, seen[i]); }
+  emit('kn-stream-event-outstanding-rejections', [rejections]);
+  await stopAll(subs);
+  const states: number[] = []; const events: number[] = [];
+  const stateSub: Subscription = engine.observeState((value: Snapshot): void => { states.push(value.value); });
+  const eventSub: Subscription = engine.observeEvents((value: Snapshot): void => { events.push(value.value); });
+  engine.publishState({ value: 11, text: 'state' });
+  engine.publishEvent({ value: 21, text: 'event' });
+  await until((): boolean => states.length >= 1 && events.length >= 1, deadline, 'cross-stream-first');
+  vector(states, [11], 'event-never-enters-state'); vector(events, [21], 'state-never-enters-event');
+  engine.publishState({ value: 12, text: 'state-next' });
+  engine.publishEvent({ value: 22, text: 'event-next' });
+  await until((): boolean => states.length >= 2 && events.length >= 2, deadline, 'cross-stream-second');
+  vector(states, [11,12], 'state-channel-isolated'); vector(events, [21,22], 'event-channel-isolated');
+  emit('kn-stream-event-isolation-state-trace', states); emit('kn-stream-event-isolation-event-trace', events);
+  await stateSub.close(); await eventSub.close();
+}
+
+async function publicationStop(runtime: Runtime, engine: Engine, stream: number, deadline: number,
+                               emit: EmitNumbers, emitControl: EmitControl): Promise<void> {
+  const prefix: string = 'kn-stream-source-' + stream;
+  const first: number[] = []; const second: number[] = [];
+  const listenerA = (value: Snapshot): void => { first.push(value.value); };
+  const listenerB = (value: Snapshot): void => { second.push(value.value); };
+  const a: Subscription = stream === 0 ? engine.observeState(listenerA) : engine.observeEvents(listenerA);
+  const b: Subscription = stream === 0 ? engine.observeState(listenerB) : engine.observeEvents(listenerB);
+  const abortBefore: string[] = control(runtime, prefix + '-abort-before-control', emitControl);
+  testStagePublication(engine, stream, { value: 6, text: 'skip' });
+  observed(runtime, prefix + '-abort-held-native', emit);
+  testFinishPublication(engine, false);
+  const abortAfter: string[] = control(runtime, prefix + '-abort-after-control', emitControl);
+  const abortReleased: number[] = observed(runtime, prefix + '-abort-released-native', emit);
+  check(small(abortAfter, 17) - small(abortBefore, 17) === 1 && abortReleased[27] === 0 && abortReleased[28] === 0 && abortReleased[29] === 0 && abortReleased[30] === 0, 'explicit-abandon-releases-both-selected-owners');
+  check(first.length === 0 && second.length === 0, 'abandon-never-invokes-listener');
+  testStagePublication(engine, stream, { value: 7, text: 'pair' });
+  const staged: number[] = observed(runtime, prefix + '-held-native', emit);
+  const stagedControl: string[] = control(runtime, prefix + '-held-control', emitControl);
+  check(staged[27] === 8 && staged[30] === 2 && small(stagedControl, 13) === 2, 'staging-both-recipients-owned');
+  let closed: boolean = false;
+  a.requestStop(); const close: Promise<void> = a.close().then((): void => { closed = true; });
+  await nextTurn(deadline, prefix + '-close-pending');
+  emit(prefix + '-pending', [closed ? 1 : 0, first.length, second.length]);
+  check(!closed && first.length === 0 && second.length === 0, 'selected-source-keeps-close-pending');
+  throwsCode((): void => { testFinishPublication(engine, true); }, 'Closing', 'one-selected-stop-abandons-entire-publication');
+  const abandoned: number[] = observed(runtime, prefix + '-abandoned-native', emit);
+  control(runtime, prefix + '-abandoned-control', emitControl);
+  check(abandoned[27] === 0 && abandoned[28] === 0 && abandoned[29] === 0 && abandoned[30] === 0, 'all-selected-staging-returned');
+  await close;
+  if (stream === 0) { engine.publishState({ value: 8, text: 'live' }); }
+  else { engine.publishEvent({ value: 8, text: 'live' }); }
+  await until((): boolean => second.length >= 1, deadline, prefix + '-recovery');
+  vector(first, [], 'stopped-source-never-entered'); vector(second, [8], 'no-partial-publication');
+  emit(prefix + '-stopped-trace', first); emit(prefix + '-live-trace', second);
+  await b.close();
+}
+async function deliveryStop(runtime: Runtime, engine: Engine, stream: number, deadline: number,
+                            emit: EmitNumbers, emitControl: EmitControl): Promise<void> {
+  const prefix: string = 'kn-stream-delivery-stop-' + stream;
+  const seen: number[] = [];
+  const listener = (value: Snapshot): void => { seen.push(value.value); };
+  const sub: Subscription = stream === 0 ? engine.observeState(listener) : engine.observeEvents(listener);
+  const baseline: string[] = control(runtime, prefix + '-baseline-control', emitControl);
+  testArmDelivery(sub);
+  if (stream === 0) { engine.publishState({ value: 11, text: 'hold' }); }
+  else { engine.publishEvent({ value: 11, text: 'hold' }); }
+  await held(runtime, deadline, prefix + '-held-control', emitControl);
+  let closed: boolean = false;
+  sub.requestStop(); const close: Promise<void> = sub.close().then((): void => { closed = true; });
+  await nextTurn(deadline, prefix + '-pending');
+  emit(prefix + '-pending', [closed ? 1 : 0, seen.length]);
+  const pending: number[] = observed(runtime, prefix + '-pending-native', emit);
+  check(!closed && seen.length === 0 && pending[27] === 4 && pending[31] === 0, 'preentry-delivery-keeps-stop-pending');
+  testReleaseDelivery(sub); emit(prefix + '-release-sync', [closed ? 1 : 0, seen.length]);
+  check(!closed && seen.length === 0, 'release-never-invokes-on-support-stack');
+  await close;
+  const after: string[] = control(runtime, prefix + '-closed-control', emitControl);
+  const drained: number[] = observed(runtime, prefix + '-closed-native', emit);
+  check(small(after, 9) - small(baseline, 9) === 1 && small(after, 10) === small(baseline, 10) && small(after, 11) - small(baseline, 11) === 1, 'taken-discarded-not-invoked');
+  check(seen.length === 0 && drained[27] === 0 && drained[28] === 0 && drained[29] === 0 && drained[31] === 0, 'released-held-stop-completes');
+}
+
+async function cloneFanout(runtime: Runtime, engine: Engine, stream: number, ownedError: boolean,
+                           deadline: number, emit: EmitNumbers, emitControl: EmitControl): Promise<void> {
+  const prefix: string = 'kn-stream-clone-' + stream + '-' + (ownedError ? 'owned' : 'pre');
+  const seen: number[][] = [[], [], []]; const subs: Subscription[] = [];
+  for (let i: number = 0; i < 3; i++) {
+    const recipient: number = i;
+    const listener = (value: Snapshot): void => { seen[recipient].push(value.value); };
+    subs.push(stream === 0 ? engine.observeState(listener) : engine.observeEvents(listener));
+  }
+  if (stream === 0) { engine.publishState({ value: 1, text: 'old' }); }
+  const before: number[] = observed(runtime, prefix + '-before-native', emit);
+  const beforeControl: string[] = control(runtime, prefix + '-before-control', emitControl);
+  testArmCloneFailure(engine, 2, ownedError);
+  throwsCode((): void => {
+    if (stream === 0) { engine.publishState({ value: 2, text: 'new' }); }
+    else { engine.publishEvent({ value: 2, text: 'new' }); }
+  }, 'ResourceExhausted', 'nth-clone-controlled-error');
+  const after: number[] = observed(runtime, prefix + '-after-native', emit);
+  const afterControl: string[] = control(runtime, prefix + '-after-control', emitControl);
+  const allocations: number = ownedError ? 2 : 1;
+  check(small(afterControl, 18) - small(beforeControl, 18) === 2 && small(afterControl, 19) - small(beforeControl, 19) === 1, 'second-real-clone-failed');
+  check(small(afterControl, 20) - small(beforeControl, 20) === allocations && small(afterControl, 21) - small(beforeControl, 21) === allocations && small(afterControl, 22) === small(beforeControl, 22), 'owned-error-and-earlier-clones-paired');
+  check(after[9] - before[9] === allocations && after[10] - before[10] === allocations && after[27] === before[27] && after[28] === before[28] && after[29] === before[29], 'fanout-atomic-budget-rollback');
+  if (stream === 0) {
+    await until((): boolean => seen.every((values: number[]): boolean => values.length >= 1), deadline, prefix + '-old-state');
+    for (let i: number = 0; i < 3; i++) { vector(seen[i], [1], 'old-state-survives-partial-clone'); }
+    engine.publishState({ value: 3, text: 'recovery' });
+  } else { engine.publishEvent({ value: 3, text: 'recovery' }); }
+  const count: number = stream === 0 ? 2 : 1;
+  await until((): boolean => seen.every((values: number[]): boolean => values.length >= count), deadline, prefix + '-recovery');
+  for (let i: number = 0; i < 3; i++) { vector(seen[i], stream === 0 ? [1,3] : [3], 'no-partial-failed-fanout'); emit(prefix + '-trace-' + i, seen[i]); }
+  await stopAll(subs);
+}
+
+export async function runKotlinStreamCase(name: string, runtime: Runtime, engine: Engine,
+    deadline: number, emitNumbers: EmitNumbers, emitControl: EmitControl): Promise<boolean> {
+  if (name === 'kotlin-state') { await latest(runtime, engine, deadline, emitNumbers, emitControl); await enteredState(runtime, engine, deadline, emitNumbers); }
+  else if (name === 'kotlin-state-staging-bytes') { await staging(runtime, engine, deadline, emitNumbers, emitControl); }
+  else if (name === 'kotlin-event-fifo-and-atomic') { await event(runtime, engine, deadline, emitNumbers, emitControl); await eventReentryAndIsolation(runtime, engine, deadline, emitNumbers); }
+  else if (name === 'kotlin-source-stop') {
+    for (let stream: number = 0; stream <= 1; stream++) {
+      await publicationStop(runtime, engine, stream, deadline, emitNumbers, emitControl);
+      await deliveryStop(runtime, engine, stream, deadline, emitNumbers, emitControl);
+    }
+  } else if (name === 'kotlin-fanout-allocation') {
+    for (let stream: number = 0; stream <= 1; stream++) {
+      await cloneFanout(runtime, engine, stream, false, deadline, emitNumbers, emitControl);
+      await cloneFanout(runtime, engine, stream, true, deadline, emitNumbers, emitControl);
+    }
+  } else { return false; }
+  return true; // Controller still owns the mandatory normal Runtime.close/110 ACK.
+}

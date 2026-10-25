@@ -2,12 +2,12 @@
 from pathlib import Path
 import json,sys,unittest
 sys.path.insert(0,str(Path(__file__).resolve().parents[1]));sys.path.insert(0,str(Path(__file__).resolve().parent))
-from c07_kotlin_observations import NATIVE_FIELDS,CONTROL_FIELDS,parse_control_csv,parse_kotlin,validate_kotlin_contracts
+from c07_kotlin_observations import NATIVE_FIELDS,CONTROL_FIELDS,ADMISSION_FIELDS,parse_control_csv,parse_kotlin,validate_kotlin_contracts
 from test_c07_kotlin_admission import closed_frames
 
 
 def contracts():
-    return {"kotlin-frame-layout.json":{"format":70501,"length":110,"fields":[{"index":i,"name":v} for i,v in enumerate(NATIVE_FIELDS)]},
+    return {"admission-frame.json":{"length":13,"fields":[{"index":i,"name":v} for i,v in enumerate(ADMISSION_FIELDS)]},"kotlin-frame-layout.json":{"format":70501,"length":110,"fields":[{"index":i,"name":v} for i,v in enumerate(NATIVE_FIELDS)]},
         "kotlin-controls-layout.json":{"frame":{"fields":[{"index":i,"name":v} for i,v in enumerate(CONTROL_FIELDS)]}}}
 
 def control():

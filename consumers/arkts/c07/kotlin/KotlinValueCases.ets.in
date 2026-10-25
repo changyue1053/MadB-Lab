@@ -1,0 +1,151 @@
+// Lab-owned ordinary API behavior, observed through Kotlin's own 110-field frame.
+import { Runtime, Engine, Operation, Subscription, Snapshot, BoundaryError,
+  testObserve, testArmWork, testReleaseWork } from @MADB_PUBLIC_MODULE@;
+import { check, code, snapshot, rejectsVoid, nextTurn } from '../Assertions';
+import { runNegativeInputs, runClosingGetter } from '../NegativeInputs';
+
+type Emit = (label: string, values: number[]) => void;
+
+function observe(runtime: Runtime): number[] {
+  const values: number[] = testObserve(runtime);
+  check(values.length === 110 && values[0] === 70501, 'kotlin-value:frame');
+  return values;
+}
+
+async function getters(runtime: Runtime, engine: Engine, emit: Emit): Promise<void> {
+  const report: number[] = runNegativeInputs((input: Snapshot): Snapshot => engine.roundtrip(input),
+    (error: Error): boolean => error instanceof BoundaryError);
+  const expected: number[] = [16, 1, 1, 2, 1, 0, 2];
+  check(report.length === expected.length, 'kotlin-getter:report-length');
+  for (let i: number = 0; i < expected.length; i++) {
+    check(report[i] === expected[i], 'kotlin-getter:report:' + String(i));
+  }
+  emit('getter-report', report);
+  const before: number[] = observe(runtime);
+  runClosingGetter((input: Snapshot): Snapshot => engine.roundtrip(input), (): void => engine.requestClose());
+  const after: number[] = observe(runtime);
+  check(after[9] === before[9] && after[14] === before[14], 'kotlin-getter:no-provider-admission-after-close');
+  check(after[33] === after[34] && after[35] === 0 && after[31] === 0, 'kotlin-getter:temporary-ownership-returned');
+  emit('getter-before-close', before); emit('getter-after-close', after);
+  await engine.close();
+}
+
+async function copies(runtime: Runtime, engine: Engine, deadline: number, emit: Emit): Promise<void> {
+  const input: Snapshot = { value: 41, text: 'copied-input\u0000中' };
+  const first: Snapshot = engine.roundtrip(input);
+  first.value = -7; first.text = 'local-only';
+  snapshot(input, 41, 'copied-input\u0000中', 'kotlin-copy:roundtrip-source');
+  snapshot(engine.roundtrip(input), 41, 'copied-input\u0000中', 'kotlin-copy:roundtrip-new');
+  const before: number[] = observe(runtime);
+  testArmWork(engine, 1);
+  const operation: Operation = engine.startOperation(input);
+  input.value = 999; input.text = 'changed-after-submit';
+  while (observe(runtime)[41] === before[41]) { await nextTurn(deadline, 'kotlin-copy:held-work'); }
+  const pending: Promise<Snapshot> = operation.result();
+  testReleaseWork(engine);
+  const result: Snapshot = await pending;
+  snapshot(result, 42, 'copied-input\u0000中', 'kotlin-copy:owned-operation-input');
+  await operation.close();
+  const left: Snapshot[] = []; const right: Snapshot[] = [];
+  const a: Subscription = engine.observeEvents((value: Snapshot): void => {
+    snapshot(value, left.length + 1, 'event-' + String(left.length + 1), 'kotlin-copy:left-original');
+    left.push(value); value.value = 90; value.text = 'left-mutation';
+  });
+  const b: Subscription = engine.observeEvents((value: Snapshot): void => {
+    snapshot(value, right.length + 1, 'event-' + String(right.length + 1), 'kotlin-copy:right-original');
+    right.push(value);
+  });
+  const publication: Snapshot = { value: 1, text: 'event-1' };
+  engine.publishEvent(publication);
+  publication.value = 333; publication.text = 'changed-after-publish';
+  engine.publishEvent({ value: 2, text: 'event-2' });
+  while (left.length < 2 || right.length < 2) { await nextTurn(deadline, 'kotlin-copy:event-delivery'); }
+  check(left.length === 2 && right.length === 2 && left[0] !== left[1] &&
+    left[0] !== right[0] && right[0] !== right[1], 'kotlin-copy:independent-snapshot-objects');
+  await a.close(); await b.close(); await engine.close();
+  snapshot(result, 42, 'copied-input\u0000中', 'kotlin-copy:result-survives-native-close');
+  snapshot(right[0], 1, 'event-1', 'kotlin-copy:event-survives-native-close');
+  snapshot(right[1], 2, 'event-2', 'kotlin-copy:second-event-survives-native-close');
+  emit('copy-values', [result.value, left.length, right.length, left[0].value,
+    right[0].value, right[1].value, input.value, publication.value]);
+  emit('copy-closed', observe(runtime));
+}
+
+async function listeners(runtime: Runtime, engine: Engine, deadline: number, emit: Emit): Promise<void> {
+  const own: number[] = []; const others: number[] = [];
+  let self: Subscription | undefined = undefined;
+  let pending: Promise<void> | undefined = undefined;
+  let stopped: boolean = false;
+  self = engine.observeEvents((value: Snapshot): void => {
+    own.push(value.value);
+    check(self !== undefined, 'kotlin-listener:assigned');
+    emit('listener-entered', observe(runtime));
+    const active: Subscription = self as Subscription;
+    active.requestStop();
+    pending = active.close().then((): void => { stopped = true; });
+    engine.publishEvent({ value: 2, text: 'sibling-only' });
+    check(!stopped, 'kotlin-listener:close-waits-current-entry');
+    snapshot(value, 1, 'first', 'kotlin-listener:entered-copy');
+    emit('listener-stopped-entered', observe(runtime));
+  });
+  const sibling: Subscription = engine.observeEvents((value: Snapshot): void => { others.push(value.value); });
+  engine.publishEvent({ value: 1, text: 'first' });
+  while (!stopped || others.length < 2) { await nextTurn(deadline, 'kotlin-listener:drain'); }
+  if (pending !== undefined) { await pending; }
+  check(own.length === 1 && own[0] === 1 && others.length === 2 && others[0] === 1 && others[1] === 2,
+    'kotlin-listener:stop-and-sibling-fifo');
+  emit('listener-stopped', observe(runtime));
+  emit('listener-values', [own.length, others.length, others[0], others[1]]);
+  let failedCalls: number = 0;
+  const failed: Subscription = engine.observeEvents((_value: Snapshot): void => {
+    failedCalls++; throw new Error('LAB_KOTLIN_LISTENER_FAILURE');
+  });
+  engine.publishEvent({ value: 3, text: 'throwing-listener' });
+  while (failedCalls === 0 || others.length < 3) { await nextTurn(deadline, 'kotlin-listener:failure'); }
+  await rejectsVoid(() => failed.close(), 'CallbackFailure', 'kotlin-listener:failure-code');
+  engine.publishEvent({ value: 4, text: 'after-failure' });
+  while (others.length < 4) { await nextTurn(deadline, 'kotlin-listener:sibling-recovery'); }
+  check(failedCalls === 1 && others[2] === 3 && others[3] === 4, 'kotlin-listener:failure-isolated');
+  snapshot(engine.roundtrip({ value: 7, text: 'still-open' }), 7, 'still-open', 'kotlin-listener:engine-recovers');
+  await rejectsVoid(() => failed.close(), 'CallbackFailure', 'kotlin-listener:stable-failure-tombstone');
+  await sibling.close();
+  emit('listener-all-closed', observe(runtime));
+  emit('listener-failure-values', [failedCalls, others.length, others[2], others[3]]);
+}
+
+async function requestOnly(runtime: Runtime, engine: Engine, deadline: number, emit: Emit): Promise<void> {
+  let calls: number = 0;
+  const failed: Subscription = engine.observeEvents((_value: Snapshot): void => {
+    calls++; throw new Error('LAB_KOTLIN_REQUEST_ONLY_FAILURE');
+  });
+  engine.publishEvent({ value: 1, text: 'failure' });
+  while (calls === 0) { await nextTurn(deadline, 'kotlin-request-only:failure'); }
+  const old: Subscription[] = [];
+  for (let i: number = 0; i < 16; i++) {
+    let next: Subscription | undefined = undefined;
+    while (next === undefined) {
+      try { next = engine.observeEvents((_value: Snapshot): void => { throw new Error('LAB_UNEXPECTED_LISTENER'); }); }
+      catch (error) { if (code(error as Error) !== 'ResourceExhausted') { throw error as Error; } }
+      if (next === undefined) { await nextTurn(deadline, 'kotlin-request-only:reuse-capacity'); }
+    }
+    const sub: Subscription = next as Subscription;
+    sub.requestStop(); old.push(sub);
+    check(observe(runtime)[26] === 0, 'kotlin-request-only:no-close-waiter');
+    await nextTurn(deadline, 'kotlin-request-only:progress');
+  }
+  for (let i: number = 0; i < old.length; i++) { await old[i].close(); }
+  await rejectsVoid(() => failed.close(), 'CallbackFailure', 'kotlin-request-only:old-failure-preserved');
+  check(calls === 1, 'kotlin-request-only:failure-once');
+  emit('request-only-counts', [old.length, calls]);
+  emit('request-only-closed', observe(runtime));
+}
+
+export async function runKotlinValueCase(name: string, runtime: Runtime, engine: Engine,
+                                        deadline: number, emit: Emit): Promise<boolean> {
+  if (name === 'kotlin-getters') { await getters(runtime, engine, emit); }
+  else if (name === 'kotlin-copies') { await copies(runtime, engine, deadline, emit); }
+  else if (name === 'kotlin-listeners') { await listeners(runtime, engine, deadline, emit); }
+  else if (name === 'kotlin-request-only') { await requestOnly(runtime, engine, deadline, emit); }
+  else { return false; }
+  return true;
+}

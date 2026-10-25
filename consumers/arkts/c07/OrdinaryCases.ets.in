@@ -37,7 +37,7 @@ function values(engine: Engine): void {
   }
 }
 
-async function operationBasics(engine: Engine): Promise<void> {
+async function operationBasics(engine: Engine): Promise<Operation> {
   const operation: Operation = engine.startOperation({ value: 41, text: 'job\u0000中文' });
   const first: Promise<Snapshot> = operation.result();
   await rejectsSnapshot(() => operation.result(), 'AlreadyConsumed', 'strict-second-result');
@@ -48,9 +48,10 @@ async function operationBasics(engine: Engine): Promise<void> {
   const overflow: Operation = engine.startOperation({ value: 2147483647, text: 'overflow' });
   await rejectsSnapshot(() => overflow.result(), 'DomainOverflow', 'domain');
   await overflow.close();
+  return operation;
 }
 
-async function notificationBasics(engine: Engine): Promise<void> {
+async function notificationBasics(engine: Engine): Promise<Subscription> {
   const stateCalls: Snapshot[] = [];
   const eventCalls: Snapshot[] = [];
   let stateDone: (() => void) = () => {};
@@ -76,6 +77,7 @@ async function notificationBasics(engine: Engine): Promise<void> {
   check(stateCalls.length === 1 && eventCalls.length === 1, 'separate-stream-counts');
   snapshot(stateCalls[0], 21, 'state-only', 'state');
   snapshot(eventCalls[0], 22, 'event-only', 'event');
+  return event;
 }
 
 async function nextSubscription(engine: Engine, deadline: number): Promise<Subscription> {
@@ -124,6 +126,41 @@ async function nextEngine(runtime: Runtime, deadline: number): Promise<Engine> {
   }
 }
 
+
+async function reopenRuntime(oldRuntime: Runtime, oldEngine: Engine, oldOperation: Operation,
+                             oldSubscription: Subscription, emit: Emit): Promise<void> {
+  // The old close Promise has completed before this new owner is admitted.
+  const runtime: Runtime = openRuntime();
+  check(runtime !== oldRuntime, 'new-runtime-wrapper');
+  try {
+    const engine: Engine = runtime.connect();
+    throwsCode(() => { oldRuntime.connect(); }, 'Closed', 'old-runtime-cannot-connect');
+    throwsCode(() => { oldEngine.roundtrip({ value: 1, text: 'old-epoch' }); }, 'Closed', 'old-engine-cannot-enter-new-epoch');
+    await rejectsSnapshot(() => oldOperation.result(), 'Closed', 'old-operation-cannot-claim-new-epoch');
+    const operation: Operation = engine.startOperation({ value: 41, text: 'new-runtime\u0000中' });
+    const pending: Promise<Snapshot> = operation.result();
+    // Retained, already-closed wrappers retain their own immutable close result.
+    // They must not address this new runtime's live operation/subscription slots.
+    oldOperation.requestCancel(); await oldOperation.close();
+    oldSubscription.requestStop(); await oldSubscription.close();
+    await oldEngine.close(); await oldRuntime.close();
+    snapshot(await pending, 42, 'new-runtime\u0000中', 'new-runtime-work-survives-old-wrappers');
+    await operation.close();
+    const events: Snapshot[] = [];
+    let seen: (() => void) = () => {};
+    const arrived: Promise<void> = new Promise<void>((resolve) => { seen = resolve; });
+    const sub: Subscription = engine.observeEvents((value: Snapshot): void => {
+      events.push(value); seen();
+    });
+    oldSubscription.requestStop(); await oldSubscription.close();
+    engine.publishEvent({ value: 51, text: 'new-epoch-event' }); await arrived;
+    check(events.length === 1, 'new-epoch-event-once');
+    snapshot(events[0], 51, 'new-epoch-event', 'new-subscription-survives-old-wrapper');
+    await sub.close(); await engine.close(); await runtime.close();
+    emit('ordinary-runtime-reopened', [1, 42, 51, 3]);
+  } finally { await runtime.close(); }
+}
+
 export async function runOrdinaryRoute(emit: Emit, watchdogMs: number): Promise<void> {
   const deadline: number = Date.now() + watchdogMs;
   const runtime: Runtime = openRuntime();
@@ -140,8 +177,8 @@ export async function runOrdinaryRoute(emit: Emit, watchdogMs: number): Promise<
       check(negative[i] === expected[i], 'negative-report-' + String(i));
     }
     emit('values-and-negative-inputs', negative);
-    await operationBasics(engine);
-    await notificationBasics(engine);
+    const oldOperation: Operation = await operationBasics(engine);
+    const oldSubscription: Subscription = await notificationBasics(engine);
     await requestOnlySubscriptions(engine, deadline);
     await callbackFailureTombstone(engine, deadline);
 
@@ -158,6 +195,7 @@ export async function runOrdinaryRoute(emit: Emit, watchdogMs: number): Promise<
     await runtime.close();
     await runtime.close();
     emit('ordinary-runtime-close-returned', [1]);
+    await reopenRuntime(runtime, engine, oldOperation, oldSubscription, emit);
     // This event alone is not the independent native physical-ACK evidence.
   } finally {
     await runtime.close();

@@ -7,12 +7,15 @@ import unittest
 
 sys.path.insert(0, str(Path(__file__).resolve().parents[1]))
 import c07_companion_observations as oracle
+from c07_memory_observations import FIELDS as MEMORY_FIELDS, UNITS as MEMORY_UNITS
 from c07_admission_observations import BOOTSTRAP_FIELDS, DELIVERY_FIELDS
 
 
 def contracts():
     # Explicit mock public layout input. There is no producer source dependency.
     return {
+        "memory-layout.json":{"format":1,"length":27,"native_ordinal":31,"fields":{str(i):v for i,v in enumerate(MEMORY_FIELDS)},"units":MEMORY_UNITS,"native_signature":"testMemory(runtime:string):number[]","public_signature":"testMemory(runtime:Runtime):number[]"},
+        "subscription-state-layout.json":{"format":1,"length":4,"fields":{"0":"Format","1":"Closing","2":"Closed","3":"ListenerRetained"}},
         "bootstrap-totals-layout.json": {"format":1,"length":16,"fields":{str(i):v for i,v in enumerate(BOOTSTRAP_FIELDS)}},
         "ports-layout.json": {"delivery":{"format":1,"length":8,"fields":{str(i):v for i,v in enumerate(DELIVERY_FIELDS)}}},
         "runtime-frame-layout.json": {str(i): name for i, name in enumerate(oracle.RUNTIME_FIELDS)},

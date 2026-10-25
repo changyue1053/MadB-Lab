@@ -16,7 +16,7 @@ RUN = "new-controller-run"
 READY_GROUPS = {"single-claim", "dropped-promise", "operations", "event-fifo-and-atomic",
                 "fanout-allocation", "event-outstanding", "shared-waiters", "settling-reentry",
                 "runtime-close-full", "env-exit-full", "getters-and-reentry", "terminal-winner",
-                "result-transfer-failures", "source-stop", "request-before-observer", "listener-throw-close", "state", "request-only-retirement", "generation-and-handles", "identity"}
+                "result-transfer-failures", "source-stop", "request-before-observer", "listener-throw-close", "state", "request-only-retirement", "generation-and-handles", "subscriptions", "state-staging-bytes", "retained-bytes-and-scratch"}
 
 
 def observations():
@@ -36,20 +36,20 @@ class CompanionCoverageTests(unittest.TestCase):
         arguments.update(changes)
         return assess_group(group, **arguments)
 
-    def test_exact_existing_25_groups_and_39_unique_scenarios(self):
+    def test_exact_existing_25_groups_and_42_unique_scenarios(self):
         requirements = json.loads((ROOT / "consumers/arkts/c07/requirements.json").read_text())
         for route in ("c", "cpp", "rust"):
             profile = next(item for item in requirements["profiles"] if item["profile_id"] == "c07-" + route + "-arkts-aarch64-ohos23-test")
             self.assertEqual(set(GROUPS), {name.rsplit(".", 1)[1] for name in profile["required_cases"]})
             plan = scenario_plan(route)
-            self.assertEqual(len(plan), 39)
+            self.assertEqual(len(plan), 42)
             self.assertEqual(set(plan), set(SCENARIOS))
         self.assertEqual(scenario_plan("kotlin"), ())
 
     def test_successful_scenarios_close_only_the_reviewed_groups(self):
         statuses = {group: self.assess(group)["status"] for group in GROUPS}
         self.assertEqual({name for name, status in statuses.items() if status == "passed"}, READY_GROUPS)
-        self.assertEqual(sum(status == "blocked" for status in statuses.values()), 5)
+        self.assertEqual(sum(status == "blocked" for status in statuses.values()), 3)
         for group in set(GROUPS) - READY_GROUPS:
             self.assertTrue(self.assess(group)["gaps"], group)
 
@@ -58,6 +58,15 @@ class CompanionCoverageTests(unittest.TestCase):
         result = self.assess(records=records)
         self.assertEqual(result["status"], "blocked")
         self.assertEqual(result["missing_scenarios"], ["worker-env-exit"])
+
+    def test_subscription_map_without_actual_listener_lifetime_is_blocked(self):
+        records=observations();del records["listener-lifetime"]
+        self.assertEqual(self.assess("subscriptions",records)["status"],"blocked")
+
+    def test_companion_identity_alone_does_not_claim_ordinary_wrong_library(self):
+        result=self.assess("identity")
+        self.assertEqual(result["status"],"blocked")
+        self.assertTrue(any("ordinary" in gap for gap in result["gaps"]))
 
     def test_retained_development_run_and_other_candidate_are_rejected(self):
         for field, value in (("run_id", "old-development-run"), ("candidate_digest", "sha256:" + "b" * 64)):
@@ -92,6 +101,19 @@ class CompanionCoverageTests(unittest.TestCase):
         records = {"ordinary-baseline": next(iter(observations().values()))}
         for group in GROUPS:
             self.assertEqual(self.assess(group, records)["status"], "blocked")
+
+    def test_both_source_and_build_binding_are_needed_with_current_target(self):
+        receipt={"candidate_digest":DIGEST,"run_id":RUN,"observation":{
+            "status":"bound","candidate_digest":DIGEST,"route":"c","producer_revision":"frozen",
+            "source_review":{"status":"bound","route":"c","variant":"test", "producer_revision":"frozen", "inventory_sha256":DIGEST}}}
+        for group in ("worker-and-domain","route-ownership"):
+            self.assertEqual(self.assess(group,route_ownership=receipt)["status"],"passed")
+            missing=deepcopy(receipt);missing["observation"]["source_review"]["status"]="blocked"
+            self.assertEqual(self.assess(group,route_ownership=missing)["status"],"blocked")
+            stale=deepcopy(receipt);stale["run_id"]="old-run"
+            self.assertEqual(self.assess(group,route_ownership=stale)["status"],"blocked")
+            records=observations();records["terminal-success"]["observation"]["status"]="failed"
+            self.assertEqual(self.assess(group,records,route_ownership=receipt)["status"],"failed")
 
     def test_candidate_and_current_run_bindings_are_mandatory(self):
         self.assertEqual(self.assess(candidate_digest="") ["status"], "error")

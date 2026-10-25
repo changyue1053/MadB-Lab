@@ -1,0 +1,74 @@
+{
+  "schema": "madb.case/1",
+  "id": "c07.kotlin-arkts.source-stop",
+  "kind": "template",
+  "problem_ids": [
+    "ASYNC-003",
+    "LIFE-002",
+    "LIFE-004",
+    "LIFE-005",
+    "THR-003"
+  ],
+  "source_ids": [],
+  "selector": null,
+  "requires": {
+    "features": [],
+    "environment": []
+  },
+  "fixture": {
+    "path": "harness/c07_kotlin_cases.py",
+    "sha256": "sha256:1cf4528d51c950680261d9427008676316b3cfa82bd524ff39dfdf51769efd5a",
+    "size": 4253,
+    "schema": "madb.lab-source/1"
+  },
+  "setup": [
+    {
+      "id": "admission",
+      "action": "environment",
+      "entrypoint": "exact-candidate-current-run-public-companion-har",
+      "arguments": []
+    }
+  ],
+  "steps": [
+    {
+      "id": "scenario-1",
+      "action": "call",
+      "entrypoint": "runKotlinCase:kotlin-source-stop",
+      "arguments": []
+    },
+    {
+      "id": "scenario-2",
+      "action": "call",
+      "entrypoint": "runKotlinCase:kotlin-listeners",
+      "arguments": []
+    }
+  ],
+  "assertions": [
+    {
+      "observation": "source-stop",
+      "operator": "equals",
+      "expected": [
+        {
+          "kind": "string",
+          "value": "Hold one real publication/source transaction before enqueue. Request stop/close, prove callback does not newly enter and ACK remains pending while the acquired source owner exists. Release/abandon the actual lease, then complete cleanup. Also stop during actual entered callback: current call returns, no later callback starts."
+        }
+      ]
+    }
+  ],
+  "expected_result": {
+    "kind": "success"
+  },
+  "cleanup": [
+    {
+      "id": "physical-retirement",
+      "action": "cleanup",
+      "entrypoint": "normal-main-env-runtime-physical-ack-not-vm-destruction",
+      "arguments": []
+    }
+  ],
+  "timeout_policy": {
+    "timeout_ms": 100000,
+    "on_timeout": "error",
+    "recovery": "isolate"
+  }
+}

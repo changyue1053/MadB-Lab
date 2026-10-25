@@ -1,0 +1,67 @@
+{
+  "schema": "madb.case/1",
+  "id": "c07.kotlin-arkts.operations",
+  "kind": "template",
+  "problem_ids": [
+    "ASYNC-005",
+    "LIFE-001",
+    "LIFE-005",
+    "LIFE-006"
+  ],
+  "source_ids": [],
+  "selector": null,
+  "requires": {
+    "features": [],
+    "environment": []
+  },
+  "fixture": {
+    "path": "harness/c07_kotlin_cases.py",
+    "sha256": "sha256:1cf4528d51c950680261d9427008676316b3cfa82bd524ff39dfdf51769efd5a",
+    "size": 4253,
+    "schema": "madb.lab-source/1"
+  },
+  "setup": [
+    {
+      "id": "admission",
+      "action": "environment",
+      "entrypoint": "exact-candidate-current-run-public-companion-har",
+      "arguments": []
+    }
+  ],
+  "steps": [
+    {
+      "id": "scenario-1",
+      "action": "call",
+      "entrypoint": "runKotlinCase:kotlin-operations-capacity",
+      "arguments": []
+    }
+  ],
+  "assertions": [
+    {
+      "observation": "operations",
+      "operator": "equals",
+      "expected": [
+        {
+          "kind": "string",
+          "value": "Eight accepted operation handles remain charged even after terminal/unclaimed result; ninth rejects. Closing one returns capacity after true work/payload drain; successful later admission proves a concurrent bound rather than an eight-lifetime cap."
+        }
+      ]
+    }
+  ],
+  "expected_result": {
+    "kind": "success"
+  },
+  "cleanup": [
+    {
+      "id": "physical-retirement",
+      "action": "cleanup",
+      "entrypoint": "normal-main-env-runtime-physical-ack-not-vm-destruction",
+      "arguments": []
+    }
+  ],
+  "timeout_policy": {
+    "timeout_ms": 50000,
+    "on_timeout": "error",
+    "recovery": "isolate"
+  }
+}

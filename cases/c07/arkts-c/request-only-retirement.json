@@ -16,8 +16,8 @@
   },
   "fixture": {
     "path": "harness/c07_companion_cases.py",
-    "sha256": "sha256:474a41d6818260defc652be95cd9833585f2e0a940548f08124c06c506b67b9e",
-    "size": 9140,
+    "sha256": "sha256:1b0bf5c3aa4958a0320ee896d5c1241af14c7bb1cf3a67c68510615d81fb4d2d",
+    "size": 10430,
     "schema": "madb.lab-source/1"
   },
   "setup": [
@@ -30,9 +30,15 @@
   ],
   "steps": [
     {
-      "id": "required-schedule",
+      "id": "scenario-1",
       "action": "call",
-      "entrypoint": "unimplemented-companion-schedule",
+      "entrypoint": "runControlledCase:request-only-observed",
+      "arguments": []
+    },
+    {
+      "id": "scenario-2",
+      "action": "call",
+      "entrypoint": "runControlledCase:engine-generation",
       "arguments": []
     }
   ],

@@ -11,6 +11,9 @@ from c07_admission_observations import SCENARIOS as ADMISSION_SCENARIOS, GATED a
 from c07_diagnostic_observations import SCENARIOS as DIAGNOSTIC_SCENARIOS, GATED as DIAGNOSTIC_GATED, predicates as diagnostic_predicates
 
 from c07_identity_observations import SCENARIOS as IDENTITY_SCENARIOS
+from c07_listener_lifetime_observations import SCENARIOS as LISTENER_SCENARIOS, predicates as listener_predicates
+
+from c07_memory_observations import SCENARIOS as MEMORY_SCENARIOS, GATED as MEMORY_GATED, predicates as memory_predicates, validate_contracts as memory_contracts
 
 MAX_SAFE = 2**53 - 1
 RUNTIME_FIELDS = """Format Phase BusinessEntries ScratchLive Operations Subscriptions
@@ -83,6 +86,8 @@ SCENARIOS = {
 SCENARIOS.update(COMPLETION_SCENARIOS)
 SCENARIOS.update(ADMISSION_SCENARIOS)
 SCENARIOS.update(DIAGNOSTIC_SCENARIOS)
+SCENARIOS.update(LISTENER_SCENARIOS)
+SCENARIOS.update(MEMORY_SCENARIOS)
 SCENARIOS.update({name:{} for name in IDENTITY_SCENARIOS})
 WORKER_CASES = {"worker-env-exit", "fault-before-guard", "fault-after-accepted"}
 GATED_CASES = {"full-waiters", "settling-reentry", "terminal-cancel", "terminal-success",
@@ -92,6 +97,7 @@ GATED_CASES = {"full-waiters", "settling-reentry", "terminal-cancel", "terminal-
 GATED_CASES.update(COMPLETION_GATED)
 GATED_CASES.update(ADMISSION_GATED)
 GATED_CASES.update(DIAGNOSTIC_GATED)
+GATED_CASES.update(MEMORY_GATED)
 ZERO_OWNERS = (2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 18, 19, 20, 21, 22,
                23, 24, 25, 26, 28, 29, 35, 37, 77)
 PAIRS = (33, 38, 40, 42, 44, 46, 48, 50, 52)
@@ -145,7 +151,7 @@ def _frame_error(values, kind):
         return None
     if kind in ("one", "zero"):
         return None if values == ([1] if kind == "one" else [0]) else "wrong scalar marker"
-    length = {"native": 178, "facade": 15, "operation": 10, "hook": 54, "local": 12, "process": 10, "bootstrap": 16, "delivery": 8}[kind]
+    length = {"native": 178, "facade": 15, "operation": 10, "hook": 54, "local": 12, "process": 10, "bootstrap": 16, "delivery": 8, "memory": 27}[kind]
     if len(values) != length or any(v < 0 for v in values) or kind != "process" and values[0] != 1:
         return "wrong length, format or negative counter"
     if kind == "native":
@@ -269,6 +275,8 @@ def _predicates(case, frames):
         problems.extend(completion_predicates(case, frames))
     problems.extend(admission_predicates(case, frames))
     problems.extend(diagnostic_predicates(case, frames))
+    if case in LISTENER_SCENARIOS:problems.extend(listener_predicates(frames))
+    if case in MEMORY_SCENARIOS:memory_predicates(case,frames,need,equal,delta)
     return problems
 
 
@@ -285,6 +293,13 @@ def parse_controlled(raw, *, nonce, pid, case, route, contracts):
     problems.extend(validate_contracts(contracts))
     if case in ADMISSION_SCENARIOS:
         problems.extend(admission_contracts(contracts))
+    if case in MEMORY_SCENARIOS:
+        try:memory_contracts(contracts)
+        except (KeyError,TypeError,ValueError) as error:problems.append("memory contract: "+str(error))
+    if case in LISTENER_SCENARIOS:
+        layout=contracts.get("subscription-state-layout.json",{})
+        if layout.get("format")!=1 or layout.get("length")!=4 or layout.get("fields")!={"0":"Format","1":"Closing","2":"Closed","3":"ListenerRetained"}:
+            problems.append("missing/incompatible actual subscription-record contract")
     if not isinstance(nonce, str) or not re.fullmatch(r"[A-Za-z0-9_-]+", nonce):
         problems.append("invalid explicit nonce")
     if result["pid"] is None or result["pid"] <= 0:

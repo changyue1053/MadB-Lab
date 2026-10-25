@@ -1,0 +1,73 @@
+{
+  "schema": "madb.case/1",
+  "id": "c07.kotlin-arkts.event-outstanding",
+  "kind": "template",
+  "problem_ids": [
+    "ASYNC-004",
+    "LIFE-001",
+    "LIFE-004",
+    "THR-004"
+  ],
+  "source_ids": [],
+  "selector": null,
+  "requires": {
+    "features": [],
+    "environment": []
+  },
+  "fixture": {
+    "path": "harness/c07_kotlin_cases.py",
+    "sha256": "sha256:1cf4528d51c950680261d9427008676316b3cfa82bd524ff39dfdf51769efd5a",
+    "size": 4253,
+    "schema": "madb.lab-source/1"
+  },
+  "setup": [
+    {
+      "id": "admission",
+      "action": "environment",
+      "entrypoint": "exact-candidate-current-run-public-companion-har",
+      "arguments": []
+    }
+  ],
+  "steps": [
+    {
+      "id": "scenario-1",
+      "action": "call",
+      "entrypoint": "runKotlinCase:kotlin-event-fifo-and-atomic",
+      "arguments": []
+    },
+    {
+      "id": "scenario-2",
+      "action": "call",
+      "entrypoint": "runKotlinCase:kotlin-source-stop",
+      "arguments": []
+    }
+  ],
+  "assertions": [
+    {
+      "observation": "event-outstanding",
+      "operator": "equals",
+      "expected": [
+        {
+          "kind": "string",
+          "value": "Two event subscribers \u00d7 four accepted publications = eight tickets. In the first actual listener, entered still owns its ticket; another two-recipient publish rejects. Callback return, not dequeue/copy, returns the ticket. Source-acquired and queued phases use the same conserved ticket."
+        }
+      ]
+    }
+  ],
+  "expected_result": {
+    "kind": "success"
+  },
+  "cleanup": [
+    {
+      "id": "physical-retirement",
+      "action": "cleanup",
+      "entrypoint": "normal-main-env-runtime-physical-ack-not-vm-destruction",
+      "arguments": []
+    }
+  ],
+  "timeout_policy": {
+    "timeout_ms": 100000,
+    "on_timeout": "error",
+    "recovery": "isolate"
+  }
+}

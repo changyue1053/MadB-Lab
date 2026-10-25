@@ -110,9 +110,18 @@ class C07ObservationTests(unittest.TestCase):
         raw, nonce, pid = self.raw()
         self.assertEqual(parse_ordinary(raw, nonce=nonce, pid=pid)["status"], "passed")
 
+    def test_zero_pid_cannot_bind_an_actual_process(self):
+        raw,nonce,pid=self.raw()
+        self.assertEqual(parse_ordinary(raw.replace("time 123 ","time 0 "),nonce=nonce,pid="0")["status"],"failed")
+
     def test_no_completion_is_not_pass(self):
         raw, nonce, pid = self.raw()
         self.assertEqual(parse_ordinary(raw.rsplit("\n", 1)[0], nonce=nonce, pid=pid)["status"], "incomplete")
+
+    def test_old_consumer_without_reopen_witness_is_not_complete(self):
+        raw,nonce,pid=self.raw()
+        old="\n".join(line for line in raw.splitlines() if "ordinary-runtime-reopened" not in line)
+        self.assertEqual(parse_ordinary(old,nonce=nonce,pid=pid)["status"],"failed")
 
     def test_duplicate_pid_and_changed_values_fail(self):
         raw, nonce, pid = self.raw()

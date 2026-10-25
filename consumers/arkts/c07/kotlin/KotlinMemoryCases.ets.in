@@ -1,0 +1,122 @@
+// Independent public-HAR consumer. No producer/private imports or model estimates.
+import { Runtime, Engine, Operation, Subscription, Snapshot, testMemoryFrame,
+  testObserve, testControlFrame, testArmWork, testReleaseWork, testArmDelivery,
+  testReleaseDelivery, testStagePublication, testFinishPublication } from @MADB_PUBLIC_MODULE@;
+import { check, nextTurn, snapshot, throwsCode } from '../Assertions';
+
+export type EmitNumbers = (label: string, values: number[]) => void;
+export type EmitMemory = (label: string, csv: string) => void;
+
+function memory(label: string, emit: EmitMemory): number[] {
+  const raw: string = testMemoryFrame();
+  const tokens: string[] = raw.split(',');
+  check(tokens.length === 22 && tokens[0] === '70603', label + ':memory22');
+  const values: number[] = [];
+  for (let i: number = 0; i < tokens.length; i++) {
+    check(/^(0|[1-9][0-9]*)$/.test(tokens[i]), label + ':canonical-decimal');
+    // This short scenario has exact small counters. Preserve original CSV for
+    // the independent host's uint64 parser; do not serialize converted values.
+    const value: number = Number(tokens[i]);
+    check(Number.isSafeInteger(value) && value >= 0, label + ':bounded-window');
+    values.push(value);
+  }
+  emit(label, raw); return values;
+}
+function observed(runtime: Runtime, label: string, emit: EmitNumbers): number[] {
+  const values: number[] = testObserve(runtime);
+  check(values.length === 110 && values[0] === 70501 && values[8] === 0, label + ':native110');
+  emit(label, values); return values;
+}
+function balanced(values: number[], label: string): void {
+  check(values[1] === 0 && values[5] === 0 && values[11] === 0 && values[16] === 0, label + ':zero-live-byte-domains');
+  check(values[3] === values[4] && values[7] === values[8] && values[9] === values[10], label + ':ledger-model-pairs');
+  check(values[13] === values[14] + values[15], label + ':staging-role-pairs');
+  check(values[18] === values[19] && values[20] === values[21], label + ':utf-scope-pairs');
+}
+async function waitControl(runtime: Runtime, index: number, value: string,
+    label: string, deadline: number, emit: EmitMemory): Promise<void> {
+  while (true) {
+    const raw: string = testControlFrame(runtime);
+    const fields: string[] = raw.split(',');
+    check(fields.length === 31 && fields[0] === '1', label + ':control31');
+    if (fields[index] === value) { emit(label, raw); return; }
+    await nextTurn(deadline, label);
+  }
+}
+async function retainedScratch(runtime: Runtime, engine: Engine, deadline: number,
+    emitNumbers: EmitNumbers, emitMemory: EmitMemory): Promise<void> {
+  balanced(memory('memory-baseline', emitMemory), 'retained-baseline');
+  const text: string = 'x'.repeat(1024);
+  const operations: Operation[] = [];
+  testArmWork(engine, 1);
+  for (let i: number = 0; i < 4; i++) { operations.push(engine.startOperation({ value: i, text: text })); }
+  await waitControl(runtime, 3, '1', 'memory-work-held-control', deadline, emitMemory);
+  const native: number[] = observed(runtime, 'memory-retained-native', emitNumbers);
+  check(native[24] === 4 && native[27] === 4096 && native[12] > native[13] && native[39] === 1, 'real-four-retained-owners');
+  const full: number[] = memory('memory-retained-full', emitMemory);
+  check(full[1] === 4096 && full[5] === 4096 && full[11] === 0 && full[16] === 0, 'retained-exact-byte-domains');
+  snapshot(engine.roundtrip({ value: 19, text: text }), 19, text, 'independent-full-budget-roundtrip');
+  const scratch: number[] = memory('memory-scratch-returned', emitMemory);
+  check(scratch[1] === 4096 && scratch[3] === full[3] && scratch[4] === full[4], 'scratch-outside-canonical-ledger');
+  check(scratch[5] === 4096 && scratch[6] >= 5120, 'actual-retained-plus-scratch-peak');
+  check(scratch[7] - full[7] === 1024 && scratch[8] - full[8] === 1024 && scratch[9] - full[9] === 1 && scratch[10] - full[10] === 1, 'scratch-native-allocation-returned');
+  check(scratch[16] === 0 && scratch[17] >= 2050 && scratch[18] - full[18] === 4100 && scratch[19] - full[19] === 4100, 'actual-input-output-utf16-scope-overhead');
+  check(scratch[20] - full[20] === 2 && scratch[21] - full[21] === 2, 'two-real-utf16-arrays');
+  throwsCode((): void => { engine.startOperation({ value: 5, text: 'y' }); }, 'ResourceExhausted', 'retained-budget-plus-one-denied');
+  const denied: number[] = memory('memory-retained-denied', emitMemory);
+  check(denied[1] === 4096 && denied[5] === 4096 && denied[7] === scratch[7] && denied[9] === scratch[9], 'rejected-admission-does-not-allocate-model');
+  const closes: Promise<void>[] = [];
+  for (let i: number = 0; i < operations.length; i++) { closes.push(operations[i].close()); }
+  testReleaseWork(engine);
+  for (let i: number = 0; i < closes.length; i++) { await closes[i]; }
+  balanced(memory('memory-drained', emitMemory), 'retained-drained');
+}
+async function stateStaging(runtime: Runtime, engine: Engine, deadline: number,
+    emitNumbers: EmitNumbers, emitMemory: EmitMemory): Promise<void> {
+  balanced(memory('memory-baseline', emitMemory), 'state-baseline');
+  const seen: number[] = [];
+  const sub: Subscription = engine.observeState((value: Snapshot): void => {
+    snapshot(value, 4, 'd'.repeat(1024), 'state-only-committed-latest'); seen.push(value.value);
+  });
+  testArmDelivery(sub);
+  engine.publishState({ value: 1, text: 'a'.repeat(1024) });
+  await waitControl(runtime, 7, '2', 'memory-delivery-held-control', deadline, emitMemory);
+  const held: number[] = memory('memory-state-held', emitMemory);
+  const first: number[] = observed(runtime, 'memory-state-held-native', emitNumbers);
+  check(held[1] === 1024 && held[5] === 1024 && first[29] === 1 && first[31] === 0 && seen.length === 0, 'positive-real-preentry-state-owner');
+  engine.publishState({ value: 2, text: 'b'.repeat(1024) });
+  const replaced: number[] = memory('memory-state-replaced', emitMemory);
+  const one: number[] = observed(runtime, 'memory-state-replaced-native', emitNumbers);
+  check(replaced[1] === 1024 && replaced[5] === 1024 && replaced[2] >= 2048 && replaced[6] >= 2048, 'replacement-includes-old-and-new-before-retirement');
+  check(replaced[7] - held[7] === 1024 && replaced[8] - held[8] === 1024 && one[29] === 1 && one[31] === 0, 'replacement-frees-old-with-one-ticket');
+  testStagePublication(engine, 0, { value: 3, text: 'c'.repeat(1024) });
+  const staged: number[] = memory('memory-staging-held', emitMemory);
+  const stage: string = testControlFrame(runtime); emitMemory('memory-staging-held-control', stage);
+  check(stage.split(',')[12] === '1' && stage.split(',')[13] === '1' && stage.split(',')[14] === '1024', 'positive-selected-publication-source');
+  check(staged[1] === 2048 && staged[5] === 2048 && staged[11] === 1024, 'old-state-plus-real-staging');
+  throwsCode((): void => { testStagePublication(engine, 0, { value: 8, text: 'z' }); }, 'ResourceExhausted', 'second-held-publication-denied');
+  const denied: number[] = memory('memory-staging-denied', emitMemory);
+  check(denied[7] === staged[7] && denied[9] === staged[9] && denied[11] === 1024, 'second-source-does-not-clone');
+  testFinishPublication(engine, false);
+  const abandoned: number[] = memory('memory-staging-abandoned', emitMemory);
+  check(abandoned[1] === 1024 && abandoned[5] === 1024 && abandoned[11] === 0 && abandoned[15] - staged[15] === 1024, 'abandon-frees-new-state-only');
+  testStagePublication(engine, 0, { value: 4, text: 'd'.repeat(1024) });
+  const commitHeld: number[] = memory('memory-staging-commit-held', emitMemory);
+  check(commitHeld[1] === 2048 && commitHeld[5] === 2048 && commitHeld[11] === 1024, 'second-real-staging-source');
+  testFinishPublication(engine, true);
+  const committed: number[] = memory('memory-staging-committed', emitMemory);
+  check(committed[1] === 1024 && committed[5] === 1024 && committed[11] === 0 && committed[14] - commitHeld[14] === 1024, 'commit-transfers-staging-role');
+  check(seen.length === 0, 'held-state-never-entered-during-support-calls');
+  testReleaseDelivery(sub); emitNumbers('memory-release-sync', [seen.length]);
+  while (seen.length === 0) { await nextTurn(deadline, 'memory-state-delivery'); }
+  check(seen.length === 1 && seen[0] === 4, 'one-latest-state-copy'); emitNumbers('memory-state-trace', seen);
+  await sub.close();
+  balanced(memory('memory-drained', emitMemory), 'state-drained');
+}
+export async function runKotlinMemoryCase(name: string, runtime: Runtime, engine: Engine,
+    deadline: number, emitNumbers: EmitNumbers, emitMemory: EmitMemory): Promise<boolean> {
+  if (name === 'kotlin-memory-retained-scratch') { await retainedScratch(runtime, engine, deadline, emitNumbers, emitMemory); }
+  else if (name === 'kotlin-memory-state-staging') { await stateStaging(runtime, engine, deadline, emitNumbers, emitMemory); }
+  else { return false; }
+  return true; // Controller must await Runtime.close/110 ACK, then emit memory-final.
+}

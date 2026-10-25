@@ -1,0 +1,95 @@
+import { Runtime, Engine, Operation, Subscription, Snapshot, openRuntime, testObserve,
+  testExportKey, testMemory, testDeliveryGate, testHoldPublication, testReleasePublication,
+  testArmWork, testReleaseWork } from @MADB_PUBLIC_MODULE@;
+import { check, snapshot, throwsCode, nextTurn } from './Assertions';
+import { Emit, observed, gate, finalClosed } from './SupportChecks';
+
+function memory(runtime: Runtime, label: string, emit: Emit): number[] {
+  const result: number[] = testMemory(runtime);
+  check(result.length === 27 && result[0] === 1, label + ':format');
+  for (let i: number = 0; i < result.length; i++) {
+    check(Number.isSafeInteger(result[i]) && result[i] >= 0, label + ':range');
+  }
+  emit(label, result);
+  return result;
+}
+async function until(predicate: () => boolean, deadline: number, label: string): Promise<void> {
+  while (!predicate()) { await nextTurn(deadline, label); }
+}
+async function stateMemory(runtime: Runtime, engine: Engine, deadline: number, emit: Emit): Promise<void> {
+  const text: string = '\uD83E\uDD80'.repeat(256); // 1,024 UTF-8 bytes; 512 UTF-16 code units.
+  const values: number[] = [];
+  const sub: Subscription = engine.observeState((value: Snapshot): void => {
+    snapshot(value, 2, text, 'latest-state-only');
+    values.push(value.value);
+    memory(runtime, 'memory-state-entered', emit);
+    emit('memory-state-entered-native', observed(runtime, 'memory-state-entered'));
+  });
+  let deliveryHeld: boolean = false;
+  let publicationHeld: boolean = false;
+  try {
+    testDeliveryGate(sub, 0); deliveryHeld = true;
+    engine.publishState({ value: 1, text: text });
+    await until((): boolean => testDeliveryGate(sub, 1)[2] === 1, deadline, 'memory-real-delivery-held');
+    check(values.length === 0, 'no-preentry-callback');
+    emit('memory-state-gate', testDeliveryGate(sub, 1));
+    memory(runtime, 'memory-state-pending', emit);
+    testHoldPublication(engine, 0, { value: 2, text: text }); publicationHeld = true;
+    memory(runtime, 'memory-state-staged', emit);
+    emit('memory-state-staged-native', observed(runtime, 'memory-state-staged'));
+    check(values.length === 0, 'staging-is-not-delivery');
+    testReleasePublication(engine, 1); publicationHeld = false;
+    memory(runtime, 'memory-state-replaced', emit);
+    emit('memory-state-replaced-native', observed(runtime, 'memory-state-replaced'));
+    check(values.length === 0, 'replacement-still-preentry');
+    testDeliveryGate(sub, 2); deliveryHeld = false;
+    await until((): boolean => values.length === 1 && testObserve(runtime)[10] === 0,
+                deadline, 'memory-state-delivery-and-release');
+    check(values.length === 1 && values[0] === 2, 'only-latest-state');
+    emit('memory-state-values', values);
+    memory(runtime, 'memory-state-drained', emit);
+  } finally {
+    if (publicationHeld) { testReleasePublication(engine, 0); }
+    if (deliveryHeld) { testDeliveryGate(sub, 2); }
+    await sub.close();
+  }
+}
+async function scratchMemory(runtime: Runtime, engine: Engine, deadline: number, emit: Emit): Promise<void> {
+  const text: string = '\uD83E\uDD80'.repeat(256);
+  const operations: Operation[] = [];
+  testArmWork(engine, 1);
+  try {
+    operations.push(engine.startOperation({ value: 1, text: text }));
+    await gate(runtime, operations[0], 1, deadline, emit);
+    for (let i: number = 1; i < 4; i++) {
+      operations.push(engine.startOperation({ value: i + 1, text: text }));
+    }
+    memory(runtime, 'memory-full-before-copy', emit);
+    emit('memory-full-native', observed(runtime, 'memory-full-native'));
+    snapshot(engine.roundtrip({ value: 41, text: text }), 41, text, 'full-retained-scratch-copy');
+    memory(runtime, 'memory-full-after-copy', emit);
+    emit('memory-full-after-copy-native', observed(runtime, 'memory-full-after-copy'));
+    throwsCode(() => { engine.startOperation({ value: 9, text: 'x' }); },
+               'ResourceExhausted', 'one-byte-over-retained-budget-not-operation-count');
+    memory(runtime, 'memory-full-rejected', emit);
+    emit('memory-full-rejected-native', observed(runtime, 'memory-full-rejected'));
+    emit('memory-copy-result', [1, 1024, 512]);
+  } finally {
+    for (let i: number = 0; i < operations.length; i++) { operations[i].requestCancel(); }
+    testReleaseWork(engine);
+  }
+}
+export async function runMemoryCase(name: string, emit: Emit, timeoutMs: number): Promise<void> {
+  const deadline: number = Date.now() + timeoutMs;
+  const runtime: Runtime = openRuntime();
+  const engine: Engine = runtime.connect();
+  const key: string = testExportKey(runtime);
+  emit('open', testObserve(runtime));
+  try {
+    if (name === 'memory-state-staging') { await stateMemory(runtime, engine, deadline, emit); }
+    else { check(name === 'memory-full-scratch', 'unknown-memory-case'); await scratchMemory(runtime, engine, deadline, emit); }
+  } finally { await runtime.close(); }
+  await finalClosed(runtime, key, deadline, emit);
+  memory(runtime, 'memory-final', emit);
+  emit('case-complete', [1]);
+}

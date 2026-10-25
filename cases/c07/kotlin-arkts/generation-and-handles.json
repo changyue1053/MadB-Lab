@@ -1,0 +1,68 @@
+{
+  "schema": "madb.case/1",
+  "id": "c07.kotlin-arkts.generation-and-handles",
+  "kind": "template",
+  "problem_ids": [
+    "LIFE-003",
+    "LIFE-005",
+    "LIFE-006",
+    "TYPE-003",
+    "TYPE-007"
+  ],
+  "source_ids": [],
+  "selector": null,
+  "requires": {
+    "features": [],
+    "environment": []
+  },
+  "fixture": {
+    "path": "harness/c07_kotlin_cases.py",
+    "sha256": "sha256:1cf4528d51c950680261d9427008676316b3cfa82bd524ff39dfdf51769efd5a",
+    "size": 4253,
+    "schema": "madb.lab-source/1"
+  },
+  "setup": [
+    {
+      "id": "admission",
+      "action": "environment",
+      "entrypoint": "exact-candidate-current-run-public-companion-har",
+      "arguments": []
+    }
+  ],
+  "steps": [
+    {
+      "id": "scenario-1",
+      "action": "call",
+      "entrypoint": "runKotlinCase:kotlin-admission",
+      "arguments": []
+    }
+  ],
+  "assertions": [
+    {
+      "observation": "generation-and-handles",
+      "operator": "equals",
+      "expected": [
+        {
+          "kind": "string",
+          "value": "Second operational engine rejected; new generation admitted only after old business + waiters + JS settling + notifications drain. Old immutable tombstone cannot address reused slots. Public companion malformed/wrong-kind/env/generation/overflow handle fixtures reject before work, with full uint64 decimal precision retained."
+        }
+      ]
+    }
+  ],
+  "expected_result": {
+    "kind": "success"
+  },
+  "cleanup": [
+    {
+      "id": "physical-retirement",
+      "action": "cleanup",
+      "entrypoint": "normal-main-env-runtime-physical-ack-not-vm-destruction",
+      "arguments": []
+    }
+  ],
+  "timeout_policy": {
+    "timeout_ms": 50000,
+    "on_timeout": "error",
+    "recovery": "isolate"
+  }
+}

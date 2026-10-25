@@ -1,0 +1,158 @@
+import { Runtime, Engine, Operation, Subscription, Snapshot, testObserve, testControlFrame,
+  testArmWork, testReleaseWork, testStagePublication, testFinishPublication,
+  testArmTransferFailure, testSettleProbe, testSettleInspect } from @MADB_PUBLIC_MODULE@;
+import { check, nextTurn, snapshot, throwsCode, rejectsSnapshot, rejectsVoid } from '../Assertions';
+type EmitNumbers = (label: string, values: number[]) => void;
+type EmitControl = (label: string, csv: string) => void;
+function observed(runtime: Runtime): number[] {
+ const f: number[] = testObserve(runtime);
+ check(f.length === 110 && f[0] === 70501, 'kn110');
+ for (let i: number = 0; i < f.length; i++) { check(Number.isSafeInteger(f[i]), 'kn110-safe:' + String(i)); }
+ return f;
+}
+function counter(fields: string[], index: number): number {
+ check(index !== 4 && index !== 5 && index !== 8, 'identity-is-not-number');
+ const value: number = Number(fields[index]);
+ check(Number.isSafeInteger(value) && String(value) === fields[index], 'control-safe:' + String(index));
+ return value;
+}
+function controls(runtime: Runtime, label: string, emit: EmitControl): string[] {
+ const raw: string = testControlFrame(runtime); const fields: string[] = raw.split(',');
+ check(fields.length === 31 && fields[0] === '1', 'kotlin-control31');
+ emit(label, raw); return fields;
+}
+async function held(runtime: Runtime, phase: number, deadline: number, emit: EmitNumbers, control: EmitControl): Promise<void> {
+ while (true) {
+  const raw: string = testControlFrame(runtime); const fields: string[] = raw.split(',');
+  check(fields.length === 31, 'gate-control-format');
+  if (counter(fields, 3) === phase) {
+   const f: number[] = observed(runtime);
+   check(f[12] === 1 && f[13] === 0 && f[39] === 1 && f[24] >= 1, 'actual-native-work-held');
+   emit('work-held', f); control('work-held-control', raw); return;
+  }
+  await nextTurn(deadline, 'kotlin-real-work-held');
+ }
+}
+async function terminal(name: string, runtime: Runtime, engine: Engine, deadline: number,
+ emit: EmitNumbers, control: EmitControl): Promise<void> {
+ const mode: string = name.substring('kotlin-terminal-'.length);
+ const phase: number = mode === 'cancel' ? 1 : 2;
+ testArmWork(engine, phase);
+ const operation: Operation = engine.startOperation({ value: mode === 'domain' ? 2147483647 : 41, text: '终态\u0000' });
+ await held(runtime, phase, deadline, emit, control);
+ const before: string[] = controls(runtime, 'terminal-before', control);
+ const expected: number = mode === 'cancel' ? -1 : mode === 'domain' ? 8 : 0;
+ check(counter(before, 6) === expected, 'first-terminal-before-cancel');
+ operation.requestCancel();
+ const after: string[] = controls(runtime, 'terminal-after', control);
+ // The work gate's terminal witness is sampled when phase2 is reached, not a new logical-winner API.
+ if (phase === 2) { check(counter(after, 6) === expected, 'committed-terminal-not-rewritten'); }
+ let completed: Promise<void>;
+ if (mode === 'success') { completed = operation.result().then((v: Snapshot): void => { snapshot(v, 42, '终态\u0000', 'success'); }); }
+ else { completed = rejectsSnapshot(() => operation.result(), mode === 'domain' ? 'DomainOverflow' : 'Cancelled', 'first-winner'); }
+ const duplicate: Promise<void> = rejectsSnapshot(() => operation.result(), 'AlreadyConsumed', 'strict-second-result');
+ let done: boolean = false; const closing: Promise<void> = operation.close().then((): void => { done = true; });
+ await nextTurn(deadline, 'terminal-not-physical-exit');
+ check(!done && observed(runtime)[13] === 0, 'work-owner-not-exited');
+ emit('terminal-close-pending', observed(runtime)); testReleaseWork(engine);
+ await completed; await duplicate; await closing; emit('terminal-outcome', [mode === 'success' ? 0 : mode === 'domain' ? 8 : 5]);
+}
+async function operations(runtime: Runtime, engine: Engine, deadline: number, emit: EmitNumbers, control: EmitControl): Promise<void> {
+ testArmWork(engine, 1); const operations: Operation[] = [engine.startOperation({ value: 1, text: '' })];
+ await held(runtime, 1, deadline, emit, control);
+ for (let i: number = 1; i < 8; i++) { operations.push(engine.startOperation({ value: i + 1, text: '' })); }
+ const full: number[] = observed(runtime); check(full[24] === 8, 'eight-actual-operations'); emit('operations-full', full);
+ throwsCode(() => { engine.startOperation({ value: 9, text: '' }); }, 'ResourceExhausted', 'operation-nine');
+ const after: number[] = observed(runtime); check(after[9] === full[9] && after[24] === 8, 'reject-before-provider-allocation'); emit('operations-denied', after);
+ const closing: Promise<void>[] = []; for (let i: number = 0; i < operations.length; i++) { closing.push(operations[i].close()); }
+ testReleaseWork(engine); for (let i: number = 0; i < closing.length; i++) { await closing[i]; }
+ const next: Operation = engine.startOperation({ value: 41, text: 'recovery' }); snapshot(await next.result(), 42, 'recovery', 'capacity-recovery'); await next.close(); emit('operations-recovered', [42]);
+}
+async function subscriptions(runtime: Runtime, engine: Engine, emit: EmitNumbers): Promise<void> {
+ const subscriptions: Subscription[] = [];
+ for (let i: number = 0; i < 4; i++) { subscriptions.push(engine.observeState((_s: Snapshot): void => {})); subscriptions.push(engine.observeEvents((_s: Snapshot): void => {})); }
+ const before: number[] = observed(runtime); check(before[25] === 8 && before[28] === 0 && before[29] === 0, 'shared-eight-subscriptions'); emit('subscriptions-full', before);
+ throwsCode(() => { engine.observeEvents((_s: Snapshot): void => {}); }, 'ResourceExhausted', 'subscription-nine');
+ emit('subscriptions-denied', observed(runtime));
+ for (let i: number = 0; i < subscriptions.length; i++) { await subscriptions[i].close(); }
+ const next: Subscription = engine.observeState((_s: Snapshot): void => {}); await next.close(); emit('subscriptions-recovered', [1]);
+}
+async function shared(name: string, runtime: Runtime, engine: Engine, deadline: number, emit: EmitNumbers, control: EmitControl): Promise<void> {
+ const settling: boolean = name === 'kotlin-settling-reentry';
+ testArmWork(engine, 1); const operation: Operation = engine.startOperation({ value: 41, text: 'held' });
+ await held(runtime, 1, deadline, emit, control);
+ let source: Subscription | undefined = undefined; let reentered: boolean = false; let reentry: Promise<void> | undefined = undefined;
+ if (settling) {
+  const sub: Subscription = engine.observeEvents((_v: Snapshot): void => { throw new Error('unexpected-held-source'); }); source = sub;
+  testStagePublication(engine, 1, { value: 1, text: '' });
+  testSettleProbe(runtime, (): void => {
+   reentered = true; const f: number[] = testSettleInspect(runtime);
+   check(f.length === 9 && f[5] === 1 && f[6] === 32, 'actual-after-resolver-still-charged'); emit('settling-actual', f);
+   reentry = rejectsVoid(() => sub.close(), 'ResourceExhausted', 'settling-record33');
+  }, false);
+ }
+ const result: Promise<void> = rejectsSnapshot(() => operation.result(), 'Cancelled', 'first-result-cancelled');
+ const closes: Promise<void>[] = []; for (let i: number = 0; i < 31; i++) { closes.push(operation.close()); }
+ const full: number[] = observed(runtime); check(full[26] === 32, 'shared-real32'); emit('waiters-full', full);
+ const denied: Promise<void> = rejectsVoid(() => operation.close(), 'ResourceExhausted', 'record33');
+ let parent: Promise<void> | undefined = undefined;
+ if (!settling) { parent = runtime.close(); check(parent === runtime.close(), 'memoized-parent-control'); check(observed(runtime)[26] === 32, 'parent-not-business-slot'); emit('parent-close-full', observed(runtime)); }
+ await denied; testReleaseWork(engine); await result;
+ for (let i: number = 0; i < closes.length; i++) { await closes[i]; }
+ if (settling) {
+  check(reentered && reentry !== undefined, 'real-settler-entered'); if (reentry !== undefined) { await reentry; }
+  testFinishPublication(engine, false); if (source !== undefined) { await source.close(); }
+ }
+ if (parent !== undefined) { await parent; }
+}
+async function dropped(runtime: Runtime, engine: Engine, deadline: number, emit: EmitNumbers, control: EmitControl): Promise<void> {
+ testArmWork(engine, 1); const op: Operation = engine.startOperation({ value: 41, text: 'drop' });
+ await held(runtime, 1, deadline, emit, control); op.result();
+ const owned: number[] = observed(runtime); check(owned[26] === 1, 'dropped-promise-retains-observation'); emit('dropped-owned', owned);
+ testReleaseWork(engine);
+ while (observed(runtime)[26] !== 0) { await nextTurn(deadline, 'unretained-promise-settled'); }
+ await op.close(); emit('dropped-consumed', observed(runtime));
+}
+async function rollback(runtime: Runtime, engine: Engine, deadline: number, emit: EmitNumbers, control: EmitControl): Promise<void> {
+ testArmWork(engine, 1); const op: Operation = engine.startOperation({ value: 41, text: 'rollback' });
+ await held(runtime, 1, deadline, emit, control); testArmTransferFailure(runtime, 1);
+ await rejectsSnapshot(() => op.result(), 'BridgeFailure', 'admission-return-rollback');
+ const rolled: string[] = controls(runtime, 'claim-rollback-control', control);
+ check(counter(rolled, 25) === 1 && counter(rolled, 30) === 1 && observed(runtime)[26] === 0, 'real-claim-rollback'); emit('claim-rollback-native', observed(runtime));
+ const result: Promise<Snapshot> = op.result(); const second: Promise<void> = rejectsSnapshot(() => op.result(), 'AlreadyConsumed', 'retry-strict');
+ testReleaseWork(engine); snapshot(await result, 42, 'rollback', 'retry-result'); await second; await op.close(); emit('claim-rollback-result', [42]);
+}
+async function bytes(runtime: Runtime, engine: Engine, deadline: number, emit: EmitNumbers, control: EmitControl): Promise<void> {
+ const text: string = 'x'.repeat(1024); testArmWork(engine, 1);
+ const operations: Operation[] = [engine.startOperation({ value: 1, text: text })]; await held(runtime, 1, deadline, emit, control);
+ for (let i: number = 1; i < 4; i++) { operations.push(engine.startOperation({ value: i + 1, text: text })); }
+ check(observed(runtime)[27] === 4096, 'four-canonical-payloads');
+ snapshot(engine.roundtrip({ value: 1, text: text }), 1, text, 'independent-scratch1024');
+ const full: number[] = observed(runtime); check(full[27] === 4096 && full[33] === full[34], 'scratch-returned-independent'); emit('bytes-scratch-full', full);
+ throwsCode(() => { engine.startOperation({ value: 5, text: 'x' }); }, 'ResourceExhausted', 'retained-byte4097');
+ throwsCode(() => { engine.roundtrip({ value: 1, text: text + 'x' }); }, 'InvalidArgument', 'scratch1025'); emit('bytes-scratch-denied', observed(runtime));
+ const closes: Promise<void>[] = []; for (let i: number = 0; i < operations.length; i++) { closes.push(operations[i].close()); }
+ testReleaseWork(engine); for (let i: number = 0; i < closes.length; i++) { await closes[i]; }
+}
+async function consumed(runtime: Runtime, engine: Engine, deadline: number, emit: EmitNumbers, control: EmitControl): Promise<void> {
+ testArmWork(engine, 2); const op: Operation = engine.startOperation({ value: 41, text: 'consumed' });
+ await held(runtime, 2, deadline, emit, control); testArmTransferFailure(runtime, 3);
+ await rejectsSnapshot(() => op.result(), 'DeliveryFailureConsumed', 'postguard-failure');
+ const f: string[] = controls(runtime, 'after-guard-control', control);
+ check(counter(f, 27) === 1 && counter(f, 28) === counter(f, 29) && counter(f, 28) > 0, 'actual-guard-paired');
+ check(observed(runtime)[26] === 0, 'postguard-waiter-released'); emit('after-guard-native', observed(runtime));
+ testReleaseWork(engine); await op.close();
+}
+export async function runKotlinWorkCase(name: string, runtime: Runtime, engine: Engine, deadline: number,
+ emit: EmitNumbers, control: EmitControl): Promise<boolean> {
+ if (name === 'kotlin-terminal-cancel' || name === 'kotlin-terminal-success' || name === 'kotlin-terminal-domain') { await terminal(name, runtime, engine, deadline, emit, control); }
+ else if (name === 'kotlin-operations-capacity') { await operations(runtime, engine, deadline, emit, control); }
+ else if (name === 'kotlin-subscriptions-capacity') { await subscriptions(runtime, engine, emit); }
+ else if (name === 'kotlin-shared-waiters' || name === 'kotlin-settling-reentry') { await shared(name, runtime, engine, deadline, emit, control); }
+ else if (name === 'kotlin-dropped-promise') { await dropped(runtime, engine, deadline, emit, control); }
+ else if (name === 'kotlin-claim-rollback') { await rollback(runtime, engine, deadline, emit, control); }
+ else if (name === 'kotlin-bytes-scratch') { await bytes(runtime, engine, deadline, emit, control); }
+ else if (name === 'kotlin-after-guard') { await consumed(runtime, engine, deadline, emit, control); }
+ else { return false; }
+ return true;
+}

@@ -18,8 +18,8 @@
   },
   "fixture": {
     "path": "consumers/arkts/c07/OrdinaryCases.ets.in",
-    "sha256": "sha256:cd55912ddb4cf1111307c956e97a091554dd08047163ece69ce9adf5d4489e39",
-    "size": 7294,
+    "sha256": "sha256:5f893cdad8c4964f62a895aa859377013ff5e78efb0fb321307468886e94298d",
+    "size": 9603,
     "schema": "madb.lab-source/1"
   },
   "setup": [

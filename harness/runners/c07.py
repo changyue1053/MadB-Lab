@@ -145,13 +145,14 @@ def main(argv=None):
         generation, generation_error = None, None
         controlled = None
         begin = time.monotonic()
+        generation_budget = 1200 if args.route == "kotlin" else 600
         if not args.companion:
             try:
                 session = Session(args, candidate)
                 session.verify_tools(include_device=not args.generation_only)
                 if all(generation_inputs):
                     try:
-                        generation = run_generation(session, deadline=begin + 600)
+                        generation = run_generation(session, deadline=begin + generation_budget)
                     except (OSError, RuntimeError, ValueError, KeyError, StopIteration) as error:
                         generation_error = str(error)
                 if not args.generation_only:
@@ -176,7 +177,7 @@ def main(argv=None):
             except (OSError, RuntimeError, ValueError, KeyError) as error:
                 execution_error = str(error)
         duration = int((time.monotonic() - begin) * 1000)
-        if generation is not None and duration >= 600000:
+        if generation is not None and duration >= generation_budget * 1000:
             generation_error = "overall generation watchdog expired including final tool closure check"
         final_candidate = verify_candidate(args.candidate, args.route, companion=args.companion)
         if (final_candidate["manifest"]["candidate_digest"] != candidate["manifest"]["candidate_digest"] or
@@ -200,7 +201,8 @@ def main(argv=None):
                     status, reason = "blocked", "required controlled fixture is not registered"
                 elif controlled:
                     assessment = assess_group(name, route=args.route, candidate_digest=candidate["manifest"]["candidate_digest"],
-                                              run_id=controlled["run_id"], observations=controlled["observations"])
+                                              run_id=controlled["run_id"], observations=controlled["observations"],
+                                              route_ownership=controlled.get("route_ownership"))
                     status, reason = assessment["status"], assessment["reason"]
                 else:
                     status, reason = "blocked", "no controlled candidate observations"

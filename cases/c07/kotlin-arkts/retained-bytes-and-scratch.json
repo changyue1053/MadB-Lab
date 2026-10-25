@@ -1,0 +1,78 @@
+{
+  "schema": "madb.case/1",
+  "id": "c07.kotlin-arkts.retained-bytes-and-scratch",
+  "kind": "template",
+  "problem_ids": [
+    "LIFE-001",
+    "LIFE-002",
+    "PERF-001"
+  ],
+  "source_ids": [],
+  "selector": null,
+  "requires": {
+    "features": [],
+    "environment": []
+  },
+  "fixture": {
+    "path": "harness/c07_kotlin_cases.py",
+    "sha256": "sha256:1cf4528d51c950680261d9427008676316b3cfa82bd524ff39dfdf51769efd5a",
+    "size": 4253,
+    "schema": "madb.lab-source/1"
+  },
+  "setup": [
+    {
+      "id": "admission",
+      "action": "environment",
+      "entrypoint": "exact-candidate-current-run-public-companion-har",
+      "arguments": []
+    }
+  ],
+  "steps": [
+    {
+      "id": "scenario-1",
+      "action": "call",
+      "entrypoint": "runKotlinCase:kotlin-bytes-scratch",
+      "arguments": []
+    },
+    {
+      "id": "scenario-2",
+      "action": "call",
+      "entrypoint": "runKotlinCase:kotlin-operations-capacity",
+      "arguments": []
+    },
+    {
+      "id": "scenario-3",
+      "action": "call",
+      "entrypoint": "runKotlinCase:kotlin-memory-retained-scratch",
+      "arguments": []
+    }
+  ],
+  "assertions": [
+    {
+      "observation": "retained-bytes-and-scratch",
+      "operator": "equals",
+      "expected": [
+        {
+          "kind": "string",
+          "value": "Hold four operations with1024-byte inputs \u21924096 retained; a fifth one-byte input rejects although only four op slots are used. A1024-byte roundtrip still succeeds using its independent scratch, returns an independent copy and returns scratch immediately. Separately use zero-byte values to exercise the eighth operation without conflating byte exhaustion. Record model/UTF conversion overhead separately from the4096 ledger."
+        }
+      ]
+    }
+  ],
+  "expected_result": {
+    "kind": "success"
+  },
+  "cleanup": [
+    {
+      "id": "physical-retirement",
+      "action": "cleanup",
+      "entrypoint": "normal-main-env-runtime-physical-ack-not-vm-destruction",
+      "arguments": []
+    }
+  ],
+  "timeout_policy": {
+    "timeout_ms": 150000,
+    "on_timeout": "error",
+    "recovery": "isolate"
+  }
+}

@@ -1,0 +1,34 @@
+// Independent Kotlin consumer; all resource observations retain Kotlin's layout.
+import { Runtime, Engine, openRuntime, testObserve, testSettleInspect, testMemoryFrame, testObserveNapi } from @MADB_PUBLIC_MODULE@;
+import { check } from '../Assertions';
+import { runKotlinAdmission } from './KotlinAdmissionCases';
+import { runKotlinValueCase } from './KotlinValueCases';
+import { runKotlinWorkCase } from './KotlinWorkCases';
+import { runKotlinStreamCase } from './KotlinStreamCases';
+import { runKotlinMemoryCase } from './KotlinMemoryCases';
+
+type EmitNumbers = (label: string, values: number[]) => void;
+type EmitControl = (label: string, values: string) => void;
+
+export async function runKotlinCase(name: string, emit: EmitNumbers,
+                                   emitControl: EmitControl, timeoutMs: number): Promise<void> {
+  if (name === 'kotlin-admission') { await runKotlinAdmission(emit, timeoutMs); return; }
+  const deadline: number = Date.now() + timeoutMs;
+  emitControl('napi-before-open', testObserveNapi());
+  const runtime: Runtime = openRuntime();
+  const engine: Engine = runtime.connect();
+  emit('runtime-open', testObserve(runtime));
+  emitControl('napi-open', testObserveNapi());
+  check(await runKotlinValueCase(name, runtime, engine, deadline, emit) ||
+    await runKotlinWorkCase(name, runtime, engine, deadline, emit, emitControl) ||
+    await runKotlinStreamCase(name, runtime, engine, deadline, emit, emitControl) ||
+    await runKotlinMemoryCase(name, runtime, engine, deadline, emit, emitControl), 'known-kotlin-case');
+  await runtime.close();
+  // close is normal explicit shutdown while the host env remains valid. The
+  // offline oracle must see all native, managed-ref and finalizer ACK counters.
+  emit('runtime-closed', testObserve(runtime));
+  emit('js-final', testSettleInspect(runtime));
+  if (name === 'kotlin-memory-retained-scratch' || name === 'kotlin-memory-state-staging') { emitControl('memory-final', testMemoryFrame()); }
+  emitControl('napi-final', testObserveNapi());
+  emit('runtime-complete', [1]);
+}

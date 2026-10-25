@@ -1,0 +1,66 @@
+{
+  "schema": "madb.case/1",
+  "id": "c07.kotlin-arkts.shared-waiters",
+  "kind": "template",
+  "problem_ids": [
+    "ASYNC-002",
+    "LIFE-001",
+    "LIFE-005"
+  ],
+  "source_ids": [],
+  "selector": null,
+  "requires": {
+    "features": [],
+    "environment": []
+  },
+  "fixture": {
+    "path": "harness/c07_kotlin_cases.py",
+    "sha256": "sha256:1cf4528d51c950680261d9427008676316b3cfa82bd524ff39dfdf51769efd5a",
+    "size": 4253,
+    "schema": "madb.lab-source/1"
+  },
+  "setup": [
+    {
+      "id": "admission",
+      "action": "environment",
+      "entrypoint": "exact-candidate-current-run-public-companion-har",
+      "arguments": []
+    }
+  ],
+  "steps": [
+    {
+      "id": "scenario-1",
+      "action": "call",
+      "entrypoint": "runKotlinCase:kotlin-shared-waiters",
+      "arguments": []
+    }
+  ],
+  "assertions": [
+    {
+      "observation": "shared-waiters",
+      "operator": "equals",
+      "expected": [
+        {
+          "kind": "string",
+          "value": "Exactly one admitted result plus31 pending Operation.close calls gives32 actual ordinary claims in one env turn. Observer33 rejects ResourceExhausted. Separate pending Subscription/Engine close variants share this same budget; already-Closed close is value-only. No hidden allocator or child-close memoization makes this test pass."
+        }
+      ]
+    }
+  ],
+  "expected_result": {
+    "kind": "success"
+  },
+  "cleanup": [
+    {
+      "id": "physical-retirement",
+      "action": "cleanup",
+      "entrypoint": "normal-main-env-runtime-physical-ack-not-vm-destruction",
+      "arguments": []
+    }
+  ],
+  "timeout_policy": {
+    "timeout_ms": 50000,
+    "on_timeout": "error",
+    "recovery": "isolate"
+  }
+}

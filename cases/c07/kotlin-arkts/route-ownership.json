@@ -1,0 +1,93 @@
+{
+  "schema": "madb.case/1",
+  "id": "c07.kotlin-arkts.route-ownership",
+  "kind": "template",
+  "problem_ids": [
+    "CAP-001",
+    "LIFE-001",
+    "LIFE-002",
+    "LIFE-004",
+    "LIFE-007",
+    "VERIFY-001"
+  ],
+  "source_ids": [],
+  "selector": null,
+  "requires": {
+    "features": [],
+    "environment": []
+  },
+  "fixture": {
+    "path": "harness/c07_kotlin_cases.py",
+    "sha256": "sha256:1cf4528d51c950680261d9427008676316b3cfa82bd524ff39dfdf51769efd5a",
+    "size": 4253,
+    "schema": "madb.lab-source/1"
+  },
+  "setup": [
+    {
+      "id": "admission",
+      "action": "environment",
+      "entrypoint": "exact-candidate-current-run-public-companion-har",
+      "arguments": []
+    }
+  ],
+  "steps": [
+    {
+      "id": "scenario-1",
+      "action": "call",
+      "entrypoint": "runKotlinCase:kotlin-terminal-success",
+      "arguments": []
+    },
+    {
+      "id": "scenario-2",
+      "action": "call",
+      "entrypoint": "runKotlinCase:kotlin-terminal-domain",
+      "arguments": []
+    },
+    {
+      "id": "scenario-3",
+      "action": "call",
+      "entrypoint": "runKotlinCase:kotlin-fanout-allocation",
+      "arguments": []
+    },
+    {
+      "id": "scenario-4",
+      "action": "call",
+      "entrypoint": "runKotlinCase:kotlin-admission",
+      "arguments": []
+    },
+    {
+      "id": "scenario-5",
+      "action": "call",
+      "entrypoint": "runKotlinCase:kotlin-copies",
+      "arguments": []
+    }
+  ],
+  "assertions": [
+    {
+      "observation": "route-ownership",
+      "operator": "equals",
+      "expected": [
+        {
+          "kind": "string",
+          "value": "Every admitted model, callback owner and worker belongs to the declared C/C++/Rust/Kotlin implementation. Allocation/free totals match actual destructor/free sites; rejected failure outputs are included. Baseline-preserving operation close differs from entire-runtime zero; sentinel/metadata/class refs and runtime hook/TSFN/context obligations are all included in final shutdown."
+        }
+      ]
+    }
+  ],
+  "expected_result": {
+    "kind": "success"
+  },
+  "cleanup": [
+    {
+      "id": "physical-retirement",
+      "action": "cleanup",
+      "entrypoint": "normal-main-env-runtime-physical-ack-not-vm-destruction",
+      "arguments": []
+    }
+  ],
+  "timeout_policy": {
+    "timeout_ms": 250000,
+    "on_timeout": "error",
+    "recovery": "isolate"
+  }
+}

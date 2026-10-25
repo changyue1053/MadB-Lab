@@ -17,7 +17,7 @@ SUPPORTED_ROUTES = ("c", "cpp", "rust")
 GROUPS = {
     "identity": {
         "scenarios": ("partial-open", "identity-positive", "identity-wrong-abi", "identity-wrong-profile", "identity-wrong-build"),
-        "gaps": (),
+        "gaps": ("Matched ordinary HAR actual wrong-library rejection evidence remains required separately from companion owner counters.",),
     },
     "getters-and-reentry": {
         "scenarios": ('getters-observed',),
@@ -42,8 +42,8 @@ GROUPS = {
     "dropped-promise": {"scenarios": ("dropped-promise",), "gaps": ()},
     "operations": {"scenarios": ("operations-capacity",), "gaps": ()},
     "subscriptions": {
-        "scenarios": ("subscriptions-capacity", "source-stop", "event-entered"),
-        "gaps": ("Explicit listener-reference lifetime observations across source-held, pending and entered phases, followed by explicit-close release, are not yet wired.",),
+        "scenarios": ("subscriptions-capacity", "source-stop", "event-entered", "listener-lifetime"),
+        "gaps": (),
     },
     "state": {
         "scenarios": ("state-entered", "delivery-and-handle-admission"),
@@ -52,8 +52,8 @@ GROUPS = {
     "event-fifo-and-atomic": {"scenarios": ("event-atomic", "state-entered"), "gaps": ()},
     "fanout-allocation": {"scenarios": ("fanout-state", "fanout-events"), "gaps": ()},
     "state-staging-bytes": {
-        "scenarios": ("state-staging",),
-        "gaps": ("Record exact staging/retained peaks and route allocation observations separately; the existing pre/post 4096-byte checkpoint alone does not establish all peak measurements.",),
+        "scenarios": ("state-staging", "memory-state-staging"),
+        "gaps": (),
     },
     "event-outstanding": {"scenarios": ("event-entered", "source-stop"), "gaps": ()},
     "source-stop": {
@@ -61,8 +61,8 @@ GROUPS = {
         "gaps": (),
     },
     "retained-bytes-and-scratch": {
-        "scenarios": ("bytes-scratch", "operations-capacity"),
-        "gaps": ("Record model/UTF-conversion overhead separately from the retained-byte ledger without treating scratch lease count as a byte peak.",),
+        "scenarios": ("bytes-scratch", "operations-capacity", "memory-full-scratch"),
+        "gaps": (),
     },
     "shared-waiters": {
         "scenarios": ("full-waiters", "mixed-waiters-engine-close", "pending-sub-close-denied", "result-capacity-retry"),
@@ -106,7 +106,7 @@ def scenario_plan(route):
     return tuple(scenario for scenario in SCENARIOS if scenario in selected)
 
 
-def assess_group(matrix_id, *, route, candidate_digest, run_id, observations):
+def assess_group(matrix_id, *, route, candidate_digest, run_id, observations, route_ownership=None):
     """Assess controller-owned current-run observations, never a saved report.
 
     Each scenario envelope is {candidate_digest, run_id, observation}, where
@@ -115,13 +115,36 @@ def assess_group(matrix_id, *, route, candidate_digest, run_id, observations):
     An optional ordinary-baseline observation is preserved elsewhere and cannot
     silently fulfill a controlled requirement through this function.
     """
-    if matrix_id not in GROUPS:
+    if route == "kotlin":
+        from c07_kotlin_cases import GROUPS as KOTLIN_GROUPS
+        groups, supported = KOTLIN_GROUPS, ("kotlin",)
+    else:
+        groups, supported = GROUPS, SUPPORTED_ROUTES
+    if matrix_id not in groups:
         raise ValueError("unknown C07 companion matrix group: " + matrix_id)
-    group = GROUPS[matrix_id]
+    group = groups[matrix_id]
+    if route in SUPPORTED_ROUTES and matrix_id in ("worker-and-domain", "route-ownership"):
+        envelope = route_ownership if isinstance(route_ownership, dict) else {}
+        evidence = envelope.get("observation", {})
+        review = evidence.get("source_review", {})
+        source_bound = (envelope.get("candidate_digest") == candidate_digest and envelope.get("run_id") == run_id
+            and evidence.get("candidate_digest") == candidate_digest and evidence.get("route") == route
+            and evidence.get("status") == "bound" and review.get("status") == "bound"
+            and review.get("route") == route and review.get("variant") == "test"
+            and isinstance(evidence.get("producer_revision"), str) and bool(evidence["producer_revision"])
+            and review.get("producer_revision") == evidence["producer_revision"]
+            and isinstance(review.get("inventory_sha256"), str)
+            and re.fullmatch(r"sha256:[0-9a-f]{64}", review["inventory_sha256"]) is not None)
+        if source_bound:group = dict(group, gaps=())
+    return assess_mapped_group(matrix_id, group, supported, route=route, candidate_digest=candidate_digest,
+                              run_id=run_id, observations=observations)
+
+
+def assess_mapped_group(matrix_id, group, supported, *, route, candidate_digest, run_id, observations):
     result = {"status": "blocked", "reason": "", "matrix_id": matrix_id,
               "scenarios": list(group["scenarios"]), "passed_scenarios": [],
               "missing_scenarios": [], "gaps": list(group["gaps"]), "problems": []}
-    if route not in SUPPORTED_ROUTES:
+    if route not in supported:
         result["reason"] = "route requires an independently implemented companion layout and controller"
         return result
     if not isinstance(candidate_digest, str) or not re.fullmatch(r"sha256:[0-9a-f]{64}", candidate_digest) or not isinstance(run_id, str) or not run_id:

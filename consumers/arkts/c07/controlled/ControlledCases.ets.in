@@ -8,6 +8,8 @@ import { Emit, observed, facade, gate, finalClosed } from './SupportChecks';
 import { runAdditional } from './AdditionalCases';
 import { runAdmissionDelivery, runEngineGeneration } from './AdmissionDeliveryCases';
 import { runDiagnostic } from './DiagnosticCases';
+import { runMemoryCase } from './MemoryCases';
+import { runListenerLifetime } from './ListenerLifetimeCase';
 import { runCompletionCase } from './CompletionCases';
 import { runWorkerExit } from './WorkerExitCase';
 import { runFaultExit } from './FaultExitCase';
@@ -186,6 +188,7 @@ async function fanoutFailure(runtime: Runtime, engine: Engine, stream: number,
 }
 
 export async function runControlledCase(name: string, emit: Emit, timeoutMs: number): Promise<void> {
+  if (name === 'memory-state-staging' || name === 'memory-full-scratch') { await runMemoryCase(name, emit, timeoutMs); return; }
   if (name === 'delivery-and-handle-admission') { await runAdmissionDelivery(emit, timeoutMs); return; }
   if (name === 'engine-generation') { await runEngineGeneration(emit, timeoutMs); return; }
   if (name === 'partial-open') { await runPartialOpen(emit, timeoutMs); return; }
@@ -205,6 +208,7 @@ export async function runControlledCase(name: string, emit: Emit, timeoutMs: num
   else if (name === 'state-entered') { await stateAndEntered(runtime, engine, deadline, emit); }
   else if (name === 'fanout-state') { await fanoutFailure(runtime, engine, 0, deadline, emit); }
   else if (name === 'fanout-events') { await fanoutFailure(runtime, engine, 1, deadline, emit); }
+  else if (name === 'listener-lifetime') { await runListenerLifetime(runtime, engine, deadline, emit); }
   else if (name === 'live-cleanup-threads' || name === 'child-ownership-baseline') { await runDiagnostic(name, runtime, engine, deadline, emit); }
   else { check(await runCompletionCase(name, runtime, engine, deadline, emit) || await runSharedWaiters(name, runtime, engine, deadline, emit) || await runAdditional(name, runtime, engine, deadline, emit) || await runFailure(name, runtime, engine, deadline, emit), 'known-additional-case'); }
   await runtime.close(); await finalClosed(runtime, key, deadline, emit);

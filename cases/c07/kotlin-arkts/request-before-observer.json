@@ -1,0 +1,66 @@
+{
+  "schema": "madb.case/1",
+  "id": "c07.kotlin-arkts.request-before-observer",
+  "kind": "template",
+  "problem_ids": [
+    "ASYNC-002",
+    "ERR-003",
+    "LIFE-005"
+  ],
+  "source_ids": [],
+  "selector": null,
+  "requires": {
+    "features": [],
+    "environment": []
+  },
+  "fixture": {
+    "path": "harness/c07_kotlin_cases.py",
+    "sha256": "sha256:1cf4528d51c950680261d9427008676316b3cfa82bd524ff39dfdf51769efd5a",
+    "size": 4253,
+    "schema": "madb.lab-source/1"
+  },
+  "setup": [
+    {
+      "id": "admission",
+      "action": "environment",
+      "entrypoint": "exact-candidate-current-run-public-companion-har",
+      "arguments": []
+    }
+  ],
+  "steps": [
+    {
+      "id": "scenario-1",
+      "action": "call",
+      "entrypoint": "runKotlinCase:kotlin-shared-waiters",
+      "arguments": []
+    }
+  ],
+  "assertions": [
+    {
+      "observation": "request-before-observer",
+      "operator": "equals",
+      "expected": [
+        {
+          "kind": "string",
+          "value": "At32 occupied ordinary records, pending op/sub/engine close observer rejects but its close request already gates new work/listener entry. Keep the targeted resource genuinely pending with a real work/source/entered owner; a closed child correctly does not consume another waiter. Retry after drain observes the same latched result."
+        }
+      ]
+    }
+  ],
+  "expected_result": {
+    "kind": "success"
+  },
+  "cleanup": [
+    {
+      "id": "physical-retirement",
+      "action": "cleanup",
+      "entrypoint": "normal-main-env-runtime-physical-ack-not-vm-destruction",
+      "arguments": []
+    }
+  ],
+  "timeout_policy": {
+    "timeout_ms": 50000,
+    "on_timeout": "error",
+    "recovery": "isolate"
+  }
+}

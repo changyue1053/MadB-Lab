@@ -1,0 +1,72 @@
+{
+  "schema": "madb.case/1",
+  "id": "c07.kotlin-arkts.state-staging-bytes",
+  "kind": "template",
+  "problem_ids": [
+    "ASYNC-004",
+    "LIFE-001",
+    "PERF-001"
+  ],
+  "source_ids": [],
+  "selector": null,
+  "requires": {
+    "features": [],
+    "environment": []
+  },
+  "fixture": {
+    "path": "harness/c07_kotlin_cases.py",
+    "sha256": "sha256:1cf4528d51c950680261d9427008676316b3cfa82bd524ff39dfdf51769efd5a",
+    "size": 4253,
+    "schema": "madb.lab-source/1"
+  },
+  "setup": [
+    {
+      "id": "admission",
+      "action": "environment",
+      "entrypoint": "exact-candidate-current-run-public-companion-har",
+      "arguments": []
+    }
+  ],
+  "steps": [
+    {
+      "id": "scenario-1",
+      "action": "call",
+      "entrypoint": "runKotlinCase:kotlin-state-staging-bytes",
+      "arguments": []
+    },
+    {
+      "id": "scenario-2",
+      "action": "call",
+      "entrypoint": "runKotlinCase:kotlin-memory-state-staging",
+      "arguments": []
+    }
+  ],
+  "assertions": [
+    {
+      "observation": "state-staging-bytes",
+      "operator": "equals",
+      "expected": [
+        {
+          "kind": "string",
+          "value": "Four state subscribers each hold pending1024 (4096 retained). Replacement must reserve incoming copies while old remain charged and rejects without changing any pending value. After drain/free, the same replacement succeeds. Exact staging/retained peaks and per-route allocations are observed separately."
+        }
+      ]
+    }
+  ],
+  "expected_result": {
+    "kind": "success"
+  },
+  "cleanup": [
+    {
+      "id": "physical-retirement",
+      "action": "cleanup",
+      "entrypoint": "normal-main-env-runtime-physical-ack-not-vm-destruction",
+      "arguments": []
+    }
+  ],
+  "timeout_policy": {
+    "timeout_ms": 100000,
+    "on_timeout": "error",
+    "recovery": "isolate"
+  }
+}

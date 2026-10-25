@@ -1,0 +1,67 @@
+{
+  "schema": "madb.case/1",
+  "id": "c07.kotlin-arkts.dropped-promise",
+  "kind": "template",
+  "problem_ids": [
+    "ASYNC-002",
+    "LIFE-002",
+    "LIFE-005",
+    "LIFE-008"
+  ],
+  "source_ids": [],
+  "selector": null,
+  "requires": {
+    "features": [],
+    "environment": []
+  },
+  "fixture": {
+    "path": "harness/c07_kotlin_cases.py",
+    "sha256": "sha256:1cf4528d51c950680261d9427008676316b3cfa82bd524ff39dfdf51769efd5a",
+    "size": 4253,
+    "schema": "madb.lab-source/1"
+  },
+  "setup": [
+    {
+      "id": "admission",
+      "action": "environment",
+      "entrypoint": "exact-candidate-current-run-public-companion-har",
+      "arguments": []
+    }
+  ],
+  "steps": [
+    {
+      "id": "scenario-1",
+      "action": "call",
+      "entrypoint": "runKotlinCase:kotlin-dropped-promise",
+      "arguments": []
+    }
+  ],
+  "assertions": [
+    {
+      "observation": "dropped-promise",
+      "operator": "equals",
+      "expected": [
+        {
+          "kind": "string",
+          "value": "Discarding a JS Promise does not cancel work or return its native waiter. Check the actual retained count while delivery is held, then Runtime.close drains or legally discards it with paired ownership. No forced GC prerequisite."
+        }
+      ]
+    }
+  ],
+  "expected_result": {
+    "kind": "success"
+  },
+  "cleanup": [
+    {
+      "id": "physical-retirement",
+      "action": "cleanup",
+      "entrypoint": "normal-main-env-runtime-physical-ack-not-vm-destruction",
+      "arguments": []
+    }
+  ],
+  "timeout_policy": {
+    "timeout_ms": 50000,
+    "on_timeout": "error",
+    "recovery": "isolate"
+  }
+}

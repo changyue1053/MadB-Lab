@@ -5,13 +5,14 @@ EXPECTED = {
     "values-and-negative-inputs": [16, 1, 1, 2, 1, 0, 2],
     "ordinary-api-and-request-only-retirement": [1],
     "ordinary-runtime-close-returned": [1],
+    "ordinary-runtime-reopened": [1, 42, 51, 3],
 }
 
 
 def parse_ordinary(raw, *, nonce, pid):
     lines = [line for line in raw.splitlines() if nonce in line]
     problems, frames = [], {}
-    if not pid.isdigit():
+    if not isinstance(pid, str) or not pid.isdigit() or int(pid) <= 0:
         problems.append("probe process absent or non-unique")
     elif any(len(line.split()) < 3 or line.split()[2] != pid for line in lines):
         problems.append("nonce/PID binding mismatch")
@@ -38,5 +39,5 @@ def parse_ordinary(raw, *, nonce, pid):
             if sum(marker + " " + nonce in line for line in lines) != 1:
                 problems.append("missing/duplicate " + marker)
     return {"status": "failed" if failures or problems else "passed" if complete else "incomplete",
-            "nonce": nonce, "pid": int(pid) if pid.isdigit() else None, "frames": frames,
+            "nonce": nonce, "pid": int(pid) if isinstance(pid, str) and pid.isdigit() and int(pid) > 0 else None, "frames": frames,
             "failures": failures, "problems": problems, "lines": lines}

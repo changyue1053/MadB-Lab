@@ -1,0 +1,70 @@
+{
+  "schema": "madb.case/1",
+  "id": "c07.kotlin-arkts.runtime-close-full",
+  "kind": "template",
+  "problem_ids": [
+    "ASYNC-002",
+    "LIFE-001",
+    "LIFE-004",
+    "LIFE-005",
+    "LIFE-006",
+    "LIFE-007",
+    "THR-002"
+  ],
+  "source_ids": [],
+  "selector": null,
+  "requires": {
+    "features": [],
+    "environment": []
+  },
+  "fixture": {
+    "path": "harness/c07_kotlin_cases.py",
+    "sha256": "sha256:1cf4528d51c950680261d9427008676316b3cfa82bd524ff39dfdf51769efd5a",
+    "size": 4253,
+    "schema": "madb.lab-source/1"
+  },
+  "setup": [
+    {
+      "id": "admission",
+      "action": "environment",
+      "entrypoint": "exact-candidate-current-run-public-companion-har",
+      "arguments": []
+    }
+  ],
+  "steps": [
+    {
+      "id": "scenario-1",
+      "action": "call",
+      "entrypoint": "runKotlinCase:kotlin-shared-waiters",
+      "arguments": []
+    }
+  ],
+  "assertions": [
+    {
+      "observation": "runtime-close-full",
+      "operator": "equals",
+      "expected": [
+        {
+          "kind": "string",
+          "value": "At32 ordinary claims plus real held work/source, Runtime.close starts using its pre-reserved parent control; repeated Runtime.close shares that control. Release holds, finish every child settlement, join actual thread/TLS and obtain static physical ACK, then timerArmed/tickInFlight=0. No33rd business waiter, no cleanup allocation from exhausted business capacity, no ACK waiting for itself."
+        }
+      ]
+    }
+  ],
+  "expected_result": {
+    "kind": "success"
+  },
+  "cleanup": [
+    {
+      "id": "physical-retirement",
+      "action": "cleanup",
+      "entrypoint": "normal-main-env-runtime-physical-ack-not-vm-destruction",
+      "arguments": []
+    }
+  ],
+  "timeout_policy": {
+    "timeout_ms": 50000,
+    "on_timeout": "error",
+    "recovery": "isolate"
+  }
+}

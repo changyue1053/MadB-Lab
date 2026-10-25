@@ -1,0 +1,67 @@
+{
+  "schema": "madb.case/1",
+  "id": "c07.kotlin-arkts.identity",
+  "kind": "template",
+  "problem_ids": [
+    "BUILD-002",
+    "CAP-001",
+    "COMP-001",
+    "LIFE-001"
+  ],
+  "source_ids": [],
+  "selector": null,
+  "requires": {
+    "features": [],
+    "environment": []
+  },
+  "fixture": {
+    "path": "harness/c07_kotlin_cases.py",
+    "sha256": "sha256:1cf4528d51c950680261d9427008676316b3cfa82bd524ff39dfdf51769efd5a",
+    "size": 4253,
+    "schema": "madb.lab-source/1"
+  },
+  "setup": [
+    {
+      "id": "admission",
+      "action": "environment",
+      "entrypoint": "exact-candidate-current-run-public-companion-har",
+      "arguments": []
+    }
+  ],
+  "steps": [
+    {
+      "id": "scenario-1",
+      "action": "call",
+      "entrypoint": "runKotlinCase:kotlin-admission",
+      "arguments": []
+    }
+  ],
+  "assertions": [
+    {
+      "observation": "identity",
+      "operator": "equals",
+      "expected": [
+        {
+          "kind": "string",
+          "value": "Unmodified facade expectations come from the admitted candidate. Replace the actual library separately with wrong artifact, ABI and profile fixtures. Exact declared error/stage, and zero new business worker/ref/TSFN/engine owners before rejection. Missing exports/load failure is distinct from a successful bootstrap check."
+        }
+      ]
+    }
+  ],
+  "expected_result": {
+    "kind": "success"
+  },
+  "cleanup": [
+    {
+      "id": "physical-retirement",
+      "action": "cleanup",
+      "entrypoint": "normal-main-env-runtime-physical-ack-not-vm-destruction",
+      "arguments": []
+    }
+  ],
+  "timeout_policy": {
+    "timeout_ms": 50000,
+    "on_timeout": "error",
+    "recovery": "isolate"
+  }
+}

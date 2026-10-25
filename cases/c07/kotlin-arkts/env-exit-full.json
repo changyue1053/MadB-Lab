@@ -1,0 +1,74 @@
+{
+  "schema": "madb.case/1",
+  "id": "c07.kotlin-arkts.env-exit-full",
+  "kind": "template",
+  "problem_ids": [
+    "LIFE-002",
+    "LIFE-004",
+    "LIFE-007",
+    "THR-001",
+    "THR-002"
+  ],
+  "source_ids": [],
+  "selector": null,
+  "requires": {
+    "features": [],
+    "environment": []
+  },
+  "fixture": {
+    "path": "harness/c07_kotlin_cases.py",
+    "sha256": "sha256:1cf4528d51c950680261d9427008676316b3cfa82bd524ff39dfdf51769efd5a",
+    "size": 4253,
+    "schema": "madb.lab-source/1"
+  },
+  "setup": [
+    {
+      "id": "admission",
+      "action": "environment",
+      "entrypoint": "exact-candidate-current-run-public-companion-har",
+      "arguments": []
+    }
+  ],
+  "steps": [
+    {
+      "id": "scenario-1",
+      "action": "call",
+      "entrypoint": "runKotlinCase:kotlin-admission",
+      "arguments": []
+    },
+    {
+      "id": "scenario-2",
+      "action": "call",
+      "entrypoint": "runKotlinCase:kotlin-shared-waiters",
+      "arguments": []
+    }
+  ],
+  "assertions": [
+    {
+      "observation": "env-exit-full",
+      "operator": "equals",
+      "expected": [
+        {
+          "kind": "string",
+          "value": "Actual supported env exits with admitted pending result/close/source/event obligations. Same-stack exit-request snapshot records full occupancy before workerPort.close (where supported); hook entry records its own actual occupancy, not inferred fullness. Native cleanup performs real join and owner-thread async-handle removal without JS. Parent static audit sees true payload/ref/finalizer/context completion and zero illegal API calls."
+        }
+      ]
+    }
+  ],
+  "expected_result": {
+    "kind": "success"
+  },
+  "cleanup": [
+    {
+      "id": "physical-retirement",
+      "action": "cleanup",
+      "entrypoint": "normal-main-env-runtime-physical-ack-not-vm-destruction",
+      "arguments": []
+    }
+  ],
+  "timeout_policy": {
+    "timeout_ms": 100000,
+    "on_timeout": "error",
+    "recovery": "isolate"
+  }
+}

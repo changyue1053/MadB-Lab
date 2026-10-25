@@ -18,7 +18,7 @@ def companion_contracts(candidate):
     paths = {"runtime-frame-layout.json": "generated/contract/frame-layout.json",
              **{name: "generated/contract/test/" + name for name in
                 ("test-frame-layout.json", "observer-layout.json", "facade-frame-layout.json",
-                 "bootstrap-totals-layout.json", "ports-layout.json")}}
+                 "bootstrap-totals-layout.json", "ports-layout.json", "subscription-state-layout.json", "memory-layout.json")}}
     if not set(paths.values()).issubset(inventory):
         raise CandidateError("ArtifactMismatch", "companion layout is not an explicit candidate file")
     contracts = {name: read_json(candidate["root"] / path) for name, path in paths.items()}
@@ -81,6 +81,9 @@ class ControlledSession(Session):
 
 def run_companion(args, candidate):
     """Serial device execution, unique source/HAP/nonce/PID per scenario."""
+    if args.route == "kotlin":
+        from c07_kotlin_execution import run_kotlin_companion
+        return run_kotlin_companion(args, candidate)
     plan = scenario_plan(args.route)
     result = {"run_id": "c07-controlled-" + uuid.uuid4().hex,
               "candidate_digest": candidate["manifest"]["candidate_digest"],
@@ -89,6 +92,14 @@ def run_companion(args, candidate):
     if not plan:
         result["reason"] = "route has no independent controlled executor"
         return result
+    from c07_route_ownership import verify_route_ownership
+    try:
+        ownership = verify_route_ownership(candidate)
+    except (OSError, ValueError, KeyError) as error:
+        ownership = {"status":"blocked", "route":args.route, "reason":str(error),
+                     "source_review":{"status":"blocked","reason":"ownership receipt unavailable"}}
+    result["route_ownership"] = {"candidate_digest":result["candidate_digest"],
+        "run_id":result["run_id"], "observation":ownership}
     from c07_identity_execution import IdentitySession
     from c07_identity_observations import SCENARIOS as IDENTITY_SCENARIOS
     from c07_identity_fixtures import admit_identity_fixtures
