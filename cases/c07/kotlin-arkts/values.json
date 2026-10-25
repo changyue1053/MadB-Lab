@@ -1,0 +1,67 @@
+{
+  "schema": "madb.case/1",
+  "id": "c07.kotlin-arkts.values",
+  "kind": "template",
+  "problem_ids": [
+    "TYPE-001",
+    "TYPE-002",
+    "TYPE-005",
+    "TYPE-006"
+  ],
+  "source_ids": [],
+  "selector": null,
+  "requires": {
+    "features": [],
+    "environment": []
+  },
+  "fixture": {
+    "path": "consumers/arkts/c07/OrdinaryCases.ets.in",
+    "sha256": "sha256:cd55912ddb4cf1111307c956e97a091554dd08047163ece69ce9adf5d4489e39",
+    "size": 7294,
+    "schema": "madb.lab-source/1"
+  },
+  "setup": [
+    {
+      "id": "install",
+      "action": "environment",
+      "entrypoint": "verified-public-har-release-obfuscated-hap",
+      "arguments": []
+    }
+  ],
+  "steps": [
+    {
+      "id": "execute",
+      "action": "call",
+      "entrypoint": "runOrdinaryRoute",
+      "arguments": []
+    }
+  ],
+  "assertions": [
+    {
+      "observation": "values",
+      "operator": "equals",
+      "expected": [
+        {
+          "kind": "string",
+          "value": "Int32 min/max, -0\u2192+0, empty/ASCII/\u4e2d\u6587/combining/supplementary Unicode/NUL; independently constructed 1024-byte ASCII, CJK and emoji boundaries accepted, 1025 rejected. Reject bool/string/null, NaN, infinities, fractions, overflow and isolated surrogates before conversion. No normalization or strlen truncation."
+        }
+      ]
+    }
+  ],
+  "expected_result": {
+    "kind": "success"
+  },
+  "cleanup": [
+    {
+      "id": "close",
+      "action": "cleanup",
+      "entrypoint": "await-runtime-close",
+      "arguments": []
+    }
+  ],
+  "timeout_policy": {
+    "timeout_ms": 50000,
+    "on_timeout": "error",
+    "recovery": "isolate"
+  }
+}

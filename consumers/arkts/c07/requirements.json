@@ -1,0 +1,1697 @@
+{
+  "profiles": [
+    {
+      "profile_id": "c07-c-arkts-aarch64-ohos23",
+      "route": "madb.arkts-c-napi",
+      "kind": "ordinary",
+      "required_cases": [
+        "c07.arkts-c.distribution",
+        "c07.arkts-c.generation",
+        "c07.arkts-c.ordinary",
+        "c07.arkts-c.output-copy",
+        "c07.arkts-c.values"
+      ],
+      "relation_profile": "c07-c-arkts-aarch64-ohos23-test"
+    },
+    {
+      "profile_id": "c07-c-arkts-aarch64-ohos23-test",
+      "route": "madb.arkts-c-napi",
+      "kind": "test-companion",
+      "required_cases": [
+        "c07.arkts-c.dropped-promise",
+        "c07.arkts-c.env-exit-full",
+        "c07.arkts-c.event-fifo-and-atomic",
+        "c07.arkts-c.event-outstanding",
+        "c07.arkts-c.fanout-allocation",
+        "c07.arkts-c.generation-and-handles",
+        "c07.arkts-c.getters-and-reentry",
+        "c07.arkts-c.identity",
+        "c07.arkts-c.listener-throw-close",
+        "c07.arkts-c.operations",
+        "c07.arkts-c.request-before-observer",
+        "c07.arkts-c.request-only-retirement",
+        "c07.arkts-c.result-transfer-failures",
+        "c07.arkts-c.retained-bytes-and-scratch",
+        "c07.arkts-c.route-ownership",
+        "c07.arkts-c.runtime-close-full",
+        "c07.arkts-c.settling-reentry",
+        "c07.arkts-c.shared-waiters",
+        "c07.arkts-c.single-claim",
+        "c07.arkts-c.source-stop",
+        "c07.arkts-c.state",
+        "c07.arkts-c.state-staging-bytes",
+        "c07.arkts-c.subscriptions",
+        "c07.arkts-c.terminal-winner",
+        "c07.arkts-c.worker-and-domain"
+      ],
+      "relation_profile": "c07-c-arkts-aarch64-ohos23"
+    },
+    {
+      "profile_id": "c07-cpp-arkts-aarch64-ohos23",
+      "route": "madb.arkts-cpp-napi",
+      "kind": "ordinary",
+      "required_cases": [
+        "c07.arkts-cpp.distribution",
+        "c07.arkts-cpp.generation",
+        "c07.arkts-cpp.ordinary",
+        "c07.arkts-cpp.output-copy",
+        "c07.arkts-cpp.values"
+      ],
+      "relation_profile": "c07-cpp-arkts-aarch64-ohos23-test"
+    },
+    {
+      "profile_id": "c07-cpp-arkts-aarch64-ohos23-test",
+      "route": "madb.arkts-cpp-napi",
+      "kind": "test-companion",
+      "required_cases": [
+        "c07.arkts-cpp.dropped-promise",
+        "c07.arkts-cpp.env-exit-full",
+        "c07.arkts-cpp.event-fifo-and-atomic",
+        "c07.arkts-cpp.event-outstanding",
+        "c07.arkts-cpp.fanout-allocation",
+        "c07.arkts-cpp.generation-and-handles",
+        "c07.arkts-cpp.getters-and-reentry",
+        "c07.arkts-cpp.identity",
+        "c07.arkts-cpp.listener-throw-close",
+        "c07.arkts-cpp.operations",
+        "c07.arkts-cpp.request-before-observer",
+        "c07.arkts-cpp.request-only-retirement",
+        "c07.arkts-cpp.result-transfer-failures",
+        "c07.arkts-cpp.retained-bytes-and-scratch",
+        "c07.arkts-cpp.route-ownership",
+        "c07.arkts-cpp.runtime-close-full",
+        "c07.arkts-cpp.settling-reentry",
+        "c07.arkts-cpp.shared-waiters",
+        "c07.arkts-cpp.single-claim",
+        "c07.arkts-cpp.source-stop",
+        "c07.arkts-cpp.state",
+        "c07.arkts-cpp.state-staging-bytes",
+        "c07.arkts-cpp.subscriptions",
+        "c07.arkts-cpp.terminal-winner",
+        "c07.arkts-cpp.worker-and-domain"
+      ],
+      "relation_profile": "c07-cpp-arkts-aarch64-ohos23"
+    },
+    {
+      "profile_id": "c07-rust-arkts-aarch64-ohos23",
+      "route": "madb.arkts-rust-napi",
+      "kind": "ordinary",
+      "required_cases": [
+        "c07.arkts-rust.distribution",
+        "c07.arkts-rust.generation",
+        "c07.arkts-rust.ordinary",
+        "c07.arkts-rust.output-copy",
+        "c07.arkts-rust.values"
+      ],
+      "relation_profile": "c07-rust-arkts-aarch64-ohos23-test"
+    },
+    {
+      "profile_id": "c07-rust-arkts-aarch64-ohos23-test",
+      "route": "madb.arkts-rust-napi",
+      "kind": "test-companion",
+      "required_cases": [
+        "c07.arkts-rust.dropped-promise",
+        "c07.arkts-rust.env-exit-full",
+        "c07.arkts-rust.event-fifo-and-atomic",
+        "c07.arkts-rust.event-outstanding",
+        "c07.arkts-rust.fanout-allocation",
+        "c07.arkts-rust.generation-and-handles",
+        "c07.arkts-rust.getters-and-reentry",
+        "c07.arkts-rust.identity",
+        "c07.arkts-rust.listener-throw-close",
+        "c07.arkts-rust.operations",
+        "c07.arkts-rust.request-before-observer",
+        "c07.arkts-rust.request-only-retirement",
+        "c07.arkts-rust.result-transfer-failures",
+        "c07.arkts-rust.retained-bytes-and-scratch",
+        "c07.arkts-rust.route-ownership",
+        "c07.arkts-rust.runtime-close-full",
+        "c07.arkts-rust.settling-reentry",
+        "c07.arkts-rust.shared-waiters",
+        "c07.arkts-rust.single-claim",
+        "c07.arkts-rust.source-stop",
+        "c07.arkts-rust.state",
+        "c07.arkts-rust.state-staging-bytes",
+        "c07.arkts-rust.subscriptions",
+        "c07.arkts-rust.terminal-winner",
+        "c07.arkts-rust.worker-and-domain"
+      ],
+      "relation_profile": "c07-rust-arkts-aarch64-ohos23"
+    },
+    {
+      "profile_id": "c07-kotlin-arkts-aarch64-ohos23",
+      "route": "madb.kn-arkts-napi",
+      "kind": "ordinary",
+      "required_cases": [
+        "c07.kotlin-arkts.distribution",
+        "c07.kotlin-arkts.generation",
+        "c07.kotlin-arkts.ordinary",
+        "c07.kotlin-arkts.output-copy",
+        "c07.kotlin-arkts.values"
+      ],
+      "relation_profile": "c07-kotlin-arkts-aarch64-ohos23-test"
+    },
+    {
+      "profile_id": "c07-kotlin-arkts-aarch64-ohos23-test",
+      "route": "madb.kn-arkts-napi",
+      "kind": "test-companion",
+      "required_cases": [
+        "c07.kotlin-arkts.dropped-promise",
+        "c07.kotlin-arkts.env-exit-full",
+        "c07.kotlin-arkts.event-fifo-and-atomic",
+        "c07.kotlin-arkts.event-outstanding",
+        "c07.kotlin-arkts.fanout-allocation",
+        "c07.kotlin-arkts.generation-and-handles",
+        "c07.kotlin-arkts.getters-and-reentry",
+        "c07.kotlin-arkts.identity",
+        "c07.kotlin-arkts.listener-throw-close",
+        "c07.kotlin-arkts.operations",
+        "c07.kotlin-arkts.request-before-observer",
+        "c07.kotlin-arkts.request-only-retirement",
+        "c07.kotlin-arkts.result-transfer-failures",
+        "c07.kotlin-arkts.retained-bytes-and-scratch",
+        "c07.kotlin-arkts.route-ownership",
+        "c07.kotlin-arkts.runtime-close-full",
+        "c07.kotlin-arkts.settling-reentry",
+        "c07.kotlin-arkts.shared-waiters",
+        "c07.kotlin-arkts.single-claim",
+        "c07.kotlin-arkts.source-stop",
+        "c07.kotlin-arkts.state",
+        "c07.kotlin-arkts.state-staging-bytes",
+        "c07.kotlin-arkts.subscriptions",
+        "c07.kotlin-arkts.terminal-winner",
+        "c07.kotlin-arkts.worker-and-domain"
+      ],
+      "relation_profile": "c07-kotlin-arkts-aarch64-ohos23"
+    }
+  ],
+  "cases": [
+    {
+      "id": "c07.arkts-c.ordinary",
+      "catalog_route": "ARKTS-C-NAPI",
+      "matrix_id": "ordinary",
+      "problem_ids": [
+        "ASYNC-004",
+        "BUILD-004",
+        "ERR-001",
+        "ERR-003",
+        "LIFE-005",
+        "TYPE-001",
+        "TYPE-004",
+        "TYPE-005",
+        "TYPE-006",
+        "VERIFY-001"
+      ],
+      "independent_expectation": "Uninstrumented public HAR ordinary consumer: fixed Snapshot values/negatives, getter exception identity/recovery, inherited setter trap, native operation/domain, state/event, request-only retirement, old-handle errors, ordinary Runtime.close return. Does not substitute for companion ownership/full-profile evidence."
+    },
+    {
+      "id": "c07.arkts-c.identity",
+      "catalog_route": "ARKTS-C-NAPI",
+      "matrix_id": "identity",
+      "problem_ids": [
+        "BUILD-002",
+        "CAP-001",
+        "COMP-001",
+        "LIFE-001"
+      ],
+      "independent_expectation": "Unmodified facade expectations come from the admitted candidate. Replace the actual library separately with wrong artifact, ABI and profile fixtures. Exact declared error/stage, and zero new business worker/ref/TSFN/engine owners before rejection. Missing exports/load failure is distinct from a successful bootstrap check."
+    },
+    {
+      "id": "c07.arkts-c.distribution",
+      "catalog_route": "ARKTS-C-NAPI",
+      "matrix_id": "distribution",
+      "problem_ids": [
+        "BUILD-001",
+        "BUILD-003",
+        "BUILD-004",
+        "BUILD-005",
+        "CAP-002",
+        "DIST-001"
+      ],
+      "independent_expectation": "Real public declarations and all required native dependencies arrive through the HAR closure; clean consumer Release + property/export/filename obfuscation succeeds with legitimate public keep rules. Ordinary app works without test-support. C++-only consumption does not incidentally depend on Kotlin initialization."
+    },
+    {
+      "id": "c07.arkts-c.generation",
+      "catalog_route": "ARKTS-C-NAPI",
+      "matrix_id": "generation",
+      "problem_ids": [
+        "CAP-002",
+        "CAP-003",
+        "CAP-004",
+        "GEN-001",
+        "TYPE-008"
+      ],
+      "independent_expectation": "Actual C/Clang, C++ bridge, napi-ohos and KSP declaration evidence as applicable. Rename a declared symbol and observe generated/public output change. Unsupported async listener and cross-thread synchronous return fail before output commit with source location; no arbitrary all-types requirement."
+    },
+    {
+      "id": "c07.arkts-c.values",
+      "catalog_route": "ARKTS-C-NAPI",
+      "matrix_id": "values",
+      "problem_ids": [
+        "TYPE-001",
+        "TYPE-002",
+        "TYPE-005",
+        "TYPE-006"
+      ],
+      "independent_expectation": "Int32 min/max, -0→+0, empty/ASCII/中文/combining/supplementary Unicode/NUL; independently constructed 1024-byte ASCII, CJK and emoji boundaries accepted, 1025 rejected. Reject bool/string/null, NaN, infinities, fractions, overflow and isolated surrogates before conversion. No normalization or strlen truncation."
+    },
+    {
+      "id": "c07.arkts-c.getters-and-reentry",
+      "catalog_route": "ARKTS-C-NAPI",
+      "matrix_id": "getters-and-reentry",
+      "problem_ids": [
+        "ERR-002",
+        "ERR-003",
+        "LIFE-005",
+        "THR-004",
+        "TYPE-006"
+      ],
+      "independent_expectation": "Read each declared property once, preserve an actual thrown Error object, and recover. A getter closes its own Engine: original generation stays alive through the entry, later admission recheck rejects without business allocation. No Core lock is held across getters."
+    },
+    {
+      "id": "c07.arkts-c.output-copy",
+      "catalog_route": "ARKTS-C-NAPI",
+      "matrix_id": "output-copy",
+      "problem_ids": [
+        "ERR-003",
+        "LIFE-008",
+        "TYPE-004",
+        "TYPE-006"
+      ],
+      "independent_expectation": "Returned Snapshot is independent; later input/output mutation cannot affect the other copy. Actual inherited setters on value/text are not invoked; returned fields are own data properties. Use a small real JS negative seam where ArkTS cannot express the input, not a weakened type declaration."
+    },
+    {
+      "id": "c07.arkts-c.worker-and-domain",
+      "catalog_route": "ARKTS-C-NAPI",
+      "matrix_id": "worker-and-domain",
+      "problem_ids": [
+        "ASYNC-005",
+        "ERR-001",
+        "LIFE-001",
+        "THR-001",
+        "THR-002"
+      ],
+      "independent_expectation": "Native worker computes 41→42, preserves text, and returns DomainOverflow for INT32_MAX. Actual owner/business/cleanup thread witnesses differ while alive. Provider computation/free counters bind the genuine route implementation, not a substituted C++ business function."
+    },
+    {
+      "id": "c07.arkts-c.terminal-winner",
+      "catalog_route": "ARKTS-C-NAPI",
+      "matrix_id": "terminal-winner",
+      "problem_ids": [
+        "ASYNC-001",
+        "ASYNC-005",
+        "ERR-003",
+        "LIFE-002",
+        "THR-003"
+      ],
+      "independent_expectation": "Deterministically cancel before terminal → Cancelled; commit Success then cancel → original success; commit DomainOverflow then cancel → original domain failure. An actual race permits only one legal winner/settlement and one free. Work held after terminal keeps close pending. No C06 cancel-overwrites rule."
+    },
+    {
+      "id": "c07.arkts-c.single-claim",
+      "catalog_route": "ARKTS-C-NAPI",
+      "matrix_id": "single-claim",
+      "problem_ids": [
+        "ASYNC-002",
+        "ERR-001",
+        "ERR-003",
+        "LIFE-008"
+      ],
+      "independent_expectation": "Second accepted result request rejects AlreadyConsumed, including while first is pending. A precommit admission/registration failure rolls back both claimant and waiter, permits a retry and leaves no duplicate result owner. Ordinary Promise-method rejection is a rejected Promise, not a synchronous throw."
+    },
+    {
+      "id": "c07.arkts-c.result-transfer-failures",
+      "catalog_route": "ARKTS-C-NAPI",
+      "matrix_id": "result-transfer-failures",
+      "problem_ids": [
+        "ASYNC-002",
+        "ERR-002",
+        "ERR-003",
+        "LIFE-001",
+        "LIFE-008"
+      ],
+      "independent_expectation": "Guard-before failure leaves a truthful native residual until explicit cleanup; guard-after conversion failure really frees once and rejects once. Error after accepted resolve cannot attempt reject/reconsume. Inherited setter trap remains uncalled. Genuine typed clone failures with a non-null output still pair that output with its route free."
+    },
+    {
+      "id": "c07.arkts-c.dropped-promise",
+      "catalog_route": "ARKTS-C-NAPI",
+      "matrix_id": "dropped-promise",
+      "problem_ids": [
+        "ASYNC-002",
+        "LIFE-002",
+        "LIFE-005",
+        "LIFE-008"
+      ],
+      "independent_expectation": "Discarding a JS Promise does not cancel work or return its native waiter. Check the actual retained count while delivery is held, then Runtime.close drains or legally discards it with paired ownership. No forced GC prerequisite."
+    },
+    {
+      "id": "c07.arkts-c.operations",
+      "catalog_route": "ARKTS-C-NAPI",
+      "matrix_id": "operations",
+      "problem_ids": [
+        "ASYNC-005",
+        "LIFE-001",
+        "LIFE-005",
+        "LIFE-006"
+      ],
+      "independent_expectation": "Eight accepted operation handles remain charged even after terminal/unclaimed result; ninth rejects. Closing one returns capacity after true work/payload drain; successful later admission proves a concurrent bound rather than an eight-lifetime cap."
+    },
+    {
+      "id": "c07.arkts-c.subscriptions",
+      "catalog_route": "ARKTS-C-NAPI",
+      "matrix_id": "subscriptions",
+      "problem_ids": [
+        "ASYNC-004",
+        "LIFE-004",
+        "LIFE-005"
+      ],
+      "independent_expectation": "Eight total state+event subscriptions, e.g. four of each; ninth rejects. Stop/drain returns one shared slot. Listener references remain held until source/pending/entered drain, and explicit close releases them without GC."
+    },
+    {
+      "id": "c07.arkts-c.state",
+      "catalog_route": "ARKTS-C-NAPI",
+      "matrix_id": "state",
+      "problem_ids": [
+        "ASYNC-004",
+        "LIFE-004",
+        "THR-003",
+        "THR-004",
+        "TYPE-004"
+      ],
+      "independent_expectation": "Registration is empty and pre-registration publication does not replay. Hold delivery pre-entry: publish1, take/hold actual delivery, publish2, invoke → only2. Inside entered2, publish3 then4 → entered2 is unchanged and next callback is4. New subscriber gets no prior current value."
+    },
+    {
+      "id": "c07.arkts-c.event-fifo-and-atomic",
+      "catalog_route": "ARKTS-C-NAPI",
+      "matrix_id": "event-fifo-and-atomic",
+      "problem_ids": [
+        "ASYNC-004",
+        "LIFE-001",
+        "THR-003"
+      ],
+      "independent_expectation": "Three selected subscribers receive accepted events in each subscriber's FIFO order; no global callback ordering assertion. With six tickets occupied, a three-recipient publication rejects atomically and reaches none. No-listener publication retains no owner. State/event calls do not modify the other stream."
+    },
+    {
+      "id": "c07.arkts-c.fanout-allocation",
+      "catalog_route": "ARKTS-C-NAPI",
+      "matrix_id": "fanout-allocation",
+      "problem_ids": [
+        "ASYNC-004",
+        "ERR-003",
+        "LIFE-001"
+      ],
+      "independent_expectation": "Fail a real provider clone after at least one selected recipient has already cloned. No recipient gets the rejected state/event; old pending state remains; all successful partial allocations are truly freed. Recovery publish reaches every selected recipient once."
+    },
+    {
+      "id": "c07.arkts-c.state-staging-bytes",
+      "catalog_route": "ARKTS-C-NAPI",
+      "matrix_id": "state-staging-bytes",
+      "problem_ids": [
+        "ASYNC-004",
+        "LIFE-001",
+        "PERF-001"
+      ],
+      "independent_expectation": "Four state subscribers each hold pending1024 (4096 retained). Replacement must reserve incoming copies while old remain charged and rejects without changing any pending value. After drain/free, the same replacement succeeds. Exact staging/retained peaks and per-route allocations are observed separately."
+    },
+    {
+      "id": "c07.arkts-c.event-outstanding",
+      "catalog_route": "ARKTS-C-NAPI",
+      "matrix_id": "event-outstanding",
+      "problem_ids": [
+        "ASYNC-004",
+        "LIFE-001",
+        "LIFE-004",
+        "THR-004"
+      ],
+      "independent_expectation": "Two event subscribers × four accepted publications = eight tickets. In the first actual listener, entered still owns its ticket; another two-recipient publish rejects. Callback return, not dequeue/copy, returns the ticket. Source-acquired and queued phases use the same conserved ticket."
+    },
+    {
+      "id": "c07.arkts-c.source-stop",
+      "catalog_route": "ARKTS-C-NAPI",
+      "matrix_id": "source-stop",
+      "problem_ids": [
+        "ASYNC-003",
+        "LIFE-002",
+        "LIFE-004",
+        "LIFE-005",
+        "THR-003"
+      ],
+      "independent_expectation": "Hold one real publication/source transaction before enqueue. Request stop/close, prove callback does not newly enter and ACK remains pending while the acquired source owner exists. Release/abandon the actual lease, then complete cleanup. Also stop during actual entered callback: current call returns, no later callback starts."
+    },
+    {
+      "id": "c07.arkts-c.retained-bytes-and-scratch",
+      "catalog_route": "ARKTS-C-NAPI",
+      "matrix_id": "retained-bytes-and-scratch",
+      "problem_ids": [
+        "LIFE-001",
+        "LIFE-002",
+        "PERF-001"
+      ],
+      "independent_expectation": "Hold four operations with1024-byte inputs →4096 retained; a fifth one-byte input rejects although only four op slots are used. A1024-byte roundtrip still succeeds using its independent scratch, returns an independent copy and returns scratch immediately. Separately use zero-byte values to exercise the eighth operation without conflating byte exhaustion. Record model/UTF conversion overhead separately from the4096 ledger."
+    },
+    {
+      "id": "c07.arkts-c.shared-waiters",
+      "catalog_route": "ARKTS-C-NAPI",
+      "matrix_id": "shared-waiters",
+      "problem_ids": [
+        "ASYNC-002",
+        "LIFE-001",
+        "LIFE-005"
+      ],
+      "independent_expectation": "Exactly one admitted result plus31 pending Operation.close calls gives32 actual ordinary claims in one env turn. Observer33 rejects ResourceExhausted. Separate pending Subscription/Engine close variants share this same budget; already-Closed close is value-only. No hidden allocator or child-close memoization makes this test pass."
+    },
+    {
+      "id": "c07.arkts-c.request-before-observer",
+      "catalog_route": "ARKTS-C-NAPI",
+      "matrix_id": "request-before-observer",
+      "problem_ids": [
+        "ASYNC-002",
+        "ERR-003",
+        "LIFE-005"
+      ],
+      "independent_expectation": "At32 occupied ordinary records, pending op/sub/engine close observer rejects but its close request already gates new work/listener entry. Keep the targeted resource genuinely pending with a real work/source/entered owner; a closed child correctly does not consume another waiter. Retry after drain observes the same latched result."
+    },
+    {
+      "id": "c07.arkts-c.settling-reentry",
+      "catalog_route": "ARKTS-C-NAPI",
+      "matrix_id": "settling-reentry",
+      "problem_ids": [
+        "ASYNC-002",
+        "LIFE-001",
+        "LIFE-008",
+        "THR-004"
+      ],
+      "independent_expectation": "While result/close is ready, entered or JS settling, the permit remains charged. Reenter at the real resolver/finally seam and observe capacity rejection until that settlement exits. No second native32 table or payload copy is created."
+    },
+    {
+      "id": "c07.arkts-c.listener-throw-close",
+      "catalog_route": "ARKTS-C-NAPI",
+      "matrix_id": "listener-throw-close",
+      "problem_ids": [
+        "ERR-002",
+        "ERR-003",
+        "LIFE-004",
+        "LIFE-005",
+        "THR-004"
+      ],
+      "independent_expectation": "Inside a real listener obtain close Promise/requestStop and return; never synchronously wait. Listener throw stops only its subscription, its close rejects CallbackFailure after full drain; sibling work and Engine.close recover. The current entered payload/ref remain owned through return/throw."
+    },
+    {
+      "id": "c07.arkts-c.request-only-retirement",
+      "catalog_route": "ARKTS-C-NAPI",
+      "matrix_id": "request-only-retirement",
+      "problem_ids": [
+        "ASYNC-002",
+        "LIFE-004",
+        "LIFE-005",
+        "LIFE-006"
+      ],
+      "independent_expectation": "More than eight ordinary observe→requestStop cycles succeed without a close observer driving retirement. Engine.requestClose similarly retires with true join before later connect; old Engine.close resolves after new generation admission. A failed subscription's close still returns its immutable CallbackFailure after other subscription slots have been reused. Native retirement hints are not extra Promise waiters."
+    },
+    {
+      "id": "c07.arkts-c.generation-and-handles",
+      "catalog_route": "ARKTS-C-NAPI",
+      "matrix_id": "generation-and-handles",
+      "problem_ids": [
+        "LIFE-003",
+        "LIFE-005",
+        "LIFE-006",
+        "TYPE-003",
+        "TYPE-007"
+      ],
+      "independent_expectation": "Second operational engine rejected; new generation admitted only after old business + waiters + JS settling + notifications drain. Old immutable tombstone cannot address reused slots. Public companion malformed/wrong-kind/env/generation/overflow handle fixtures reject before work, with full uint64 decimal precision retained."
+    },
+    {
+      "id": "c07.arkts-c.runtime-close-full",
+      "catalog_route": "ARKTS-C-NAPI",
+      "matrix_id": "runtime-close-full",
+      "problem_ids": [
+        "ASYNC-002",
+        "LIFE-001",
+        "LIFE-004",
+        "LIFE-005",
+        "LIFE-006",
+        "LIFE-007",
+        "THR-002"
+      ],
+      "independent_expectation": "At32 ordinary claims plus real held work/source, Runtime.close starts using its pre-reserved parent control; repeated Runtime.close shares that control. Release holds, finish every child settlement, join actual thread/TLS and obtain static physical ACK, then timerArmed/tickInFlight=0. No33rd business waiter, no cleanup allocation from exhausted business capacity, no ACK waiting for itself."
+    },
+    {
+      "id": "c07.arkts-c.env-exit-full",
+      "catalog_route": "ARKTS-C-NAPI",
+      "matrix_id": "env-exit-full",
+      "problem_ids": [
+        "LIFE-002",
+        "LIFE-004",
+        "LIFE-007",
+        "THR-001",
+        "THR-002"
+      ],
+      "independent_expectation": "Actual supported env exits with admitted pending result/close/source/event obligations. Same-stack exit-request snapshot records full occupancy before workerPort.close (where supported); hook entry records its own actual occupancy, not inferred fullness. Native cleanup performs real join and owner-thread async-handle removal without JS. Parent static audit sees true payload/ref/finalizer/context completion and zero illegal API calls."
+    },
+    {
+      "id": "c07.arkts-c.route-ownership",
+      "catalog_route": "ARKTS-C-NAPI",
+      "matrix_id": "route-ownership",
+      "problem_ids": [
+        "CAP-001",
+        "LIFE-001",
+        "LIFE-002",
+        "LIFE-004",
+        "LIFE-007",
+        "VERIFY-001"
+      ],
+      "independent_expectation": "Every admitted model, callback owner and worker belongs to the declared C/C++/Rust/Kotlin implementation. Allocation/free totals match actual destructor/free sites; rejected failure outputs are included. Baseline-preserving operation close differs from entire-runtime zero; sentinel/metadata/class refs and runtime hook/TSFN/context obligations are all included in final shutdown."
+    },
+    {
+      "id": "c07.arkts-cpp.ordinary",
+      "catalog_route": "ARKTS-CPP-NAPI",
+      "matrix_id": "ordinary",
+      "problem_ids": [
+        "ASYNC-004",
+        "BUILD-004",
+        "ERR-001",
+        "ERR-003",
+        "LIFE-005",
+        "TYPE-001",
+        "TYPE-004",
+        "TYPE-005",
+        "TYPE-006",
+        "VERIFY-001"
+      ],
+      "independent_expectation": "Uninstrumented public HAR ordinary consumer: fixed Snapshot values/negatives, getter exception identity/recovery, inherited setter trap, native operation/domain, state/event, request-only retirement, old-handle errors, ordinary Runtime.close return. Does not substitute for companion ownership/full-profile evidence."
+    },
+    {
+      "id": "c07.arkts-cpp.identity",
+      "catalog_route": "ARKTS-CPP-NAPI",
+      "matrix_id": "identity",
+      "problem_ids": [
+        "BUILD-002",
+        "CAP-001",
+        "COMP-001",
+        "LIFE-001"
+      ],
+      "independent_expectation": "Unmodified facade expectations come from the admitted candidate. Replace the actual library separately with wrong artifact, ABI and profile fixtures. Exact declared error/stage, and zero new business worker/ref/TSFN/engine owners before rejection. Missing exports/load failure is distinct from a successful bootstrap check."
+    },
+    {
+      "id": "c07.arkts-cpp.distribution",
+      "catalog_route": "ARKTS-CPP-NAPI",
+      "matrix_id": "distribution",
+      "problem_ids": [
+        "BUILD-001",
+        "BUILD-003",
+        "BUILD-004",
+        "BUILD-005",
+        "CAP-002",
+        "DIST-001"
+      ],
+      "independent_expectation": "Real public declarations and all required native dependencies arrive through the HAR closure; clean consumer Release + property/export/filename obfuscation succeeds with legitimate public keep rules. Ordinary app works without test-support. C++-only consumption does not incidentally depend on Kotlin initialization."
+    },
+    {
+      "id": "c07.arkts-cpp.generation",
+      "catalog_route": "ARKTS-CPP-NAPI",
+      "matrix_id": "generation",
+      "problem_ids": [
+        "CAP-002",
+        "CAP-003",
+        "CAP-004",
+        "GEN-001",
+        "TYPE-008"
+      ],
+      "independent_expectation": "Actual C/Clang, C++ bridge, napi-ohos and KSP declaration evidence as applicable. Rename a declared symbol and observe generated/public output change. Unsupported async listener and cross-thread synchronous return fail before output commit with source location; no arbitrary all-types requirement."
+    },
+    {
+      "id": "c07.arkts-cpp.values",
+      "catalog_route": "ARKTS-CPP-NAPI",
+      "matrix_id": "values",
+      "problem_ids": [
+        "TYPE-001",
+        "TYPE-002",
+        "TYPE-005",
+        "TYPE-006"
+      ],
+      "independent_expectation": "Int32 min/max, -0→+0, empty/ASCII/中文/combining/supplementary Unicode/NUL; independently constructed 1024-byte ASCII, CJK and emoji boundaries accepted, 1025 rejected. Reject bool/string/null, NaN, infinities, fractions, overflow and isolated surrogates before conversion. No normalization or strlen truncation."
+    },
+    {
+      "id": "c07.arkts-cpp.getters-and-reentry",
+      "catalog_route": "ARKTS-CPP-NAPI",
+      "matrix_id": "getters-and-reentry",
+      "problem_ids": [
+        "ERR-002",
+        "ERR-003",
+        "LIFE-005",
+        "THR-004",
+        "TYPE-006"
+      ],
+      "independent_expectation": "Read each declared property once, preserve an actual thrown Error object, and recover. A getter closes its own Engine: original generation stays alive through the entry, later admission recheck rejects without business allocation. No Core lock is held across getters."
+    },
+    {
+      "id": "c07.arkts-cpp.output-copy",
+      "catalog_route": "ARKTS-CPP-NAPI",
+      "matrix_id": "output-copy",
+      "problem_ids": [
+        "ERR-003",
+        "LIFE-008",
+        "TYPE-004",
+        "TYPE-006"
+      ],
+      "independent_expectation": "Returned Snapshot is independent; later input/output mutation cannot affect the other copy. Actual inherited setters on value/text are not invoked; returned fields are own data properties. Use a small real JS negative seam where ArkTS cannot express the input, not a weakened type declaration."
+    },
+    {
+      "id": "c07.arkts-cpp.worker-and-domain",
+      "catalog_route": "ARKTS-CPP-NAPI",
+      "matrix_id": "worker-and-domain",
+      "problem_ids": [
+        "ASYNC-005",
+        "ERR-001",
+        "LIFE-001",
+        "THR-001",
+        "THR-002"
+      ],
+      "independent_expectation": "Native worker computes 41→42, preserves text, and returns DomainOverflow for INT32_MAX. Actual owner/business/cleanup thread witnesses differ while alive. Provider computation/free counters bind the genuine route implementation, not a substituted C++ business function."
+    },
+    {
+      "id": "c07.arkts-cpp.terminal-winner",
+      "catalog_route": "ARKTS-CPP-NAPI",
+      "matrix_id": "terminal-winner",
+      "problem_ids": [
+        "ASYNC-001",
+        "ASYNC-005",
+        "ERR-003",
+        "LIFE-002",
+        "THR-003"
+      ],
+      "independent_expectation": "Deterministically cancel before terminal → Cancelled; commit Success then cancel → original success; commit DomainOverflow then cancel → original domain failure. An actual race permits only one legal winner/settlement and one free. Work held after terminal keeps close pending. No C06 cancel-overwrites rule."
+    },
+    {
+      "id": "c07.arkts-cpp.single-claim",
+      "catalog_route": "ARKTS-CPP-NAPI",
+      "matrix_id": "single-claim",
+      "problem_ids": [
+        "ASYNC-002",
+        "ERR-001",
+        "ERR-003",
+        "LIFE-008"
+      ],
+      "independent_expectation": "Second accepted result request rejects AlreadyConsumed, including while first is pending. A precommit admission/registration failure rolls back both claimant and waiter, permits a retry and leaves no duplicate result owner. Ordinary Promise-method rejection is a rejected Promise, not a synchronous throw."
+    },
+    {
+      "id": "c07.arkts-cpp.result-transfer-failures",
+      "catalog_route": "ARKTS-CPP-NAPI",
+      "matrix_id": "result-transfer-failures",
+      "problem_ids": [
+        "ASYNC-002",
+        "ERR-002",
+        "ERR-003",
+        "LIFE-001",
+        "LIFE-008"
+      ],
+      "independent_expectation": "Guard-before failure leaves a truthful native residual until explicit cleanup; guard-after conversion failure really frees once and rejects once. Error after accepted resolve cannot attempt reject/reconsume. Inherited setter trap remains uncalled. Genuine typed clone failures with a non-null output still pair that output with its route free."
+    },
+    {
+      "id": "c07.arkts-cpp.dropped-promise",
+      "catalog_route": "ARKTS-CPP-NAPI",
+      "matrix_id": "dropped-promise",
+      "problem_ids": [
+        "ASYNC-002",
+        "LIFE-002",
+        "LIFE-005",
+        "LIFE-008"
+      ],
+      "independent_expectation": "Discarding a JS Promise does not cancel work or return its native waiter. Check the actual retained count while delivery is held, then Runtime.close drains or legally discards it with paired ownership. No forced GC prerequisite."
+    },
+    {
+      "id": "c07.arkts-cpp.operations",
+      "catalog_route": "ARKTS-CPP-NAPI",
+      "matrix_id": "operations",
+      "problem_ids": [
+        "ASYNC-005",
+        "LIFE-001",
+        "LIFE-005",
+        "LIFE-006"
+      ],
+      "independent_expectation": "Eight accepted operation handles remain charged even after terminal/unclaimed result; ninth rejects. Closing one returns capacity after true work/payload drain; successful later admission proves a concurrent bound rather than an eight-lifetime cap."
+    },
+    {
+      "id": "c07.arkts-cpp.subscriptions",
+      "catalog_route": "ARKTS-CPP-NAPI",
+      "matrix_id": "subscriptions",
+      "problem_ids": [
+        "ASYNC-004",
+        "LIFE-004",
+        "LIFE-005"
+      ],
+      "independent_expectation": "Eight total state+event subscriptions, e.g. four of each; ninth rejects. Stop/drain returns one shared slot. Listener references remain held until source/pending/entered drain, and explicit close releases them without GC."
+    },
+    {
+      "id": "c07.arkts-cpp.state",
+      "catalog_route": "ARKTS-CPP-NAPI",
+      "matrix_id": "state",
+      "problem_ids": [
+        "ASYNC-004",
+        "LIFE-004",
+        "THR-003",
+        "THR-004",
+        "TYPE-004"
+      ],
+      "independent_expectation": "Registration is empty and pre-registration publication does not replay. Hold delivery pre-entry: publish1, take/hold actual delivery, publish2, invoke → only2. Inside entered2, publish3 then4 → entered2 is unchanged and next callback is4. New subscriber gets no prior current value."
+    },
+    {
+      "id": "c07.arkts-cpp.event-fifo-and-atomic",
+      "catalog_route": "ARKTS-CPP-NAPI",
+      "matrix_id": "event-fifo-and-atomic",
+      "problem_ids": [
+        "ASYNC-004",
+        "LIFE-001",
+        "THR-003"
+      ],
+      "independent_expectation": "Three selected subscribers receive accepted events in each subscriber's FIFO order; no global callback ordering assertion. With six tickets occupied, a three-recipient publication rejects atomically and reaches none. No-listener publication retains no owner. State/event calls do not modify the other stream."
+    },
+    {
+      "id": "c07.arkts-cpp.fanout-allocation",
+      "catalog_route": "ARKTS-CPP-NAPI",
+      "matrix_id": "fanout-allocation",
+      "problem_ids": [
+        "ASYNC-004",
+        "ERR-003",
+        "LIFE-001"
+      ],
+      "independent_expectation": "Fail a real provider clone after at least one selected recipient has already cloned. No recipient gets the rejected state/event; old pending state remains; all successful partial allocations are truly freed. Recovery publish reaches every selected recipient once."
+    },
+    {
+      "id": "c07.arkts-cpp.state-staging-bytes",
+      "catalog_route": "ARKTS-CPP-NAPI",
+      "matrix_id": "state-staging-bytes",
+      "problem_ids": [
+        "ASYNC-004",
+        "LIFE-001",
+        "PERF-001"
+      ],
+      "independent_expectation": "Four state subscribers each hold pending1024 (4096 retained). Replacement must reserve incoming copies while old remain charged and rejects without changing any pending value. After drain/free, the same replacement succeeds. Exact staging/retained peaks and per-route allocations are observed separately."
+    },
+    {
+      "id": "c07.arkts-cpp.event-outstanding",
+      "catalog_route": "ARKTS-CPP-NAPI",
+      "matrix_id": "event-outstanding",
+      "problem_ids": [
+        "ASYNC-004",
+        "LIFE-001",
+        "LIFE-004",
+        "THR-004"
+      ],
+      "independent_expectation": "Two event subscribers × four accepted publications = eight tickets. In the first actual listener, entered still owns its ticket; another two-recipient publish rejects. Callback return, not dequeue/copy, returns the ticket. Source-acquired and queued phases use the same conserved ticket."
+    },
+    {
+      "id": "c07.arkts-cpp.source-stop",
+      "catalog_route": "ARKTS-CPP-NAPI",
+      "matrix_id": "source-stop",
+      "problem_ids": [
+        "ASYNC-003",
+        "LIFE-002",
+        "LIFE-004",
+        "LIFE-005",
+        "THR-003"
+      ],
+      "independent_expectation": "Hold one real publication/source transaction before enqueue. Request stop/close, prove callback does not newly enter and ACK remains pending while the acquired source owner exists. Release/abandon the actual lease, then complete cleanup. Also stop during actual entered callback: current call returns, no later callback starts."
+    },
+    {
+      "id": "c07.arkts-cpp.retained-bytes-and-scratch",
+      "catalog_route": "ARKTS-CPP-NAPI",
+      "matrix_id": "retained-bytes-and-scratch",
+      "problem_ids": [
+        "LIFE-001",
+        "LIFE-002",
+        "PERF-001"
+      ],
+      "independent_expectation": "Hold four operations with1024-byte inputs →4096 retained; a fifth one-byte input rejects although only four op slots are used. A1024-byte roundtrip still succeeds using its independent scratch, returns an independent copy and returns scratch immediately. Separately use zero-byte values to exercise the eighth operation without conflating byte exhaustion. Record model/UTF conversion overhead separately from the4096 ledger."
+    },
+    {
+      "id": "c07.arkts-cpp.shared-waiters",
+      "catalog_route": "ARKTS-CPP-NAPI",
+      "matrix_id": "shared-waiters",
+      "problem_ids": [
+        "ASYNC-002",
+        "LIFE-001",
+        "LIFE-005"
+      ],
+      "independent_expectation": "Exactly one admitted result plus31 pending Operation.close calls gives32 actual ordinary claims in one env turn. Observer33 rejects ResourceExhausted. Separate pending Subscription/Engine close variants share this same budget; already-Closed close is value-only. No hidden allocator or child-close memoization makes this test pass."
+    },
+    {
+      "id": "c07.arkts-cpp.request-before-observer",
+      "catalog_route": "ARKTS-CPP-NAPI",
+      "matrix_id": "request-before-observer",
+      "problem_ids": [
+        "ASYNC-002",
+        "ERR-003",
+        "LIFE-005"
+      ],
+      "independent_expectation": "At32 occupied ordinary records, pending op/sub/engine close observer rejects but its close request already gates new work/listener entry. Keep the targeted resource genuinely pending with a real work/source/entered owner; a closed child correctly does not consume another waiter. Retry after drain observes the same latched result."
+    },
+    {
+      "id": "c07.arkts-cpp.settling-reentry",
+      "catalog_route": "ARKTS-CPP-NAPI",
+      "matrix_id": "settling-reentry",
+      "problem_ids": [
+        "ASYNC-002",
+        "LIFE-001",
+        "LIFE-008",
+        "THR-004"
+      ],
+      "independent_expectation": "While result/close is ready, entered or JS settling, the permit remains charged. Reenter at the real resolver/finally seam and observe capacity rejection until that settlement exits. No second native32 table or payload copy is created."
+    },
+    {
+      "id": "c07.arkts-cpp.listener-throw-close",
+      "catalog_route": "ARKTS-CPP-NAPI",
+      "matrix_id": "listener-throw-close",
+      "problem_ids": [
+        "ERR-002",
+        "ERR-003",
+        "LIFE-004",
+        "LIFE-005",
+        "THR-004"
+      ],
+      "independent_expectation": "Inside a real listener obtain close Promise/requestStop and return; never synchronously wait. Listener throw stops only its subscription, its close rejects CallbackFailure after full drain; sibling work and Engine.close recover. The current entered payload/ref remain owned through return/throw."
+    },
+    {
+      "id": "c07.arkts-cpp.request-only-retirement",
+      "catalog_route": "ARKTS-CPP-NAPI",
+      "matrix_id": "request-only-retirement",
+      "problem_ids": [
+        "ASYNC-002",
+        "LIFE-004",
+        "LIFE-005",
+        "LIFE-006"
+      ],
+      "independent_expectation": "More than eight ordinary observe→requestStop cycles succeed without a close observer driving retirement. Engine.requestClose similarly retires with true join before later connect; old Engine.close resolves after new generation admission. A failed subscription's close still returns its immutable CallbackFailure after other subscription slots have been reused. Native retirement hints are not extra Promise waiters."
+    },
+    {
+      "id": "c07.arkts-cpp.generation-and-handles",
+      "catalog_route": "ARKTS-CPP-NAPI",
+      "matrix_id": "generation-and-handles",
+      "problem_ids": [
+        "LIFE-003",
+        "LIFE-005",
+        "LIFE-006",
+        "TYPE-003",
+        "TYPE-007"
+      ],
+      "independent_expectation": "Second operational engine rejected; new generation admitted only after old business + waiters + JS settling + notifications drain. Old immutable tombstone cannot address reused slots. Public companion malformed/wrong-kind/env/generation/overflow handle fixtures reject before work, with full uint64 decimal precision retained."
+    },
+    {
+      "id": "c07.arkts-cpp.runtime-close-full",
+      "catalog_route": "ARKTS-CPP-NAPI",
+      "matrix_id": "runtime-close-full",
+      "problem_ids": [
+        "ASYNC-002",
+        "LIFE-001",
+        "LIFE-004",
+        "LIFE-005",
+        "LIFE-006",
+        "LIFE-007",
+        "THR-002"
+      ],
+      "independent_expectation": "At32 ordinary claims plus real held work/source, Runtime.close starts using its pre-reserved parent control; repeated Runtime.close shares that control. Release holds, finish every child settlement, join actual thread/TLS and obtain static physical ACK, then timerArmed/tickInFlight=0. No33rd business waiter, no cleanup allocation from exhausted business capacity, no ACK waiting for itself."
+    },
+    {
+      "id": "c07.arkts-cpp.env-exit-full",
+      "catalog_route": "ARKTS-CPP-NAPI",
+      "matrix_id": "env-exit-full",
+      "problem_ids": [
+        "LIFE-002",
+        "LIFE-004",
+        "LIFE-007",
+        "THR-001",
+        "THR-002"
+      ],
+      "independent_expectation": "Actual supported env exits with admitted pending result/close/source/event obligations. Same-stack exit-request snapshot records full occupancy before workerPort.close (where supported); hook entry records its own actual occupancy, not inferred fullness. Native cleanup performs real join and owner-thread async-handle removal without JS. Parent static audit sees true payload/ref/finalizer/context completion and zero illegal API calls."
+    },
+    {
+      "id": "c07.arkts-cpp.route-ownership",
+      "catalog_route": "ARKTS-CPP-NAPI",
+      "matrix_id": "route-ownership",
+      "problem_ids": [
+        "CAP-001",
+        "LIFE-001",
+        "LIFE-002",
+        "LIFE-004",
+        "LIFE-007",
+        "VERIFY-001"
+      ],
+      "independent_expectation": "Every admitted model, callback owner and worker belongs to the declared C/C++/Rust/Kotlin implementation. Allocation/free totals match actual destructor/free sites; rejected failure outputs are included. Baseline-preserving operation close differs from entire-runtime zero; sentinel/metadata/class refs and runtime hook/TSFN/context obligations are all included in final shutdown."
+    },
+    {
+      "id": "c07.arkts-rust.ordinary",
+      "catalog_route": "ARKTS-RUST-NAPI",
+      "matrix_id": "ordinary",
+      "problem_ids": [
+        "ASYNC-004",
+        "BUILD-004",
+        "ERR-001",
+        "ERR-003",
+        "LIFE-005",
+        "TYPE-001",
+        "TYPE-004",
+        "TYPE-005",
+        "TYPE-006",
+        "VERIFY-001"
+      ],
+      "independent_expectation": "Uninstrumented public HAR ordinary consumer: fixed Snapshot values/negatives, getter exception identity/recovery, inherited setter trap, native operation/domain, state/event, request-only retirement, old-handle errors, ordinary Runtime.close return. Does not substitute for companion ownership/full-profile evidence."
+    },
+    {
+      "id": "c07.arkts-rust.identity",
+      "catalog_route": "ARKTS-RUST-NAPI",
+      "matrix_id": "identity",
+      "problem_ids": [
+        "BUILD-002",
+        "CAP-001",
+        "COMP-001",
+        "LIFE-001"
+      ],
+      "independent_expectation": "Unmodified facade expectations come from the admitted candidate. Replace the actual library separately with wrong artifact, ABI and profile fixtures. Exact declared error/stage, and zero new business worker/ref/TSFN/engine owners before rejection. Missing exports/load failure is distinct from a successful bootstrap check."
+    },
+    {
+      "id": "c07.arkts-rust.distribution",
+      "catalog_route": "ARKTS-RUST-NAPI",
+      "matrix_id": "distribution",
+      "problem_ids": [
+        "BUILD-001",
+        "BUILD-003",
+        "BUILD-004",
+        "BUILD-005",
+        "CAP-002",
+        "DIST-001"
+      ],
+      "independent_expectation": "Real public declarations and all required native dependencies arrive through the HAR closure; clean consumer Release + property/export/filename obfuscation succeeds with legitimate public keep rules. Ordinary app works without test-support. C++-only consumption does not incidentally depend on Kotlin initialization."
+    },
+    {
+      "id": "c07.arkts-rust.generation",
+      "catalog_route": "ARKTS-RUST-NAPI",
+      "matrix_id": "generation",
+      "problem_ids": [
+        "CAP-002",
+        "CAP-003",
+        "CAP-004",
+        "GEN-001",
+        "TYPE-008"
+      ],
+      "independent_expectation": "Actual C/Clang, C++ bridge, napi-ohos and KSP declaration evidence as applicable. Rename a declared symbol and observe generated/public output change. Unsupported async listener and cross-thread synchronous return fail before output commit with source location; no arbitrary all-types requirement."
+    },
+    {
+      "id": "c07.arkts-rust.values",
+      "catalog_route": "ARKTS-RUST-NAPI",
+      "matrix_id": "values",
+      "problem_ids": [
+        "TYPE-001",
+        "TYPE-002",
+        "TYPE-005",
+        "TYPE-006"
+      ],
+      "independent_expectation": "Int32 min/max, -0→+0, empty/ASCII/中文/combining/supplementary Unicode/NUL; independently constructed 1024-byte ASCII, CJK and emoji boundaries accepted, 1025 rejected. Reject bool/string/null, NaN, infinities, fractions, overflow and isolated surrogates before conversion. No normalization or strlen truncation."
+    },
+    {
+      "id": "c07.arkts-rust.getters-and-reentry",
+      "catalog_route": "ARKTS-RUST-NAPI",
+      "matrix_id": "getters-and-reentry",
+      "problem_ids": [
+        "ERR-002",
+        "ERR-003",
+        "LIFE-005",
+        "THR-004",
+        "TYPE-006"
+      ],
+      "independent_expectation": "Read each declared property once, preserve an actual thrown Error object, and recover. A getter closes its own Engine: original generation stays alive through the entry, later admission recheck rejects without business allocation. No Core lock is held across getters."
+    },
+    {
+      "id": "c07.arkts-rust.output-copy",
+      "catalog_route": "ARKTS-RUST-NAPI",
+      "matrix_id": "output-copy",
+      "problem_ids": [
+        "ERR-003",
+        "LIFE-008",
+        "TYPE-004",
+        "TYPE-006"
+      ],
+      "independent_expectation": "Returned Snapshot is independent; later input/output mutation cannot affect the other copy. Actual inherited setters on value/text are not invoked; returned fields are own data properties. Use a small real JS negative seam where ArkTS cannot express the input, not a weakened type declaration."
+    },
+    {
+      "id": "c07.arkts-rust.worker-and-domain",
+      "catalog_route": "ARKTS-RUST-NAPI",
+      "matrix_id": "worker-and-domain",
+      "problem_ids": [
+        "ASYNC-005",
+        "ERR-001",
+        "LIFE-001",
+        "THR-001",
+        "THR-002"
+      ],
+      "independent_expectation": "Native worker computes 41→42, preserves text, and returns DomainOverflow for INT32_MAX. Actual owner/business/cleanup thread witnesses differ while alive. Provider computation/free counters bind the genuine route implementation, not a substituted C++ business function."
+    },
+    {
+      "id": "c07.arkts-rust.terminal-winner",
+      "catalog_route": "ARKTS-RUST-NAPI",
+      "matrix_id": "terminal-winner",
+      "problem_ids": [
+        "ASYNC-001",
+        "ASYNC-005",
+        "ERR-003",
+        "LIFE-002",
+        "THR-003"
+      ],
+      "independent_expectation": "Deterministically cancel before terminal → Cancelled; commit Success then cancel → original success; commit DomainOverflow then cancel → original domain failure. An actual race permits only one legal winner/settlement and one free. Work held after terminal keeps close pending. No C06 cancel-overwrites rule."
+    },
+    {
+      "id": "c07.arkts-rust.single-claim",
+      "catalog_route": "ARKTS-RUST-NAPI",
+      "matrix_id": "single-claim",
+      "problem_ids": [
+        "ASYNC-002",
+        "ERR-001",
+        "ERR-003",
+        "LIFE-008"
+      ],
+      "independent_expectation": "Second accepted result request rejects AlreadyConsumed, including while first is pending. A precommit admission/registration failure rolls back both claimant and waiter, permits a retry and leaves no duplicate result owner. Ordinary Promise-method rejection is a rejected Promise, not a synchronous throw."
+    },
+    {
+      "id": "c07.arkts-rust.result-transfer-failures",
+      "catalog_route": "ARKTS-RUST-NAPI",
+      "matrix_id": "result-transfer-failures",
+      "problem_ids": [
+        "ASYNC-002",
+        "ERR-002",
+        "ERR-003",
+        "LIFE-001",
+        "LIFE-008"
+      ],
+      "independent_expectation": "Guard-before failure leaves a truthful native residual until explicit cleanup; guard-after conversion failure really frees once and rejects once. Error after accepted resolve cannot attempt reject/reconsume. Inherited setter trap remains uncalled. Genuine typed clone failures with a non-null output still pair that output with its route free."
+    },
+    {
+      "id": "c07.arkts-rust.dropped-promise",
+      "catalog_route": "ARKTS-RUST-NAPI",
+      "matrix_id": "dropped-promise",
+      "problem_ids": [
+        "ASYNC-002",
+        "LIFE-002",
+        "LIFE-005",
+        "LIFE-008"
+      ],
+      "independent_expectation": "Discarding a JS Promise does not cancel work or return its native waiter. Check the actual retained count while delivery is held, then Runtime.close drains or legally discards it with paired ownership. No forced GC prerequisite."
+    },
+    {
+      "id": "c07.arkts-rust.operations",
+      "catalog_route": "ARKTS-RUST-NAPI",
+      "matrix_id": "operations",
+      "problem_ids": [
+        "ASYNC-005",
+        "LIFE-001",
+        "LIFE-005",
+        "LIFE-006"
+      ],
+      "independent_expectation": "Eight accepted operation handles remain charged even after terminal/unclaimed result; ninth rejects. Closing one returns capacity after true work/payload drain; successful later admission proves a concurrent bound rather than an eight-lifetime cap."
+    },
+    {
+      "id": "c07.arkts-rust.subscriptions",
+      "catalog_route": "ARKTS-RUST-NAPI",
+      "matrix_id": "subscriptions",
+      "problem_ids": [
+        "ASYNC-004",
+        "LIFE-004",
+        "LIFE-005"
+      ],
+      "independent_expectation": "Eight total state+event subscriptions, e.g. four of each; ninth rejects. Stop/drain returns one shared slot. Listener references remain held until source/pending/entered drain, and explicit close releases them without GC."
+    },
+    {
+      "id": "c07.arkts-rust.state",
+      "catalog_route": "ARKTS-RUST-NAPI",
+      "matrix_id": "state",
+      "problem_ids": [
+        "ASYNC-004",
+        "LIFE-004",
+        "THR-003",
+        "THR-004",
+        "TYPE-004"
+      ],
+      "independent_expectation": "Registration is empty and pre-registration publication does not replay. Hold delivery pre-entry: publish1, take/hold actual delivery, publish2, invoke → only2. Inside entered2, publish3 then4 → entered2 is unchanged and next callback is4. New subscriber gets no prior current value."
+    },
+    {
+      "id": "c07.arkts-rust.event-fifo-and-atomic",
+      "catalog_route": "ARKTS-RUST-NAPI",
+      "matrix_id": "event-fifo-and-atomic",
+      "problem_ids": [
+        "ASYNC-004",
+        "LIFE-001",
+        "THR-003"
+      ],
+      "independent_expectation": "Three selected subscribers receive accepted events in each subscriber's FIFO order; no global callback ordering assertion. With six tickets occupied, a three-recipient publication rejects atomically and reaches none. No-listener publication retains no owner. State/event calls do not modify the other stream."
+    },
+    {
+      "id": "c07.arkts-rust.fanout-allocation",
+      "catalog_route": "ARKTS-RUST-NAPI",
+      "matrix_id": "fanout-allocation",
+      "problem_ids": [
+        "ASYNC-004",
+        "ERR-003",
+        "LIFE-001"
+      ],
+      "independent_expectation": "Fail a real provider clone after at least one selected recipient has already cloned. No recipient gets the rejected state/event; old pending state remains; all successful partial allocations are truly freed. Recovery publish reaches every selected recipient once."
+    },
+    {
+      "id": "c07.arkts-rust.state-staging-bytes",
+      "catalog_route": "ARKTS-RUST-NAPI",
+      "matrix_id": "state-staging-bytes",
+      "problem_ids": [
+        "ASYNC-004",
+        "LIFE-001",
+        "PERF-001"
+      ],
+      "independent_expectation": "Four state subscribers each hold pending1024 (4096 retained). Replacement must reserve incoming copies while old remain charged and rejects without changing any pending value. After drain/free, the same replacement succeeds. Exact staging/retained peaks and per-route allocations are observed separately."
+    },
+    {
+      "id": "c07.arkts-rust.event-outstanding",
+      "catalog_route": "ARKTS-RUST-NAPI",
+      "matrix_id": "event-outstanding",
+      "problem_ids": [
+        "ASYNC-004",
+        "LIFE-001",
+        "LIFE-004",
+        "THR-004"
+      ],
+      "independent_expectation": "Two event subscribers × four accepted publications = eight tickets. In the first actual listener, entered still owns its ticket; another two-recipient publish rejects. Callback return, not dequeue/copy, returns the ticket. Source-acquired and queued phases use the same conserved ticket."
+    },
+    {
+      "id": "c07.arkts-rust.source-stop",
+      "catalog_route": "ARKTS-RUST-NAPI",
+      "matrix_id": "source-stop",
+      "problem_ids": [
+        "ASYNC-003",
+        "LIFE-002",
+        "LIFE-004",
+        "LIFE-005",
+        "THR-003"
+      ],
+      "independent_expectation": "Hold one real publication/source transaction before enqueue. Request stop/close, prove callback does not newly enter and ACK remains pending while the acquired source owner exists. Release/abandon the actual lease, then complete cleanup. Also stop during actual entered callback: current call returns, no later callback starts."
+    },
+    {
+      "id": "c07.arkts-rust.retained-bytes-and-scratch",
+      "catalog_route": "ARKTS-RUST-NAPI",
+      "matrix_id": "retained-bytes-and-scratch",
+      "problem_ids": [
+        "LIFE-001",
+        "LIFE-002",
+        "PERF-001"
+      ],
+      "independent_expectation": "Hold four operations with1024-byte inputs →4096 retained; a fifth one-byte input rejects although only four op slots are used. A1024-byte roundtrip still succeeds using its independent scratch, returns an independent copy and returns scratch immediately. Separately use zero-byte values to exercise the eighth operation without conflating byte exhaustion. Record model/UTF conversion overhead separately from the4096 ledger."
+    },
+    {
+      "id": "c07.arkts-rust.shared-waiters",
+      "catalog_route": "ARKTS-RUST-NAPI",
+      "matrix_id": "shared-waiters",
+      "problem_ids": [
+        "ASYNC-002",
+        "LIFE-001",
+        "LIFE-005"
+      ],
+      "independent_expectation": "Exactly one admitted result plus31 pending Operation.close calls gives32 actual ordinary claims in one env turn. Observer33 rejects ResourceExhausted. Separate pending Subscription/Engine close variants share this same budget; already-Closed close is value-only. No hidden allocator or child-close memoization makes this test pass."
+    },
+    {
+      "id": "c07.arkts-rust.request-before-observer",
+      "catalog_route": "ARKTS-RUST-NAPI",
+      "matrix_id": "request-before-observer",
+      "problem_ids": [
+        "ASYNC-002",
+        "ERR-003",
+        "LIFE-005"
+      ],
+      "independent_expectation": "At32 occupied ordinary records, pending op/sub/engine close observer rejects but its close request already gates new work/listener entry. Keep the targeted resource genuinely pending with a real work/source/entered owner; a closed child correctly does not consume another waiter. Retry after drain observes the same latched result."
+    },
+    {
+      "id": "c07.arkts-rust.settling-reentry",
+      "catalog_route": "ARKTS-RUST-NAPI",
+      "matrix_id": "settling-reentry",
+      "problem_ids": [
+        "ASYNC-002",
+        "LIFE-001",
+        "LIFE-008",
+        "THR-004"
+      ],
+      "independent_expectation": "While result/close is ready, entered or JS settling, the permit remains charged. Reenter at the real resolver/finally seam and observe capacity rejection until that settlement exits. No second native32 table or payload copy is created."
+    },
+    {
+      "id": "c07.arkts-rust.listener-throw-close",
+      "catalog_route": "ARKTS-RUST-NAPI",
+      "matrix_id": "listener-throw-close",
+      "problem_ids": [
+        "ERR-002",
+        "ERR-003",
+        "LIFE-004",
+        "LIFE-005",
+        "THR-004"
+      ],
+      "independent_expectation": "Inside a real listener obtain close Promise/requestStop and return; never synchronously wait. Listener throw stops only its subscription, its close rejects CallbackFailure after full drain; sibling work and Engine.close recover. The current entered payload/ref remain owned through return/throw."
+    },
+    {
+      "id": "c07.arkts-rust.request-only-retirement",
+      "catalog_route": "ARKTS-RUST-NAPI",
+      "matrix_id": "request-only-retirement",
+      "problem_ids": [
+        "ASYNC-002",
+        "LIFE-004",
+        "LIFE-005",
+        "LIFE-006"
+      ],
+      "independent_expectation": "More than eight ordinary observe→requestStop cycles succeed without a close observer driving retirement. Engine.requestClose similarly retires with true join before later connect; old Engine.close resolves after new generation admission. A failed subscription's close still returns its immutable CallbackFailure after other subscription slots have been reused. Native retirement hints are not extra Promise waiters."
+    },
+    {
+      "id": "c07.arkts-rust.generation-and-handles",
+      "catalog_route": "ARKTS-RUST-NAPI",
+      "matrix_id": "generation-and-handles",
+      "problem_ids": [
+        "LIFE-003",
+        "LIFE-005",
+        "LIFE-006",
+        "TYPE-003",
+        "TYPE-007"
+      ],
+      "independent_expectation": "Second operational engine rejected; new generation admitted only after old business + waiters + JS settling + notifications drain. Old immutable tombstone cannot address reused slots. Public companion malformed/wrong-kind/env/generation/overflow handle fixtures reject before work, with full uint64 decimal precision retained."
+    },
+    {
+      "id": "c07.arkts-rust.runtime-close-full",
+      "catalog_route": "ARKTS-RUST-NAPI",
+      "matrix_id": "runtime-close-full",
+      "problem_ids": [
+        "ASYNC-002",
+        "LIFE-001",
+        "LIFE-004",
+        "LIFE-005",
+        "LIFE-006",
+        "LIFE-007",
+        "THR-002"
+      ],
+      "independent_expectation": "At32 ordinary claims plus real held work/source, Runtime.close starts using its pre-reserved parent control; repeated Runtime.close shares that control. Release holds, finish every child settlement, join actual thread/TLS and obtain static physical ACK, then timerArmed/tickInFlight=0. No33rd business waiter, no cleanup allocation from exhausted business capacity, no ACK waiting for itself."
+    },
+    {
+      "id": "c07.arkts-rust.env-exit-full",
+      "catalog_route": "ARKTS-RUST-NAPI",
+      "matrix_id": "env-exit-full",
+      "problem_ids": [
+        "LIFE-002",
+        "LIFE-004",
+        "LIFE-007",
+        "THR-001",
+        "THR-002"
+      ],
+      "independent_expectation": "Actual supported env exits with admitted pending result/close/source/event obligations. Same-stack exit-request snapshot records full occupancy before workerPort.close (where supported); hook entry records its own actual occupancy, not inferred fullness. Native cleanup performs real join and owner-thread async-handle removal without JS. Parent static audit sees true payload/ref/finalizer/context completion and zero illegal API calls."
+    },
+    {
+      "id": "c07.arkts-rust.route-ownership",
+      "catalog_route": "ARKTS-RUST-NAPI",
+      "matrix_id": "route-ownership",
+      "problem_ids": [
+        "CAP-001",
+        "LIFE-001",
+        "LIFE-002",
+        "LIFE-004",
+        "LIFE-007",
+        "VERIFY-001"
+      ],
+      "independent_expectation": "Every admitted model, callback owner and worker belongs to the declared C/C++/Rust/Kotlin implementation. Allocation/free totals match actual destructor/free sites; rejected failure outputs are included. Baseline-preserving operation close differs from entire-runtime zero; sentinel/metadata/class refs and runtime hook/TSFN/context obligations are all included in final shutdown."
+    },
+    {
+      "id": "c07.kotlin-arkts.ordinary",
+      "catalog_route": "KN-ARKTS-NAPI",
+      "matrix_id": "ordinary",
+      "problem_ids": [
+        "ASYNC-004",
+        "BUILD-004",
+        "ERR-001",
+        "ERR-003",
+        "LIFE-005",
+        "TYPE-001",
+        "TYPE-004",
+        "TYPE-005",
+        "TYPE-006",
+        "VERIFY-001"
+      ],
+      "independent_expectation": "Uninstrumented public HAR ordinary consumer: fixed Snapshot values/negatives, getter exception identity/recovery, inherited setter trap, native operation/domain, state/event, request-only retirement, old-handle errors, ordinary Runtime.close return. Does not substitute for companion ownership/full-profile evidence."
+    },
+    {
+      "id": "c07.kotlin-arkts.identity",
+      "catalog_route": "KN-ARKTS-NAPI",
+      "matrix_id": "identity",
+      "problem_ids": [
+        "BUILD-002",
+        "CAP-001",
+        "COMP-001",
+        "LIFE-001"
+      ],
+      "independent_expectation": "Unmodified facade expectations come from the admitted candidate. Replace the actual library separately with wrong artifact, ABI and profile fixtures. Exact declared error/stage, and zero new business worker/ref/TSFN/engine owners before rejection. Missing exports/load failure is distinct from a successful bootstrap check."
+    },
+    {
+      "id": "c07.kotlin-arkts.distribution",
+      "catalog_route": "KN-ARKTS-NAPI",
+      "matrix_id": "distribution",
+      "problem_ids": [
+        "BUILD-001",
+        "BUILD-003",
+        "BUILD-004",
+        "BUILD-005",
+        "CAP-002",
+        "DIST-001"
+      ],
+      "independent_expectation": "Real public declarations and all required native dependencies arrive through the HAR closure; clean consumer Release + property/export/filename obfuscation succeeds with legitimate public keep rules. Ordinary app works without test-support. C++-only consumption does not incidentally depend on Kotlin initialization."
+    },
+    {
+      "id": "c07.kotlin-arkts.generation",
+      "catalog_route": "KN-ARKTS-NAPI",
+      "matrix_id": "generation",
+      "problem_ids": [
+        "CAP-002",
+        "CAP-003",
+        "CAP-004",
+        "GEN-001",
+        "TYPE-008"
+      ],
+      "independent_expectation": "Actual C/Clang, C++ bridge, napi-ohos and KSP declaration evidence as applicable. Rename a declared symbol and observe generated/public output change. Unsupported async listener and cross-thread synchronous return fail before output commit with source location; no arbitrary all-types requirement."
+    },
+    {
+      "id": "c07.kotlin-arkts.values",
+      "catalog_route": "KN-ARKTS-NAPI",
+      "matrix_id": "values",
+      "problem_ids": [
+        "TYPE-001",
+        "TYPE-002",
+        "TYPE-005",
+        "TYPE-006"
+      ],
+      "independent_expectation": "Int32 min/max, -0→+0, empty/ASCII/中文/combining/supplementary Unicode/NUL; independently constructed 1024-byte ASCII, CJK and emoji boundaries accepted, 1025 rejected. Reject bool/string/null, NaN, infinities, fractions, overflow and isolated surrogates before conversion. No normalization or strlen truncation."
+    },
+    {
+      "id": "c07.kotlin-arkts.getters-and-reentry",
+      "catalog_route": "KN-ARKTS-NAPI",
+      "matrix_id": "getters-and-reentry",
+      "problem_ids": [
+        "ERR-002",
+        "ERR-003",
+        "LIFE-005",
+        "THR-004",
+        "TYPE-006"
+      ],
+      "independent_expectation": "Read each declared property once, preserve an actual thrown Error object, and recover. A getter closes its own Engine: original generation stays alive through the entry, later admission recheck rejects without business allocation. No Core lock is held across getters."
+    },
+    {
+      "id": "c07.kotlin-arkts.output-copy",
+      "catalog_route": "KN-ARKTS-NAPI",
+      "matrix_id": "output-copy",
+      "problem_ids": [
+        "ERR-003",
+        "LIFE-008",
+        "TYPE-004",
+        "TYPE-006"
+      ],
+      "independent_expectation": "Returned Snapshot is independent; later input/output mutation cannot affect the other copy. Actual inherited setters on value/text are not invoked; returned fields are own data properties. Use a small real JS negative seam where ArkTS cannot express the input, not a weakened type declaration."
+    },
+    {
+      "id": "c07.kotlin-arkts.worker-and-domain",
+      "catalog_route": "KN-ARKTS-NAPI",
+      "matrix_id": "worker-and-domain",
+      "problem_ids": [
+        "ASYNC-005",
+        "ERR-001",
+        "LIFE-001",
+        "THR-001",
+        "THR-002"
+      ],
+      "independent_expectation": "Native worker computes 41→42, preserves text, and returns DomainOverflow for INT32_MAX. Actual owner/business/cleanup thread witnesses differ while alive. Provider computation/free counters bind the genuine route implementation, not a substituted C++ business function."
+    },
+    {
+      "id": "c07.kotlin-arkts.terminal-winner",
+      "catalog_route": "KN-ARKTS-NAPI",
+      "matrix_id": "terminal-winner",
+      "problem_ids": [
+        "ASYNC-001",
+        "ASYNC-005",
+        "ERR-003",
+        "LIFE-002",
+        "THR-003"
+      ],
+      "independent_expectation": "Deterministically cancel before terminal → Cancelled; commit Success then cancel → original success; commit DomainOverflow then cancel → original domain failure. An actual race permits only one legal winner/settlement and one free. Work held after terminal keeps close pending. No C06 cancel-overwrites rule."
+    },
+    {
+      "id": "c07.kotlin-arkts.single-claim",
+      "catalog_route": "KN-ARKTS-NAPI",
+      "matrix_id": "single-claim",
+      "problem_ids": [
+        "ASYNC-002",
+        "ERR-001",
+        "ERR-003",
+        "LIFE-008"
+      ],
+      "independent_expectation": "Second accepted result request rejects AlreadyConsumed, including while first is pending. A precommit admission/registration failure rolls back both claimant and waiter, permits a retry and leaves no duplicate result owner. Ordinary Promise-method rejection is a rejected Promise, not a synchronous throw."
+    },
+    {
+      "id": "c07.kotlin-arkts.result-transfer-failures",
+      "catalog_route": "KN-ARKTS-NAPI",
+      "matrix_id": "result-transfer-failures",
+      "problem_ids": [
+        "ASYNC-002",
+        "ERR-002",
+        "ERR-003",
+        "LIFE-001",
+        "LIFE-008"
+      ],
+      "independent_expectation": "Guard-before failure leaves a truthful native residual until explicit cleanup; guard-after conversion failure really frees once and rejects once. Error after accepted resolve cannot attempt reject/reconsume. Inherited setter trap remains uncalled. Genuine typed clone failures with a non-null output still pair that output with its route free."
+    },
+    {
+      "id": "c07.kotlin-arkts.dropped-promise",
+      "catalog_route": "KN-ARKTS-NAPI",
+      "matrix_id": "dropped-promise",
+      "problem_ids": [
+        "ASYNC-002",
+        "LIFE-002",
+        "LIFE-005",
+        "LIFE-008"
+      ],
+      "independent_expectation": "Discarding a JS Promise does not cancel work or return its native waiter. Check the actual retained count while delivery is held, then Runtime.close drains or legally discards it with paired ownership. No forced GC prerequisite."
+    },
+    {
+      "id": "c07.kotlin-arkts.operations",
+      "catalog_route": "KN-ARKTS-NAPI",
+      "matrix_id": "operations",
+      "problem_ids": [
+        "ASYNC-005",
+        "LIFE-001",
+        "LIFE-005",
+        "LIFE-006"
+      ],
+      "independent_expectation": "Eight accepted operation handles remain charged even after terminal/unclaimed result; ninth rejects. Closing one returns capacity after true work/payload drain; successful later admission proves a concurrent bound rather than an eight-lifetime cap."
+    },
+    {
+      "id": "c07.kotlin-arkts.subscriptions",
+      "catalog_route": "KN-ARKTS-NAPI",
+      "matrix_id": "subscriptions",
+      "problem_ids": [
+        "ASYNC-004",
+        "LIFE-004",
+        "LIFE-005"
+      ],
+      "independent_expectation": "Eight total state+event subscriptions, e.g. four of each; ninth rejects. Stop/drain returns one shared slot. Listener references remain held until source/pending/entered drain, and explicit close releases them without GC."
+    },
+    {
+      "id": "c07.kotlin-arkts.state",
+      "catalog_route": "KN-ARKTS-NAPI",
+      "matrix_id": "state",
+      "problem_ids": [
+        "ASYNC-004",
+        "LIFE-004",
+        "THR-003",
+        "THR-004",
+        "TYPE-004"
+      ],
+      "independent_expectation": "Registration is empty and pre-registration publication does not replay. Hold delivery pre-entry: publish1, take/hold actual delivery, publish2, invoke → only2. Inside entered2, publish3 then4 → entered2 is unchanged and next callback is4. New subscriber gets no prior current value."
+    },
+    {
+      "id": "c07.kotlin-arkts.event-fifo-and-atomic",
+      "catalog_route": "KN-ARKTS-NAPI",
+      "matrix_id": "event-fifo-and-atomic",
+      "problem_ids": [
+        "ASYNC-004",
+        "LIFE-001",
+        "THR-003"
+      ],
+      "independent_expectation": "Three selected subscribers receive accepted events in each subscriber's FIFO order; no global callback ordering assertion. With six tickets occupied, a three-recipient publication rejects atomically and reaches none. No-listener publication retains no owner. State/event calls do not modify the other stream."
+    },
+    {
+      "id": "c07.kotlin-arkts.fanout-allocation",
+      "catalog_route": "KN-ARKTS-NAPI",
+      "matrix_id": "fanout-allocation",
+      "problem_ids": [
+        "ASYNC-004",
+        "ERR-003",
+        "LIFE-001"
+      ],
+      "independent_expectation": "Fail a real provider clone after at least one selected recipient has already cloned. No recipient gets the rejected state/event; old pending state remains; all successful partial allocations are truly freed. Recovery publish reaches every selected recipient once."
+    },
+    {
+      "id": "c07.kotlin-arkts.state-staging-bytes",
+      "catalog_route": "KN-ARKTS-NAPI",
+      "matrix_id": "state-staging-bytes",
+      "problem_ids": [
+        "ASYNC-004",
+        "LIFE-001",
+        "PERF-001"
+      ],
+      "independent_expectation": "Four state subscribers each hold pending1024 (4096 retained). Replacement must reserve incoming copies while old remain charged and rejects without changing any pending value. After drain/free, the same replacement succeeds. Exact staging/retained peaks and per-route allocations are observed separately."
+    },
+    {
+      "id": "c07.kotlin-arkts.event-outstanding",
+      "catalog_route": "KN-ARKTS-NAPI",
+      "matrix_id": "event-outstanding",
+      "problem_ids": [
+        "ASYNC-004",
+        "LIFE-001",
+        "LIFE-004",
+        "THR-004"
+      ],
+      "independent_expectation": "Two event subscribers × four accepted publications = eight tickets. In the first actual listener, entered still owns its ticket; another two-recipient publish rejects. Callback return, not dequeue/copy, returns the ticket. Source-acquired and queued phases use the same conserved ticket."
+    },
+    {
+      "id": "c07.kotlin-arkts.source-stop",
+      "catalog_route": "KN-ARKTS-NAPI",
+      "matrix_id": "source-stop",
+      "problem_ids": [
+        "ASYNC-003",
+        "LIFE-002",
+        "LIFE-004",
+        "LIFE-005",
+        "THR-003"
+      ],
+      "independent_expectation": "Hold one real publication/source transaction before enqueue. Request stop/close, prove callback does not newly enter and ACK remains pending while the acquired source owner exists. Release/abandon the actual lease, then complete cleanup. Also stop during actual entered callback: current call returns, no later callback starts."
+    },
+    {
+      "id": "c07.kotlin-arkts.retained-bytes-and-scratch",
+      "catalog_route": "KN-ARKTS-NAPI",
+      "matrix_id": "retained-bytes-and-scratch",
+      "problem_ids": [
+        "LIFE-001",
+        "LIFE-002",
+        "PERF-001"
+      ],
+      "independent_expectation": "Hold four operations with1024-byte inputs →4096 retained; a fifth one-byte input rejects although only four op slots are used. A1024-byte roundtrip still succeeds using its independent scratch, returns an independent copy and returns scratch immediately. Separately use zero-byte values to exercise the eighth operation without conflating byte exhaustion. Record model/UTF conversion overhead separately from the4096 ledger."
+    },
+    {
+      "id": "c07.kotlin-arkts.shared-waiters",
+      "catalog_route": "KN-ARKTS-NAPI",
+      "matrix_id": "shared-waiters",
+      "problem_ids": [
+        "ASYNC-002",
+        "LIFE-001",
+        "LIFE-005"
+      ],
+      "independent_expectation": "Exactly one admitted result plus31 pending Operation.close calls gives32 actual ordinary claims in one env turn. Observer33 rejects ResourceExhausted. Separate pending Subscription/Engine close variants share this same budget; already-Closed close is value-only. No hidden allocator or child-close memoization makes this test pass."
+    },
+    {
+      "id": "c07.kotlin-arkts.request-before-observer",
+      "catalog_route": "KN-ARKTS-NAPI",
+      "matrix_id": "request-before-observer",
+      "problem_ids": [
+        "ASYNC-002",
+        "ERR-003",
+        "LIFE-005"
+      ],
+      "independent_expectation": "At32 occupied ordinary records, pending op/sub/engine close observer rejects but its close request already gates new work/listener entry. Keep the targeted resource genuinely pending with a real work/source/entered owner; a closed child correctly does not consume another waiter. Retry after drain observes the same latched result."
+    },
+    {
+      "id": "c07.kotlin-arkts.settling-reentry",
+      "catalog_route": "KN-ARKTS-NAPI",
+      "matrix_id": "settling-reentry",
+      "problem_ids": [
+        "ASYNC-002",
+        "LIFE-001",
+        "LIFE-008",
+        "THR-004"
+      ],
+      "independent_expectation": "While result/close is ready, entered or JS settling, the permit remains charged. Reenter at the real resolver/finally seam and observe capacity rejection until that settlement exits. No second native32 table or payload copy is created."
+    },
+    {
+      "id": "c07.kotlin-arkts.listener-throw-close",
+      "catalog_route": "KN-ARKTS-NAPI",
+      "matrix_id": "listener-throw-close",
+      "problem_ids": [
+        "ERR-002",
+        "ERR-003",
+        "LIFE-004",
+        "LIFE-005",
+        "THR-004"
+      ],
+      "independent_expectation": "Inside a real listener obtain close Promise/requestStop and return; never synchronously wait. Listener throw stops only its subscription, its close rejects CallbackFailure after full drain; sibling work and Engine.close recover. The current entered payload/ref remain owned through return/throw."
+    },
+    {
+      "id": "c07.kotlin-arkts.request-only-retirement",
+      "catalog_route": "KN-ARKTS-NAPI",
+      "matrix_id": "request-only-retirement",
+      "problem_ids": [
+        "ASYNC-002",
+        "LIFE-004",
+        "LIFE-005",
+        "LIFE-006"
+      ],
+      "independent_expectation": "More than eight ordinary observe→requestStop cycles succeed without a close observer driving retirement. Engine.requestClose similarly retires with true join before later connect; old Engine.close resolves after new generation admission. A failed subscription's close still returns its immutable CallbackFailure after other subscription slots have been reused. Native retirement hints are not extra Promise waiters."
+    },
+    {
+      "id": "c07.kotlin-arkts.generation-and-handles",
+      "catalog_route": "KN-ARKTS-NAPI",
+      "matrix_id": "generation-and-handles",
+      "problem_ids": [
+        "LIFE-003",
+        "LIFE-005",
+        "LIFE-006",
+        "TYPE-003",
+        "TYPE-007"
+      ],
+      "independent_expectation": "Second operational engine rejected; new generation admitted only after old business + waiters + JS settling + notifications drain. Old immutable tombstone cannot address reused slots. Public companion malformed/wrong-kind/env/generation/overflow handle fixtures reject before work, with full uint64 decimal precision retained."
+    },
+    {
+      "id": "c07.kotlin-arkts.runtime-close-full",
+      "catalog_route": "KN-ARKTS-NAPI",
+      "matrix_id": "runtime-close-full",
+      "problem_ids": [
+        "ASYNC-002",
+        "LIFE-001",
+        "LIFE-004",
+        "LIFE-005",
+        "LIFE-006",
+        "LIFE-007",
+        "THR-002"
+      ],
+      "independent_expectation": "At32 ordinary claims plus real held work/source, Runtime.close starts using its pre-reserved parent control; repeated Runtime.close shares that control. Release holds, finish every child settlement, join actual thread/TLS and obtain static physical ACK, then timerArmed/tickInFlight=0. No33rd business waiter, no cleanup allocation from exhausted business capacity, no ACK waiting for itself."
+    },
+    {
+      "id": "c07.kotlin-arkts.env-exit-full",
+      "catalog_route": "KN-ARKTS-NAPI",
+      "matrix_id": "env-exit-full",
+      "problem_ids": [
+        "LIFE-002",
+        "LIFE-004",
+        "LIFE-007",
+        "THR-001",
+        "THR-002"
+      ],
+      "independent_expectation": "Actual supported env exits with admitted pending result/close/source/event obligations. Same-stack exit-request snapshot records full occupancy before workerPort.close (where supported); hook entry records its own actual occupancy, not inferred fullness. Native cleanup performs real join and owner-thread async-handle removal without JS. Parent static audit sees true payload/ref/finalizer/context completion and zero illegal API calls.",
+      "applicability": "Main-env-only: recoverable Worker-first rejection before managed allocation; full normal main-runtime shutdown while env valid is covered by runtime-close-full/route-ownership. Record actual system-hook/null-env observed or unobserved separately against the final profile responsibility table. Do not require physical main-VM destruction or treat another route Worker exit as proof."
+    },
+    {
+      "id": "c07.kotlin-arkts.route-ownership",
+      "catalog_route": "KN-ARKTS-NAPI",
+      "matrix_id": "route-ownership",
+      "problem_ids": [
+        "CAP-001",
+        "LIFE-001",
+        "LIFE-002",
+        "LIFE-004",
+        "LIFE-007",
+        "VERIFY-001"
+      ],
+      "independent_expectation": "Every admitted model, callback owner and worker belongs to the declared C/C++/Rust/Kotlin implementation. Allocation/free totals match actual destructor/free sites; rejected failure outputs are included. Baseline-preserving operation close differs from entire-runtime zero; sentinel/metadata/class refs and runtime hook/TSFN/context obligations are all included in final shutdown."
+    }
+  ],
+  "matrix_source_sha256": "4d317b6da71365ad93144009fdb9f11e5c3adcdf6baf2042c9edcdd95dfd0e11",
+  "allocation_source_sha256": "13a231a3185b7578a9585084fce01e3698ac8199f2e89756adf565db2bed03d5"
+}

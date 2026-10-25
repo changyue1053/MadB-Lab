@@ -1,0 +1,68 @@
+// Independent Lab oracle. Public diagnostic layout is an input, not an expected-value implementation.
+// Prepared source only: no compile or target claim until a reviewed companion HAR is bound.
+import { Runtime, Engine, Operation, testObserve, testObserveFacade, testInspect,
+  testObserveOperation } from @MADB_PUBLIC_MODULE@;
+import { check, nextTurn } from './Assertions';
+export type Emit = (label: string, values: number[]) => void;
+
+export function frame(values: number[], label: string): number[] {
+  check(values.length === 156, label + ':length');
+  for (let i: number = 0; i < values.length; i++) {
+    check(Number.isFinite(values[i]) && Math.floor(values[i]) === values[i], label + ':integer:' + String(i));
+  }
+  check(values[0] === 1 && values[54] === 1, label + ':format');
+  check(values[55] >= 0 && values[55] <= 2, label + ':read-mode');
+  return values;
+}
+export function facade(runtime: Runtime, label: string): number[] {
+  const f: number[] = testObserveFacade(runtime);
+  check(f.length === 15 && f[0] === 1, label + ':facade-format');
+  for (let i: number = 0; i < f.length; i++) {
+    check(Number.isFinite(f[i]) && Math.floor(f[i]) === f[i] && f[i] >= 0, label + ':facade-integer');
+  }
+  return f;
+}
+export function observed(runtime: Runtime, label: string): number[] {
+  return frame(testObserve(runtime), label);
+}
+export async function gate(runtime: Runtime, operation: Operation, phase: number,
+                           deadline: number, emit: Emit): Promise<void> {
+  while (true) {
+    const f: number[] = observed(runtime, 'gate');
+    if (f[58] === 1) {
+      check(f[56] === phase && f[57] === 1 && f[59] === 0 && f[60] === 0, 'actual-gate-held');
+      check(f[13] >= 1 && f[14] === 1 && f[17] === 0 && f[65] === 1 && f[69] === 0, 'held-work-not-joined');
+      check(f[62] > 0 && f[63] > 0 && f[62] !== f[63], 'actual-worker-not-owner');
+      const o: number[] = testObserveOperation(operation);
+      check(o.length === 10 && o[0] === 1 && o[3] === 1 && o[4] === phase && o[5] === 1 && o[6] === 0, 'selected-operation-gate');
+      emit('work-held', f); emit('operation-held', o); return;
+    }
+    await nextTurn(deadline, 'actual-work-gate');
+  }
+}
+export async function finalClosed(runtime: Runtime, key: string, deadline: number,
+                                  emit: Emit): Promise<void> {
+  while (true) {
+    const f: number[] = frame(testInspect(key), 'closed-static');
+    if (f[1] === 3 && f[55] === 2) {
+      // Explicitly enumerate retained obligations. Never require cumulative creation counters to be zero.
+      const zero: number[] = [2,3,4,5,6,7,8,9,10,11,12,13,14,18,19,20,21,22,23,24,25,26,28,29,37,77];
+      for (let i: number = 0; i < zero.length; i++) { check(f[zero[i]] === 0, 'physical-zero:' + String(zero[i])); }
+      check(f[16] === 1 && f[17] === 1, 'physical-core-closed-worker-joined');
+      check(f[33] === f[34] && f[35] === 0, 'actual-provider-paired-free');
+      const created: number[] = [38,40,42,44,46,48,50,52];
+      for (let i: number = 0; i < created.length; i++) { check(f[created[i]] === f[created[i]+1], 'paired-native:' + String(created[i])); }
+      check(f[44] === 1 && f[45] === 1 && f[40] === 1 && f[41] === 1, 'real-finalizer-context-ack');
+      check(f[65] === 1 && f[66] === 1 && f[67] === 1 && f[68] === 1 && f[69] === 1 && f[70] === 1, 'physical-thread-stages');
+      check(f[71] < f[72] && f[72] < f[73] && f[73] < f[75] && f[74] < f[75] && f[75] < f[76], 'join-includes-tls');
+      check(f[62] > 0 && f[63] > 0 && f[64] > 0, 'actual-thread-witnesses');
+      // Historical numeric tids can be reused after exit. Compare worker/owner only at the live work gate; final join/TLS order proves completion.
+      const j: number[] = facade(runtime, 'closed');
+      const jzero: number[] = [1,2,3,4,5,6,7,13,14];
+      for (let i: number = 0; i < jzero.length; i++) { check(j[jzero[i]] === 0, 'closed-facade-zero:' + String(jzero[i])); }
+      check(j[9] === 1 && j[10] === 0, 'facade-closed-success');
+      emit('physical-closed', f); emit('facade-closed', j); return;
+    }
+    await nextTurn(deadline, 'physical-closed');
+  }
+}

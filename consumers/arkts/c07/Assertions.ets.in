@@ -1,0 +1,65 @@
+// Uncompiled Lab source. Replace only @MADB_PUBLIC_MODULE@ with a reviewed
+// public HAR import (or the ordinary facade during a labeled development run).
+import { BoundaryError, Snapshot } from @MADB_PUBLIC_MODULE@;
+
+export function check(condition: boolean, label: string): void {
+  if (!condition) { throw new Error('LAB_ASSERT:' + label); }
+}
+
+export function code(error: Error): string {
+  return (error as BoundaryError).code;
+}
+
+export function snapshot(actual: Snapshot, value: number, text: string, label: string): void {
+  check(actual.value === value, label + ':value');
+  check(actual.text === text, label + ':text');
+  if (value === 0) { check(1 / actual.value === Number.POSITIVE_INFINITY, label + ':positive-zero'); }
+}
+
+export function throwsCode(call: () => void, expected: string, label: string): void {
+  let caught: boolean = false;
+  try { call(); }
+  catch (error) {
+    caught = true;
+    check(error instanceof BoundaryError, label + ':typed-sdk-error');
+    check(code(error as Error) === expected, label + ':code:expected=' + expected + ':actual=' + code(error as Error));
+  }
+  check(caught, label + ':must-throw');
+}
+
+export async function rejectsSnapshot(call: () => Promise<Snapshot>, expected: string,
+                                      label: string): Promise<void> {
+  // A normal lifecycle/admission failure must first return a Promise.
+  let returned: Promise<Snapshot>;
+  try { returned = call(); }
+  catch (_error) { throw new Error('LAB_ASSERT:' + label + ':synchronous-throw'); }
+  let rejected: boolean = false;
+  try { await returned; }
+  catch (error) {
+    rejected = true;
+    check(error instanceof BoundaryError, label + ':typed-sdk-error');
+    check(code(error as Error) === expected, label + ':code:expected=' + expected + ':actual=' + code(error as Error));
+  }
+  check(rejected, label + ':must-reject');
+}
+
+export async function rejectsVoid(call: () => Promise<void>, expected: string,
+                                  label: string): Promise<void> {
+  let returned: Promise<void>;
+  try { returned = call(); }
+  catch (_error) { throw new Error('LAB_ASSERT:' + label + ':synchronous-throw'); }
+  let rejected: boolean = false;
+  try { await returned; }
+  catch (error) {
+    rejected = true;
+    check(error instanceof BoundaryError, label + ':typed-sdk-error');
+    check(code(error as Error) === expected, label + ':code:expected=' + expected + ':actual=' + code(error as Error));
+  }
+  check(rejected, label + ':must-reject');
+}
+
+export async function nextTurn(deadline: number, label: string): Promise<void> {
+  // This is an external Lab deadline/yield, not a business timeout or an ACK.
+  if (Date.now() >= deadline) { throw new Error('LAB_TIMEOUT:' + label); }
+  await new Promise<void>((resolve) => { setTimeout(resolve, 1); });
+}

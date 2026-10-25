@@ -1,0 +1,67 @@
+{
+  "schema": "madb.case/1",
+  "id": "c07.arkts-cpp.output-copy",
+  "kind": "template",
+  "problem_ids": [
+    "ERR-003",
+    "LIFE-008",
+    "TYPE-004",
+    "TYPE-006"
+  ],
+  "source_ids": [],
+  "selector": null,
+  "requires": {
+    "features": [],
+    "environment": []
+  },
+  "fixture": {
+    "path": "consumers/arkts/c07/OrdinaryCases.ets.in",
+    "sha256": "sha256:cd55912ddb4cf1111307c956e97a091554dd08047163ece69ce9adf5d4489e39",
+    "size": 7294,
+    "schema": "madb.lab-source/1"
+  },
+  "setup": [
+    {
+      "id": "install",
+      "action": "environment",
+      "entrypoint": "verified-public-har-release-obfuscated-hap",
+      "arguments": []
+    }
+  ],
+  "steps": [
+    {
+      "id": "execute",
+      "action": "call",
+      "entrypoint": "runOrdinaryRoute",
+      "arguments": []
+    }
+  ],
+  "assertions": [
+    {
+      "observation": "output-copy",
+      "operator": "equals",
+      "expected": [
+        {
+          "kind": "string",
+          "value": "Returned Snapshot is independent; later input/output mutation cannot affect the other copy. Actual inherited setters on value/text are not invoked; returned fields are own data properties. Use a small real JS negative seam where ArkTS cannot express the input, not a weakened type declaration."
+        }
+      ]
+    }
+  ],
+  "expected_result": {
+    "kind": "success"
+  },
+  "cleanup": [
+    {
+      "id": "close",
+      "action": "cleanup",
+      "entrypoint": "await-runtime-close",
+      "arguments": []
+    }
+  ],
+  "timeout_policy": {
+    "timeout_ms": 50000,
+    "on_timeout": "error",
+    "recovery": "isolate"
+  }
+}

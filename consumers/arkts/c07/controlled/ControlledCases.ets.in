@@ -1,0 +1,206 @@
+// Lab-owned prepared cases: ordinary public methods admit all resources; support only holds real work/source or observes.
+import { Runtime, Engine, Operation, Subscription, Snapshot, openRuntime,
+  testArmWork, testReleaseWork, testExportKey, testObserveOperation,
+  testFailCompletion, testFailClone, testHoldPublication, testReleasePublication,
+  testAfterSettlement } from @MADB_PUBLIC_MODULE@;
+import { check, snapshot, throwsCode, rejectsSnapshot, rejectsVoid, nextTurn } from './Assertions';
+import { Emit, observed, facade, gate, finalClosed } from './SupportChecks';
+import { runAdditional } from './AdditionalCases';
+import { runWorkerExit } from './WorkerExitCase';
+import { runFaultExit } from './FaultExitCase';
+import { runSharedWaiters } from './SharedWaiterCases';
+import { runFailure, runPartialOpen } from './FailureCases';
+
+async function countUntil(values: number[], count: number, deadline: number): Promise<void> {
+  while (values.length < count) { await nextTurn(deadline, 'callbacks'); }
+  check(values.length === count, 'exact-callback-count');
+}
+function exact(values: number[], expected: number[], label: string): void {
+  check(values.length === expected.length, label + ':length');
+  for (let i: number = 0; i < expected.length; i++) { check(values[i] === expected[i], label + ':item:' + String(i)); }
+}
+
+async function fullWaiters(runtime: Runtime, engine: Engine, deadline: number, emit: Emit,
+                           resolverReentry: boolean): Promise<void> {
+  testArmWork(engine, 1);
+  const operation: Operation = engine.startOperation({ value: 41, text: 'held' });
+  await gate(runtime, operation, 1, deadline, emit);
+  let reentered: boolean = false;
+  let reentry: Promise<void> | undefined = undefined;
+  let heldSubscription: Subscription | undefined = undefined;
+  if (resolverReentry) {
+    const pending: Subscription = engine.observeEvents((_s: Snapshot): void => { throw new Error('LAB_UNEXPECTED_SOURCE_CALLBACK'); });
+    heldSubscription = pending;
+    testHoldPublication(engine, 1, { value: 5, text: 'pending-subscription-source' });
+    testAfterSettlement(runtime, (): void => {
+      reentered = true;
+      const j: number[] = facade(runtime, 'resolver-reentry');
+      check(j[1] === 32 && j[2] === 1, 'actual-settling-still-charged');
+      reentry = rejectsVoid(() => pending.close(), 'ResourceExhausted', 'settling-record-33');
+      emit('resolver-reentry-facade', j); emit('resolver-reentry-native', observed(runtime, 'resolver'));
+    });
+  }
+  const cancelled: Promise<void> = rejectsSnapshot(() => operation.result(), 'Cancelled', 'cancelled-first-result');
+  const closes: Promise<void>[] = [];
+  for (let i: number = 0; i < 31; i++) { closes.push(operation.close()); }
+  const full: number[] = observed(runtime, 'full32'); const jfull: number[] = facade(runtime, 'full32');
+  check(full[11] === 32 && full[19] === 32 && jfull[1] === 32 && jfull[2] === 0, 'same-turn-ordinary-32');
+  emit('ordinary-full32', full); emit('facade-full32', jfull);
+  const denied: Promise<void> = rejectsVoid(() => operation.close(), 'ResourceExhausted', 'ordinary-record-33');
+  // Runtime close before settlement would gate the reentry with Closing; test the two claims in distinct runs.
+  let parent: Promise<void> | undefined = undefined;
+  let parentAgain: Promise<void> | undefined = undefined;
+  if (!resolverReentry) {
+    parent = runtime.close(); parentAgain = runtime.close();
+    const closing: number[] = observed(runtime, 'parent-control');
+    const js: number[] = facade(runtime, 'parent-control');
+    check(closing[11] === 32 && closing[17] === 0 && closing[14] === 1, 'parent-does-not-consume-business-slot');
+    check(js[5] === 1 && js[8] === 1 && js[9] === 0, 'one-parent-control');
+    emit('parent-close-while-full', closing); emit('parent-facade', js);
+  }
+  try { await denied; } finally { testReleaseWork(engine); }
+  await cancelled;
+  for (let i: number = 0; i < closes.length; i++) { await closes[i]; }
+  if (resolverReentry) {
+    check(reentered && reentry !== undefined, 'actual-resolver-reentry-hit');
+    if (reentry !== undefined) { await reentry; }
+    testReleasePublication(engine, 0);
+    if (heldSubscription !== undefined) { await heldSubscription.close(); }
+  }
+  if (parent !== undefined) { await parent; }
+  if (parentAgain !== undefined) { await parentAgain; }
+  await operation.close();
+}
+
+async function terminal(runtime: Runtime, engine: Engine, mode: string,
+                        deadline: number, emit: Emit): Promise<void> {
+  const phase: number = mode === 'cancel' ? 1 : 2;
+  const value: number = mode === 'domain' ? 2147483647 : 41;
+  testArmWork(engine, phase);
+  const op: Operation = engine.startOperation({ value: value, text: 'terminal\u0000中文' });
+  await gate(runtime, op, phase, deadline, emit);
+  const before: number[] = testObserveOperation(op);
+  check(before[1] === (mode === 'cancel' ? 0 : mode === 'domain' ? 2 : 1), 'winner-before-cancel');
+  op.requestCancel();
+  const after: number[] = testObserveOperation(op);
+  check(after[1] === (mode === 'cancel' ? 3 : mode === 'domain' ? 2 : 1), 'first-terminal-wins');
+  emit('terminal-after-cancel', after);
+  let result: Promise<void>;
+  if (mode === 'cancel') { result = rejectsSnapshot(() => op.result(), 'Cancelled', 'cancelled-winner'); }
+  else if (mode === 'domain') { result = rejectsSnapshot(() => op.result(), 'DomainOverflow', 'domain-winner'); }
+  else { result = op.result().then((s: Snapshot): void => { snapshot(s, 42, 'terminal\u0000中文', 'success-winner'); }); }
+  const second: Promise<void> = rejectsSnapshot(() => op.result(), 'AlreadyConsumed', 'strict-second-claim');
+  let closed: boolean = false;
+  const close: Promise<void> = op.close().then((): void => { closed = true; });
+  await nextTurn(deadline, 'terminal-does-not-end-work');
+  check(!closed && observed(runtime, 'terminal-held')[14] === 1, 'terminal-not-work-exit');
+  testReleaseWork(engine);
+  await result; await second; await close;
+}
+
+async function claimRollback(runtime: Runtime, engine: Engine, deadline: number, emit: Emit): Promise<void> {
+  testArmWork(engine, 1); const op: Operation = engine.startOperation({ value: 41, text: 'claim' });
+  await gate(runtime, op, 1, deadline, emit);
+  testFailCompletion(engine, 1);
+  const failed: Promise<void> = rejectsSnapshot(() => op.result(), 'ResourceExhausted', 'precommit-rollback');
+  const f: number[] = observed(runtime, 'claim-rolled-back');
+  check(f[11] === 0 && f[19] === 0 && f[85] === 1 && f[86] === 1, 'actual-claim-and-waiter-rollback');
+  const retried: Promise<Snapshot> = op.result();
+  const second: Promise<void> = rejectsSnapshot(() => op.result(), 'AlreadyConsumed', 'retry-only-claim');
+  testReleaseWork(engine); await failed; snapshot(await retried, 42, 'claim', 'retry-result'); await second; await op.close();
+  emit('claim-rollback', f);
+}
+
+async function bytesAndScratch(runtime: Runtime, engine: Engine, deadline: number, emit: Emit): Promise<void> {
+  const text: string = 'x'.repeat(1024); testArmWork(engine, 1);
+  const ops: Operation[] = [engine.startOperation({ value: 1, text: text })];
+  await gate(runtime, ops[0], 1, deadline, emit);
+  for (let i: number = 1; i < 4; i++) { ops.push(engine.startOperation({ value: i + 1, text: text })); }
+  const f: number[] = observed(runtime, 'bytes-full'); check(f[4] === 4 && f[10] === 4096, 'four-real-inputs-4096');
+  throwsCode(() => { engine.startOperation({ value: 9, text: 'x' }); }, 'ResourceExhausted', 'retained-byte-overflow');
+  const input: Snapshot = { value: 9, text: text }; const copy: Snapshot = engine.roundtrip(input);
+  snapshot(copy, 9, text, 'independent-scratch'); copy.value = 10; copy.text = 'changed';
+  snapshot(copy, 10, 'changed', 'public-output-writable'); snapshot(input, 9, text, 'original-input-unmodified');
+  const after: number[] = observed(runtime, 'scratch-returned');
+  emit('bytes-full-scratch-returned', after);
+  check(after[3] === 0 && after[10] === 4096 && after[52] === after[53] && after[97] === 1, 'scratch-separate-and-returned');
+  const closes: Promise<void>[] = []; for (let i: number = 0; i < ops.length; i++) { closes.push(ops[i].close()); }
+  testReleaseWork(engine); for (let i: number = 0; i < closes.length; i++) { await closes[i]; }
+  const next: Operation = engine.startOperation({ value: 8, text: 'recovered' });
+  snapshot(await next.result(), 9, 'recovered', 'byte-capacity-recovered'); await next.close();
+}
+
+async function sourceStop(runtime: Runtime, engine: Engine, deadline: number, emit: Emit): Promise<void> {
+  const seen: number[] = []; const sub: Subscription = engine.observeEvents((s: Snapshot): void => { seen.push(s.value); });
+  testHoldPublication(engine, 1, { value: 7, text: 'held-source' });
+  const before: number[] = observed(runtime, 'source-held');
+  check(before[8] > 0 && before[77] === 1 && before[6] === 1, 'real-source-ticket');
+  sub.requestStop(); let closed: boolean = false;
+  const close: Promise<void> = sub.close().then((): void => { closed = true; });
+  await nextTurn(deadline, 'source-blocks-close'); check(!closed && seen.length === 0, 'source-not-entered-and-not-ack');
+  throwsCode(() => { testReleasePublication(engine, 1); }, 'Closing', 'commit-after-stop');
+  await close; exact(seen, [], 'no-callback-after-stop');
+  const f: number[] = observed(runtime, 'source-abandoned'); check(f[77] === 0 && f[80] === before[80] + 1 && f[8] === 0 && f[6] === 0, 'real-source-drained');
+  emit('source-before-stop', before); emit('source-after-stop', f);
+}
+
+async function stateAndEntered(runtime: Runtime, engine: Engine, deadline: number, emit: Emit): Promise<void> {
+  engine.publishState({ value: 99, text: 'before-subscription' });
+  const seen: number[] = [];
+  const sub: Subscription = engine.observeState((s: Snapshot): void => {
+    seen.push(s.value);
+    if (s.value === 2) {
+      engine.publishState({ value: 3, text: 'replaced' }); engine.publishState({ value: 4, text: 'latest' });
+      snapshot(s, 2, 'latest-before-entry', 'entered-remains-independent');
+      const f: number[] = observed(runtime, 'state-entered'); check(f[7] === 2 && f[9] === 1, 'one-entered-one-pending'); emit('state-entered', f);
+    }
+  });
+  await nextTurn(deadline, 'state-registration-empty'); exact(seen, [], 'no-state-replay');
+  engine.publishState({ value: 1, text: 'replaced-before-entry' }); engine.publishState({ value: 2, text: 'latest-before-entry' });
+  await countUntil(seen, 2, deadline); exact(seen, [2,4], 'state-latest-and-entered'); await sub.close();
+  emit('state-observed-values', seen);
+  // This same-stack pending test does not claim a separately held native pre-entry delivery lease.
+}
+
+async function fanoutFailure(runtime: Runtime, engine: Engine, stream: number,
+                             deadline: number, emit: Emit): Promise<void> {
+  const a: number[] = []; const b: number[] = []; const c: number[] = [];
+  const s1: Subscription = stream === 0 ? engine.observeState((s: Snapshot): void => { a.push(s.value); }) : engine.observeEvents((s: Snapshot): void => { a.push(s.value); });
+  const s2: Subscription = stream === 0 ? engine.observeState((s: Snapshot): void => { b.push(s.value); }) : engine.observeEvents((s: Snapshot): void => { b.push(s.value); });
+  const s3: Subscription = stream === 0 ? engine.observeState((s: Snapshot): void => { c.push(s.value); }) : engine.observeEvents((s: Snapshot): void => { c.push(s.value); });
+  const publish = (value: number): void => { if (stream === 0) { engine.publishState({ value: value, text: 'fanout' }); } else { engine.publishEvent({ value: value, text: 'fanout' }); } };
+  publish(1); testFailClone(engine, 2, 1);
+  const before: number[] = observed(runtime, 'before-partial-clone');
+  throwsCode(() => { publish(2); }, 'ResourceExhausted', 'second-clone-failure');
+  const after: number[] = observed(runtime, 'after-partial-clone');
+  check(after[83] === before[83] + 1 && after[33] === before[33] + 1 && after[34] === before[34] + 1, 'actual-first-copy-rolled-back');
+  emit('partial-fanout-before', before); emit('partial-fanout-after', after);
+  await countUntil(a, 1, deadline); await countUntil(b, 1, deadline); await countUntil(c, 1, deadline);
+  exact(a, [1], 'first-recipient-original'); exact(b, [1], 'second-recipient-original'); exact(c, [1], 'third-recipient-original');
+  publish(3); await countUntil(a, 2, deadline); await countUntil(b, 2, deadline); await countUntil(c, 2, deadline);
+  exact(a, [1,3], 'recovery-a'); exact(b, [1,3], 'recovery-b'); exact(c, [1,3], 'recovery-c');
+  await s1.close(); await s2.close(); await s3.close();
+}
+
+export async function runControlledCase(name: string, emit: Emit, timeoutMs: number): Promise<void> {
+  if (name === 'partial-open') { await runPartialOpen(emit, timeoutMs); return; }
+  if (name === 'fault-before-guard' || name === 'fault-after-accepted') { await runFaultExit(name.substring(6), emit, timeoutMs); return; }
+  if (name === 'worker-env-exit') { await runWorkerExit(emit, timeoutMs); return; }
+  const deadline: number = Date.now() + timeoutMs;
+  const runtime: Runtime = openRuntime(); const key: string = testExportKey(runtime); const engine: Engine = runtime.connect();
+  emit('open', observed(runtime, 'open'));
+  if (name === 'full-waiters') { await fullWaiters(runtime, engine, deadline, emit, false); }
+  else if (name === 'settling-reentry') { await fullWaiters(runtime, engine, deadline, emit, true); }
+  else if (name === 'terminal-cancel') { await terminal(runtime, engine, 'cancel', deadline, emit); }
+  else if (name === 'terminal-success') { await terminal(runtime, engine, 'success', deadline, emit); }
+  else if (name === 'terminal-domain') { await terminal(runtime, engine, 'domain', deadline, emit); }
+  else if (name === 'claim-rollback') { await claimRollback(runtime, engine, deadline, emit); }
+  else if (name === 'bytes-scratch') { await bytesAndScratch(runtime, engine, deadline, emit); }
+  else if (name === 'source-stop') { await sourceStop(runtime, engine, deadline, emit); }
+  else if (name === 'state-entered') { await stateAndEntered(runtime, engine, deadline, emit); }
+  else if (name === 'fanout-state') { await fanoutFailure(runtime, engine, 0, deadline, emit); }
+  else if (name === 'fanout-events') { await fanoutFailure(runtime, engine, 1, deadline, emit); }
+  else { check(await runSharedWaiters(name, runtime, engine, deadline, emit) || await runAdditional(name, runtime, engine, deadline, emit) || await runFailure(name, runtime, engine, deadline, emit), 'known-additional-case'); }
+  await runtime.close(); await finalClosed(runtime, key, deadline, emit);
+  emit('case-complete', [1]);
+}

@@ -1,0 +1,17 @@
+-enable-property-obfuscation
+-enable-export-obfuscation
+-enable-filename-obfuscation
+-keep-property-name
+value
+text
+code
+-keep-file-name
+entry
+ets
+pages
+EntryAbility
+Index
+workers
+FullExitWorker
+FaultExitWorker
+-print-namecache @NAMECACHE@

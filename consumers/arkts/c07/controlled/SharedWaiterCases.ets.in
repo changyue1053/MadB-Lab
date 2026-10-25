@@ -1,0 +1,73 @@
+// Additional candidate-only schedules. Sources prepared; not yet target executed.
+import { Runtime, Engine, Operation, Subscription, Snapshot,
+  testArmWork, testReleaseWork, testHoldPublication, testReleasePublication } from @MADB_PUBLIC_MODULE@;
+import { check, snapshot, throwsCode, rejectsSnapshot, rejectsVoid } from './Assertions';
+import { Emit, observed, facade, gate } from './SupportChecks';
+
+export async function runSharedWaiters(name: string, runtime: Runtime, engine: Engine,
+                                      deadline: number, emit: Emit): Promise<boolean> {
+  if (name === 'mixed-waiters-engine-close') {
+    testArmWork(engine, 1);
+    const op: Operation = engine.startOperation({ value: 41, text: 'work-held' });
+    await gate(runtime, op, 1, deadline, emit);
+    const sub: Subscription = engine.observeEvents((_value: Snapshot): void => { throw new Error('LAB_STOPPED_SOURCE_CALLED'); });
+    testHoldPublication(engine, 1, { value: 9, text: 'source-held' });
+    const result: Promise<void> = rejectsSnapshot(() => op.result(), 'Cancelled', 'mixed-cancelled-result');
+    const operationCloses: Promise<void>[] = [];
+    const subscriptionCloses: Promise<void>[] = [];
+    for (let i: number = 0; i < 15; i++) { operationCloses.push(op.close()); }
+    for (let i: number = 0; i < 16; i++) { subscriptionCloses.push(sub.close()); }
+    const full: number[] = observed(runtime,'mixed-full32'); emit('mixed-full32', full);
+    check(full[11] === 32 && full[19] === 32 && full[13] === 1 && full[77] === 1 && facade(runtime,'mixed')[1] === 32, 'mixed-types-share-exact32');
+    const rejected: Promise<void> = rejectsVoid(() => engine.close(),'ResourceExhausted','pending-engine-observer33');
+    const before: number[] = observed(runtime,'engine-request-effective');
+    throwsCode(() => { engine.startOperation({value:7,text:'denied'}); },'Closing','engine-request-gates-new-work');
+    throwsCode(() => { engine.observeState((_value: Snapshot): void => {}); },'Closing','engine-request-gates-new-listeners');
+    const after: number[] = observed(runtime,'engine-request-after-denied'); emit('engine-request-effective',after);
+    check(before[33] === after[33] && before[50] === after[50] && before[52] === after[52], 'rejected-admission-allocates-no-business-owner');
+    const close: Promise<void> = runtime.close(); const again: Promise<void> = runtime.close();
+    const closing: number[] = observed(runtime,'mixed-parent-close'); const js: number[] = facade(runtime,'mixed-parent-close');
+    check(closing[11] === 32 && closing[13] === 1 && closing[77] === 1 && js[5] === 1 && js[9] === 0, 'full-work-and-source-parent-control');
+    emit('mixed-parent-close',closing);emit('mixed-parent-facade',js);
+    await rejected;
+    testReleasePublication(engine,0);testReleaseWork(engine);
+    await result;
+    for (let i: number=0;i<operationCloses.length;i++) { await operationCloses[i]; }
+    for (let i: number=0;i<subscriptionCloses.length;i++) { await subscriptionCloses[i]; }
+    await close;await again;
+    await engine.close();await op.close();await sub.close();
+    emit('mixed-closed-retry',[1]);return true;
+  }
+  if (name === 'pending-sub-close-denied') {
+    testArmWork(engine,1);const op: Operation=engine.startOperation({value:41,text:'held'});
+    await gate(runtime,op,1,deadline,emit);
+    const sub: Subscription=engine.observeEvents((_value: Snapshot): void=>{throw new Error('LAB_STOPPED_CALLBACK');});
+    testHoldPublication(engine,1,{value:8,text:'retained-source'});
+    const result: Promise<void>=rejectsSnapshot(()=>op.result(),'Cancelled','sub-budget-cancelled');
+    const closes: Promise<void>[]=[];for(let i: number=0;i<31;i++){closes.push(op.close());}
+    check(observed(runtime,'sub-full')[11]===32,'sub-observer32-occupied');
+    const denied: Promise<void>=rejectsVoid(()=>sub.close(),'ResourceExhausted','sub-close33');
+    const f: number[]=observed(runtime,'sub-stopped-source-held');emit('sub-stop-before-observer',f);
+    check(f[11]===32 && f[77]===1,'stop-does-not-erase-source-or-full-waiters');
+    throwsCode(()=>testReleasePublication(engine,1),'Closing','rejected-observer-still-stopped-recipient');
+    await denied;await sub.close();testReleaseWork(engine);await result;
+    for(let i: number=0;i<closes.length;i++){await closes[i];}
+    emit('sub-closed-retry',[1]);return true;
+  }
+  if (name === 'result-capacity-retry') {
+    testArmWork(engine,1);const first: Operation=engine.startOperation({value:41,text:'first'});
+    await gate(runtime,first,1,deadline,emit);
+    const second: Operation=engine.startOperation({value:6,text:'retry'});
+    const cancelled: Promise<void>=rejectsSnapshot(()=>first.result(),'Cancelled','capacity-first-cancelled');
+    const closes: Promise<void>[]=[];for(let i: number=0;i<31;i++){closes.push(first.close());}
+    check(observed(runtime,'result-capacity')[11]===32,'result-budget32');
+    const denied: Promise<void>=rejectsSnapshot(()=>second.result(),'ResourceExhausted','uncommitted-second-claim');
+    emit('result-capacity-rejected',observed(runtime,'second-uncommitted'));
+    await denied;testReleaseWork(engine);await cancelled;
+    for(let i: number=0;i<closes.length;i++){await closes[i];}
+    snapshot(await second.result(),7,'retry','same-operation-result-retry');
+    await rejectsSnapshot(()=>second.result(),'AlreadyConsumed','accepted-retry-is-strict-single-claim');
+    await second.close();emit('result-capacity-retry',[1]);return true;
+  }
+  return false;
+}

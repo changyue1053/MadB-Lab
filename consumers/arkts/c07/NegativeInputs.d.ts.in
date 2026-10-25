@@ -1,0 +1,8 @@
+// Declaration for this Lab-owned JS seam only; not a candidate declaration.
+// OHOS forbids .d.ts importing a local .ets, so the callback's exact two-field
+// test shape is declared here and checked against the real ArkTS public method.
+interface NegativeInputSnapshot { value: number; text: string; }
+export function runNegativeInputs(roundtrip: (value: NegativeInputSnapshot) => NegativeInputSnapshot,
+                                  isBoundaryError: (error: Error) => boolean): number[];
+export function runClosingGetter(roundtrip: (value: NegativeInputSnapshot) => NegativeInputSnapshot,
+                                 requestClose: () => void): void;

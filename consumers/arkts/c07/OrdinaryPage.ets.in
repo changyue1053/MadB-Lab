@@ -1,0 +1,22 @@
+import { hilog } from '@kit.PerformanceAnalysisKit';
+import { BoundaryError } from @MADB_PUBLIC_MODULE@;
+import { PROBE_NONCE } from '../ProbeConfig';
+import { runOrdinaryRoute } from '../OrdinaryCases';
+let started: boolean = false;
+@Entry
+@Component
+struct Index {
+  aboutToAppear(): void {
+    if (started) { return; }
+    started = true;
+    hilog.info(0x0000, 'MadBC07Probe', 'PROBE_PAGE_READY %{public}s', PROBE_NONCE);
+    runOrdinaryRoute((label: string, values: number[]): void => {
+      hilog.info(0x0000, 'MadBC07Probe', 'ORDINARY_CASE %{public}s %{public}s %{public}s', PROBE_NONCE, label, JSON.stringify(values));
+    }, 35000).then(() => {
+      hilog.info(0x0000, 'MadBC07Probe', 'ORDINARY_COMPLETE %{public}s', PROBE_NONCE);
+    }).catch((error: Error) => {
+      hilog.error(0x0000, 'MadBC07Probe', 'PROBE_FAILED %{public}s %{public}s %{public}s', PROBE_NONCE, error.message, String((error as BoundaryError).code));
+    });
+  }
+  build() { Column() { Text('C07 ordinary C HAR consumer') } }
+}

@@ -338,7 +338,7 @@ def verify_candidate(root: Path) -> dict:
     return verify_public_candidate(root, allowed_routes={"RUST-C-ABI"})
 
 
-def verify_public_candidate(root: Path, *, allowed_routes: set[str]) -> dict:
+def verify_public_candidate(root: Path, *, allowed_routes: set[str], identity_format: str = "c-abi") -> dict:
     """Validate the shared public format; callers own their closed route allowlist."""
     root = root.resolve(strict=True)
     manifest = read_json(root / "candidate.json")
@@ -401,11 +401,25 @@ def verify_public_candidate(root: Path, *, allowed_routes: set[str]) -> dict:
         if len(data) != size or file_digest(data) != digest:
             raise CandidateError("ArtifactMismatch", f"file bytes differ: {relative}")
     identity = read_json(root / "identity.json")
-    _keys(identity, ("schema", "bootstrap_version", "interface_digest", "profile_digest"), "native identity")
-    if identity["schema"] != "madb.native-identity/1" or type(identity["bootstrap_version"]) is not int or identity["bootstrap_version"] != 1:
-        raise CandidateError("AbiMismatch", "unsupported bootstrap identity")
-    if not DIGEST.fullmatch(identity["interface_digest"]) or identity["profile_digest"] != selector["profile_digest"]:
+    if identity_format == "c-abi":
+        _keys(identity, ("schema", "bootstrap_version", "interface_digest", "profile_digest"), "native identity")
+        digest_fields = ("interface_digest", "profile_digest")
+    elif identity_format == "arkts":
+        _keys(identity, ("schema", "bootstrap_version", "abi_digest", "profile_digest", "build_id", "expected_identity"), "ArkTS native identity")
+        digest_fields = ("abi_digest", "profile_digest", "build_id")
+    else:
+        raise CandidateError("FormatInvalid", "unknown native identity policy")
+    identity_schema = "madb.arkts-runtime-identity/1" if identity_format == "arkts" else "madb.native-identity/1"
+    if identity["schema"] != identity_schema or type(identity["bootstrap_version"]) is not int or identity["bootstrap_version"] != 1:
+        raise CandidateError("AbiMismatch", "unsupported bootstrap identity schema/version")
+    if any(not isinstance(identity[field], str) or not DIGEST.fullmatch(identity[field]) for field in digest_fields):
+        raise CandidateError("FormatInvalid", "invalid native identity digest")
+    if identity["profile_digest"] != selector["profile_digest"]:
         raise CandidateError("ProfileMismatch", "native identity differs from selected profile")
+    if identity_format == "arkts":
+        expected = "madb-arkts/1:" + ":".join(identity[field].removeprefix("sha256:") for field in digest_fields)
+        if identity["expected_identity"] != expected:
+            raise CandidateError("AbiMismatch", "ArkTS bootstrap string differs from its three exact digests")
     provenance = read_json(root / "provenance.json")
     provenance_fields = {"schema", "producer_revision", "input_digest", "tool_digest"}
     if "provisional" in provenance:

@@ -1,0 +1,69 @@
+{
+  "schema": "madb.case/1",
+  "id": "c07.kotlin-arkts.distribution",
+  "kind": "template",
+  "problem_ids": [
+    "BUILD-001",
+    "BUILD-003",
+    "BUILD-004",
+    "BUILD-005",
+    "CAP-002",
+    "DIST-001"
+  ],
+  "source_ids": [],
+  "selector": null,
+  "requires": {
+    "features": [],
+    "environment": []
+  },
+  "fixture": {
+    "path": "consumers/arkts/c07/OrdinaryCases.ets.in",
+    "sha256": "sha256:cd55912ddb4cf1111307c956e97a091554dd08047163ece69ce9adf5d4489e39",
+    "size": 7294,
+    "schema": "madb.lab-source/1"
+  },
+  "setup": [
+    {
+      "id": "install",
+      "action": "environment",
+      "entrypoint": "verified-public-har-release-obfuscated-hap",
+      "arguments": []
+    }
+  ],
+  "steps": [
+    {
+      "id": "execute",
+      "action": "call",
+      "entrypoint": "runOrdinaryRoute",
+      "arguments": []
+    }
+  ],
+  "assertions": [
+    {
+      "observation": "distribution",
+      "operator": "equals",
+      "expected": [
+        {
+          "kind": "string",
+          "value": "Real public declarations and all required native dependencies arrive through the HAR closure; clean consumer Release + property/export/filename obfuscation succeeds with legitimate public keep rules. Ordinary app works without test-support. C++-only consumption does not incidentally depend on Kotlin initialization."
+        }
+      ]
+    }
+  ],
+  "expected_result": {
+    "kind": "success"
+  },
+  "cleanup": [
+    {
+      "id": "close",
+      "action": "cleanup",
+      "entrypoint": "await-runtime-close",
+      "arguments": []
+    }
+  ],
+  "timeout_policy": {
+    "timeout_ms": 50000,
+    "on_timeout": "error",
+    "recovery": "isolate"
+  }
+}

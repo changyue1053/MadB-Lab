@@ -1,0 +1,4 @@
+import { Engine } from @MADB_PUBLIC_MODULE@;
+export function invalid(engine: Engine): void {
+  engine.publishState({ value: 41 });
+}

@@ -1,0 +1,55 @@
+import worker, { MessageEvents } from '@ohos.worker';
+import { hilog } from '@kit.PerformanceAnalysisKit';
+import { Runtime, Engine, Operation, Snapshot, BoundaryError, openRuntime, testArmWork,
+  testFailCompletion, testFailAfterSettlement, testExportKey } from @MADB_PUBLIC_MODULE@;
+import { PROBE_NONCE } from '../ProbeConfig';
+import { check, code, snapshot, rejectsVoid } from '../Assertions';
+import { observed, facade, gate } from '../SupportChecks';
+let runtime: Runtime | undefined = undefined;
+let ready: boolean = false;
+function emit(label: string, values: number[]): void {
+  hilog.info(0x0000, 'MadBC07Probe', 'CONTROLLED_CASE %{public}s %{public}s %{public}s', PROBE_NONCE, label, JSON.stringify(values));
+}
+async function start(name: string): Promise<void> {
+  check(runtime === undefined, 'one-fault-worker-runtime');
+  const r: Runtime = openRuntime(); runtime = r; const e: Engine = r.connect();
+  testArmWork(e, 2); const op: Operation = e.startOperation({ value: 41, text: 'fault-owned' });
+  await gate(r, op, 2, Date.now() + 10000, emit);
+  const before: boolean = name === 'before-guard';
+  check(before || name === 'after-accepted', 'known-fault-case');
+  if (before) { testFailCompletion(e, 2); } else { testFailAfterSettlement(r); }
+  let resolved: number = 0; let rejected: number = 0;
+  await op.result().then((value: Snapshot): void => {
+    check(!before, 'before-guard-must-not-resolve');
+    snapshot(value, 42, 'fault-owned', 'accepted-result-preserved'); resolved++;
+  }, (error: Error): void => {
+    check(before && error instanceof BoundaryError && code(error) === 'BridgeFailure', 'before-guard-public-bridge-failure'); rejected++;
+  });
+  const f: number[] = observed(r, 'fault-residual'); const j: number[] = facade(r, 'fault-residual');
+  emit('fault-residual', f); emit('fault-facade', j); emit('fault-settlement-counts', [resolved,rejected]);
+  check(f[13] === 1 && f[14] === 1 && f[17] === 0 && f[58] === 1 && f[59] === 0 && f[60] === 0, 'fault-work-remains-owned');
+  check(j[1] === 0 && j[2] === 0 && j[6] === 0 && j[7] === 0 && j[9] === 0 && j[10] === 1 && j[13] === 0 && j[14] === 0, 'failed-facade-not-a-closed-ack');
+  if (before) {
+    check(f[11] === 1 && f[19] === 1 && f[85] === 1 && f[87] === 1 && f[88] === 0, 'actual-before-guard-native-residual');
+    check(resolved === 0 && rejected === 1 && j[11] === 0 && j[12] === 0, 'before-guard-no-accepted-resolver');
+  } else {
+    check(f[11] === 0 && f[19] === 0 && f[85] === 0 && f[87] === 0 && f[88] === 0, 'after-accepted-already-consumed');
+    check(resolved === 1 && rejected === 0 && j[11] === 1 && j[12] === 0, 'one-resolve-no-reject-after-accepted');
+  }
+  await rejectsVoid(() => r.close(), 'BridgeFailure', 'fault-close-not-a-normal-ack');
+  emit('fault-close-rejected', [1]); ready = true;
+  worker.workerPort.postMessage('READY ' + testExportKey(r));
+}
+worker.workerPort.onmessage = (event: MessageEvents): void => {
+  const command: string = event.data as string;
+  if (command === 'EXIT') {
+    try {
+      check(ready && runtime !== undefined, 'fault-exit-ready');
+      if (runtime === undefined) { throw new Error('LAB_NO_RUNTIME'); }
+      emit('worker-exit-request', observed(runtime,'fault-exit-request'));
+      worker.workerPort.close();
+    } catch (error) { worker.workerPort.postMessage('ERROR ' + (error as Error).message); }
+  } else {
+    start(command).catch((error: Error): void => { worker.workerPort.postMessage('ERROR ' + error.message); });
+  }
+};

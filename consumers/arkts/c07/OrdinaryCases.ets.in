@@ -1,0 +1,165 @@
+// Source preparation only. No provider/private native import or counter oracle.
+import { openRuntime, Runtime, Engine, Operation, Subscription, Snapshot, BoundaryError } from @MADB_PUBLIC_MODULE@;
+import { check, code, snapshot, throwsCode, rejectsSnapshot, rejectsVoid, nextTurn } from './Assertions';
+import { runNegativeInputs, runClosingGetter } from './NegativeInputs';
+
+export type Emit = (label: string, values: number[]) => void;
+
+function values(engine: Engine): void {
+  const cases: Snapshot[] = [
+    { value: 0, text: '' },
+    { value: 41, text: 'ordinary' },
+    { value: -2147483648, text: 'min' },
+    { value: 2147483647, text: 'max' },
+    { value: -0, text: 'zero' },
+    { value: 7, text: '中文' },
+    { value: 8, text: 'e\u0301' },
+    { value: 9, text: '😀' },
+    { value: 10, text: 'a\u0000中文\u0000z' },
+    { value: 11, text: 'a'.repeat(1024) },
+    { value: 12, text: '中'.repeat(341) + 'a' },
+    { value: 13, text: '😀'.repeat(256) }
+  ];
+  for (let i: number = 0; i < cases.length; i++) {
+    const input: Snapshot = cases[i];
+    const beforeValue: number = input.value;
+    const beforeText: string = input.text;
+    const output: Snapshot = engine.roundtrip(input);
+    check(output !== input, 'independent-object');
+    snapshot(output, beforeValue === 0 ? 0 : beforeValue, beforeText, 'roundtrip-' + String(i));
+    input.value = 123;
+    input.text = 'mutated-input';
+    snapshot(output, beforeValue === 0 ? 0 : beforeValue, beforeText, 'input-mutation-' + String(i));
+    output.value = 456;
+    output.text = 'mutated-output';
+    snapshot(output, 456, 'mutated-output', 'writable-output-' + String(i));
+    snapshot(input, 123, 'mutated-input', 'output-mutation-' + String(i));
+  }
+}
+
+async function operationBasics(engine: Engine): Promise<void> {
+  const operation: Operation = engine.startOperation({ value: 41, text: 'job\u0000中文' });
+  const first: Promise<Snapshot> = operation.result();
+  await rejectsSnapshot(() => operation.result(), 'AlreadyConsumed', 'strict-second-result');
+  snapshot(await first, 42, 'job\u0000中文', 'worker-result');
+  await operation.close();
+  await operation.close();
+
+  const overflow: Operation = engine.startOperation({ value: 2147483647, text: 'overflow' });
+  await rejectsSnapshot(() => overflow.result(), 'DomainOverflow', 'domain');
+  await overflow.close();
+}
+
+async function notificationBasics(engine: Engine): Promise<void> {
+  const stateCalls: Snapshot[] = [];
+  const eventCalls: Snapshot[] = [];
+  let stateDone: (() => void) = () => {};
+  let eventDone: (() => void) = () => {};
+  const stateSeen: Promise<void> = new Promise<void>((resolve) => { stateDone = resolve; });
+  const eventSeen: Promise<void> = new Promise<void>((resolve) => { eventDone = resolve; });
+  const state: Subscription = engine.observeState((value: Snapshot): void => {
+    stateCalls.push({ value: value.value, text: value.text });
+    stateDone();
+  });
+  const event: Subscription = engine.observeEvents((value: Snapshot): void => {
+    eventCalls.push({ value: value.value, text: value.text });
+    eventDone();
+  });
+  engine.publishState({ value: 21, text: 'state-only' });
+  engine.publishEvent({ value: 22, text: 'event-only' });
+  await stateSeen;
+  await eventSeen;
+  state.requestStop();
+  event.requestStop();
+  await state.close();
+  await event.close();
+  check(stateCalls.length === 1 && eventCalls.length === 1, 'separate-stream-counts');
+  snapshot(stateCalls[0], 21, 'state-only', 'state');
+  snapshot(eventCalls[0], 22, 'event-only', 'event');
+}
+
+async function nextSubscription(engine: Engine, deadline: number): Promise<Subscription> {
+  while (true) {
+    try { return engine.observeEvents((_value: Snapshot): void => {}); }
+    catch (error) {
+      if (code(error as Error) !== 'ResourceExhausted') { throw error as Error; }
+    }
+    await nextTurn(deadline, 'requestStop-capacity-recovery');
+  }
+}
+
+async function requestOnlySubscriptions(engine: Engine, deadline: number): Promise<void> {
+  const old: Subscription[] = [];
+  for (let i: number = 0; i < 16; i++) {
+    const sub: Subscription = await nextSubscription(engine, deadline);
+    sub.requestStop();
+    old.push(sub);
+    // No sub.close observer is registered until all16 normal admissions occur.
+    await nextTurn(deadline, 'requestStop-progress');
+  }
+  for (let i: number = 0; i < old.length; i++) { await old[i].close(); }
+}
+
+async function callbackFailureTombstone(engine: Engine, deadline: number): Promise<void> {
+  let entered: (() => void) = () => {};
+  const seen: Promise<void> = new Promise<void>((resolve) => { entered = resolve; });
+  const failed: Subscription = engine.observeEvents((_value: Snapshot): void => {
+    entered();
+    throw new Error('LAB_LISTENER_FAILURE');
+  });
+  engine.publishEvent({ value: 31, text: 'throw-once' });
+  await seen;
+  // The failed sub has no close waiter during capacity reuse.
+  await requestOnlySubscriptions(engine, deadline);
+  await rejectsVoid(() => failed.close(), 'CallbackFailure', 'old-failure-after-reuse');
+}
+
+async function nextEngine(runtime: Runtime, deadline: number): Promise<Engine> {
+  while (true) {
+    try { return runtime.connect(); }
+    catch (error) {
+      if (code(error as Error) !== 'Closing') { throw error as Error; }
+    }
+    await nextTurn(deadline, 'engine-generation-recovery');
+  }
+}
+
+export async function runOrdinaryRoute(emit: Emit, watchdogMs: number): Promise<void> {
+  const deadline: number = Date.now() + watchdogMs;
+  const runtime: Runtime = openRuntime();
+  try {
+    const engine: Engine = runtime.connect();
+    values(engine);
+    const negative: number[] = runNegativeInputs((input: Snapshot): Snapshot => engine.roundtrip(input),
+      (error: Error): boolean => error instanceof BoundaryError);
+    //16 invalid values/texts; getter reads1/1;2 original Error identities;
+    // positive-control setter hit1; native/facade setter hits0;2 own data fields.
+    check(negative.length === 7, 'negative-report-shape');
+    const expected: number[] = [16, 1, 1, 2, 1, 0, 2];
+    for (let i: number = 0; i < expected.length; i++) {
+      check(negative[i] === expected[i], 'negative-report-' + String(i));
+    }
+    emit('values-and-negative-inputs', negative);
+    await operationBasics(engine);
+    await notificationBasics(engine);
+    await requestOnlySubscriptions(engine, deadline);
+    await callbackFailureTombstone(engine, deadline);
+
+    engine.requestClose();
+    // No Engine.close observer drives this retirement. Ordinary successful
+    // connect is the recovery observation; physical join is also audited by T.
+    const next: Engine = await nextEngine(runtime, deadline);
+    await engine.close();
+    throwsCode(() => { engine.roundtrip({ value: 1, text: 'stale' }); }, 'Closed', 'old-engine');
+    snapshot(next.roundtrip({ value: 2, text: 'next' }), 2, 'next', 'new-generation');
+    runClosingGetter((input: Snapshot): Snapshot => next.roundtrip(input), (): void => next.requestClose());
+    await next.close();
+    emit('ordinary-api-and-request-only-retirement', [1]);
+    await runtime.close();
+    await runtime.close();
+    emit('ordinary-runtime-close-returned', [1]);
+    // This event alone is not the independent native physical-ACK evidence.
+  } finally {
+    await runtime.close();
+  }
+}

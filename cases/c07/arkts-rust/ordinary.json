@@ -1,0 +1,73 @@
+{
+  "schema": "madb.case/1",
+  "id": "c07.arkts-rust.ordinary",
+  "kind": "template",
+  "problem_ids": [
+    "ASYNC-004",
+    "BUILD-004",
+    "ERR-001",
+    "ERR-003",
+    "LIFE-005",
+    "TYPE-001",
+    "TYPE-004",
+    "TYPE-005",
+    "TYPE-006",
+    "VERIFY-001"
+  ],
+  "source_ids": [],
+  "selector": null,
+  "requires": {
+    "features": [],
+    "environment": []
+  },
+  "fixture": {
+    "path": "consumers/arkts/c07/OrdinaryCases.ets.in",
+    "sha256": "sha256:cd55912ddb4cf1111307c956e97a091554dd08047163ece69ce9adf5d4489e39",
+    "size": 7294,
+    "schema": "madb.lab-source/1"
+  },
+  "setup": [
+    {
+      "id": "install",
+      "action": "environment",
+      "entrypoint": "verified-public-har-release-obfuscated-hap",
+      "arguments": []
+    }
+  ],
+  "steps": [
+    {
+      "id": "execute",
+      "action": "call",
+      "entrypoint": "runOrdinaryRoute",
+      "arguments": []
+    }
+  ],
+  "assertions": [
+    {
+      "observation": "ordinary",
+      "operator": "equals",
+      "expected": [
+        {
+          "kind": "string",
+          "value": "Uninstrumented public HAR ordinary consumer: fixed Snapshot values/negatives, getter exception identity/recovery, inherited setter trap, native operation/domain, state/event, request-only retirement, old-handle errors, ordinary Runtime.close return. Does not substitute for companion ownership/full-profile evidence."
+        }
+      ]
+    }
+  ],
+  "expected_result": {
+    "kind": "success"
+  },
+  "cleanup": [
+    {
+      "id": "close",
+      "action": "cleanup",
+      "entrypoint": "await-runtime-close",
+      "arguments": []
+    }
+  ],
+  "timeout_policy": {
+    "timeout_ms": 50000,
+    "on_timeout": "error",
+    "recovery": "isolate"
+  }
+}

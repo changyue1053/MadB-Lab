@@ -1,0 +1,103 @@
+import { Runtime, Engine, Operation, Subscription, Snapshot, testArmWork, testReleaseWork,
+  testFailClone } from @MADB_PUBLIC_MODULE@;
+import { check, snapshot, throwsCode, nextTurn } from './Assertions';
+import { Emit, observed, gate } from './SupportChecks';
+async function until(checker: () => boolean, deadline: number, label: string): Promise<void> {
+  while (!checker()) { await nextTurn(deadline, label); }
+}
+function vector(actual: number[], expected: number[], label: string): void {
+  check(actual.length === expected.length, label + ':length');
+  for (let i: number = 0; i < expected.length; i++) { check(actual[i] === expected[i], label + ':item'); }
+}
+async function operations(runtime: Runtime, engine: Engine, deadline: number, emit: Emit): Promise<void> {
+  testArmWork(engine, 1);
+  const ops: Operation[] = [engine.startOperation({ value: 1, text: '' })];
+  await gate(runtime, ops[0], 1, deadline, emit);
+  for (let i: number = 1; i < 8; i++) { ops.push(engine.startOperation({ value: i, text: '' })); }
+  const full: number[] = observed(runtime, 'operations8'); emit('operations-full8', full);
+  check(full[4] === 8 && full[10] === 0, 'eight-operation-handles-not-byte-limit');
+  throwsCode(() => { engine.startOperation({ value: 9, text: '' }); }, 'ResourceExhausted', 'ninth-operation');
+  const closed: Promise<void> = ops[0].close(); testReleaseWork(engine); await closed;
+  const recovered: Operation = engine.startOperation({ value: 9, text: '' });
+  snapshot(await recovered.result(), 10, '', 'operation-capacity-reused');
+  check(observed(runtime, 'operations-reused')[4] === 8, 'terminal-unclaimed-handles-still-charged');
+  for (let i: number = 1; i < ops.length; i++) { await ops[i].close(); }
+  await recovered.close();
+}
+async function subscriptions(runtime: Runtime, engine: Engine, _deadline: number, emit: Emit): Promise<void> {
+  const subs: Subscription[] = [];
+  for (let i: number = 0; i < 4; i++) { subs.push(engine.observeState((_s: Snapshot): void => {})); subs.push(engine.observeEvents((_s: Snapshot): void => {})); }
+  const full: number[] = observed(runtime, 'subscriptions8'); emit('subscriptions-full8', full);
+  check(full[5] === 8 && full[6] === 0 && full[7] === 0, 'state-event-shared8-empty');
+  throwsCode(() => { engine.observeEvents((_s: Snapshot): void => {}); }, 'ResourceExhausted', 'ninth-shared-subscription');
+  subs[0].requestStop(); await subs[0].close();
+  const recovered: Subscription = engine.observeEvents((_s: Snapshot): void => {});
+  check(observed(runtime, 'subscriptions-reused')[5] === 8, 'subscription-slot-reused');
+  for (let i: number = 1; i < subs.length; i++) { await subs[i].close(); }
+  await recovered.close();
+}
+async function stateStaging(runtime: Runtime, engine: Engine, deadline: number, emit: Emit): Promise<void> {
+  const text: string = 's'.repeat(1024); const seen: number[] = []; const subs: Subscription[] = [];
+  for (let i: number = 0; i < 4; i++) { subs.push(engine.observeState((s: Snapshot): void => { check(s.text === text, 'full-state-text'); seen.push(s.value); })); }
+  engine.publishState({ value: 1, text: text });
+  const before: number[] = observed(runtime, 'state-pending4096'); emit('state-staging-before', before);
+  check(before[7] === 4 && before[10] === 4096, 'four-pending-state-copies');
+  throwsCode(() => { engine.publishState({ value: 2, text: text }); }, 'ResourceExhausted', 'replacement-needs-staging-reservation');
+  const after: number[] = observed(runtime, 'state-staging-rejected'); emit('state-staging-after', after);
+  check(after[7] === 4 && after[10] === 4096 && after[33] === before[33] && after[34] === before[34], 'rejected-replacement-does-not-replace-old');
+  await until((): boolean => seen.length >= 4, deadline, 'state-first-drain'); vector(seen, [1,1,1,1], 'old-state-preserved');
+  engine.publishState({ value: 2, text: text });
+  await until((): boolean => seen.length >= 8, deadline, 'state-recovery-drain'); vector(seen, [1,1,1,1,2,2,2,2], 'state-replacement-after-drain');
+  for (let i: number = 0; i < subs.length; i++) { await subs[i].close(); }
+}
+async function eventAtomic(runtime: Runtime, engine: Engine, deadline: number, emit: Emit): Promise<void> {
+  const seen: number[][] = [[],[],[]]; const subs: Subscription[] = [];
+  for (let i: number = 0; i < 3; i++) { const index: number = i; subs.push(engine.observeEvents((s: Snapshot): void => { seen[index].push(s.value); })); }
+  engine.publishEvent({ value: 1, text: 'a' }); engine.publishEvent({ value: 2, text: 'b' });
+  const before: number[] = observed(runtime, 'six-events'); emit('event-six-tickets', before);
+  check(before[6] === 6, 'three-subs-two-publications');
+  throwsCode(() => { engine.publishEvent({ value: 3, text: 'c' }); }, 'ResourceExhausted', 'three-recipient-atomic-reject-at-six');
+  engine.publishState({ value: 99, text: 'no-state-listener' });
+  const after: number[] = observed(runtime, 'event-atomic-rejected');
+  check(after[6] === 6 && after[7] === 0 && after[8] === 0 && after[33] === before[33], 'no-partial-fanout-no-stream-crosstalk'); emit('event-atomic-after', after);
+  await until((): boolean => seen[0].length >= 2 && seen[1].length >= 2 && seen[2].length >= 2, deadline, 'event-fifo');
+  for (let i: number = 0; i < 3; i++) { vector(seen[i], [1,2], 'subscriber-fifo'); await subs[i].close(); }
+  const idle: number[] = observed(runtime, 'no-listeners-before'); engine.publishEvent({ value: 100, text: 'no-listener' });
+  const empty: number[] = observed(runtime, 'no-listeners-after'); check(empty[6] === 0 && empty[8] === 0 && empty[33] === idle[33], 'no-recipient-no-owner');
+}
+async function eventEntered(runtime: Runtime, engine: Engine, deadline: number, emit: Emit): Promise<void> {
+  const a: number[] = []; const b: number[] = []; let entered: boolean = false;
+  const listener = (values: number[], s: Snapshot): void => {
+    values.push(s.value);
+    if (!entered) {
+      entered = true; const f: number[] = observed(runtime, 'event-entered-full'); emit('event-entered-full8', f);
+      check(f[6] === 8 && f[9] === 1, 'entered-still-owns-event-ticket');
+      throwsCode(() => { engine.publishEvent({ value: 99, text: '' }); }, 'ResourceExhausted', 'entered-ticket-not-returned');
+    }
+  };
+  const sa: Subscription = engine.observeEvents((s: Snapshot): void => { listener(a,s); });
+  const sb: Subscription = engine.observeEvents((s: Snapshot): void => { listener(b,s); });
+  for (let i: number = 1; i <= 4; i++) { engine.publishEvent({ value: i, text: '' }); }
+  check(observed(runtime, 'events8')[6] === 8, 'two-subs-four-publications');
+  await until((): boolean => a.length >= 4 && b.length >= 4, deadline, 'event-outstanding-drain');
+  check(entered, 'actual-event-callback-entered'); vector(a,[1,2,3,4],'event-fifo-a'); vector(b,[1,2,3,4],'event-fifo-b');
+  await sa.close(); await sb.close();
+}
+async function ownedError(runtime: Runtime, engine: Engine, _deadline: number, emit: Emit): Promise<void> {
+  const before: number[] = observed(runtime, 'owned-error-before'); testFailClone(engine, 1, 4);
+  throwsCode(() => { engine.roundtrip({ value: 41, text: 'owned-error' }); }, 'InternalFailure', 'nonnull-error-output');
+  const after: number[] = observed(runtime, 'owned-error-after'); emit('owned-error-before',before);emit('owned-error-after',after);
+  check(after[33] === before[33]+1 && after[34] === before[34]+1 && after[35] === before[35] && after[83] === before[83]+1, 'nonnull-owned-result-freed-once');
+  snapshot(engine.roundtrip({ value: 42, text: 'recovery' }),42,'recovery','owned-error-recovery');
+}
+export async function runAdditional(name: string, runtime: Runtime, engine: Engine,
+                                     deadline: number, emit: Emit): Promise<boolean> {
+  if (name === 'operations-capacity') { await operations(runtime,engine,deadline,emit); }
+  else if (name === 'subscriptions-capacity') { await subscriptions(runtime,engine,deadline,emit); }
+  else if (name === 'state-staging') { await stateStaging(runtime,engine,deadline,emit); }
+  else if (name === 'event-atomic') { await eventAtomic(runtime,engine,deadline,emit); }
+  else if (name === 'event-entered') { await eventEntered(runtime,engine,deadline,emit); }
+  else if (name === 'nonnull-owned-error') { await ownedError(runtime,engine,deadline,emit); }
+  else { return false; }
+  return true;
+}

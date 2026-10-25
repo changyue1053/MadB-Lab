@@ -1,0 +1,59 @@
+import worker, { MessageEvents } from '@ohos.worker';
+import { hilog } from '@kit.PerformanceAnalysisKit';
+import { Runtime, Engine, Operation, Snapshot, openRuntime, testArmWork, testObserve,
+  testObserveOperation, testExportKey, testHoldPublication } from @MADB_PUBLIC_MODULE@;
+import { PROBE_NONCE } from '../ProbeConfig';
+import { check, nextTurn } from '../Assertions';
+let runtime: Runtime | undefined = undefined;
+let engine: Engine | undefined = undefined;
+let first: Operation | undefined = undefined;
+let ready: boolean = false;
+function emit(label: string, values: number[]): void {
+  hilog.info(0x0000, 'MadBC07Probe', 'CONTROLLED_CASE %{public}s %{public}s %{public}s', PROBE_NONCE, label, JSON.stringify(values));
+}
+async function start(): Promise<void> {
+  check(runtime === undefined, 'one-worker-runtime');
+  const r: Runtime = openRuntime(); runtime = r;
+  const e: Engine = r.connect(); engine = e;
+  testArmWork(e, 1); const op: Operation = e.startOperation({ value: 41, text: 'x'.repeat(1024) }); first = op;
+  const deadline: number = Date.now() + 10000;
+  while (true) {
+    const f: number[] = testObserve(r);
+    if (f[58] === 1) {
+      const o: number[] = testObserveOperation(op);
+      check(f.length === 156 && f[0] === 1 && f[55] === 1 && f[56] === 1 && f[59] === 0 && f[60] === 0 && f[13] === 1 && f[14] === 1, 'worker-real-work-held');
+      check(o.length === 10 && o[1] === 0 && o[3] === 1 && o[5] === 1, 'worker-terminal-unclaimed');
+      check(f[62] > 0 && f[63] > 0 && f[62] !== f[63], 'worker-business-not-env-thread');
+      emit('worker-gate-held', f); ready = true;
+      worker.workerPort.postMessage('READY ' + testExportKey(r)); return;
+    }
+    await nextTurn(deadline, 'worker-gate');
+  }
+}
+function exitFull(): void {
+  check(ready && runtime !== undefined && engine !== undefined && first !== undefined, 'worker-exit-ready');
+  if (runtime === undefined || engine === undefined || first === undefined) { throw new Error('LAB_WORKER_NOT_READY'); }
+  const r: Runtime = runtime; const e: Engine = engine; const op: Operation = first;
+  // Complete the same ordinary capacities while the actual worker remains held.
+  const retained: Operation[] = [op];
+  for (let i: number = 1; i < 8; i++) { retained.push(e.startOperation({ value: i, text: i < 4 ? 'x'.repeat(1024) : '' })); }
+  op.result().catch((_error: Error): Snapshot => { return { value: 0, text: '' }; });
+  for (let i: number = 0; i < 31; i++) { op.close().catch((_error: Error): void => {}); }
+  e.observeEvents((_value: Snapshot): void => {}); e.observeEvents((_value: Snapshot): void => {});
+  for (let i: number = 0; i < 4; i++) { e.publishEvent({ value: i, text: '' }); }
+  e.observeState((_value: Snapshot): void => {});
+  testHoldPublication(e, 0, { value: 9, text: '' });
+  const f: number[] = testObserve(r);
+  check(f[4] === 8 && f[5] === 3 && f[6] === 8 && f[7] === 1 && f[8] > 0 && f[10] === 4096 && f[11] === 32 && f[19] === 32 && f[77] === 1, 'actual-exit-request-full-capacities');
+  emit('worker-exit-request', f);
+  // No await, postMessage, timer or manual cleanup between snapshot and real Worker closure.
+  worker.workerPort.close();
+}
+worker.workerPort.onmessage = (event: MessageEvents): void => {
+  const command: string = event.data as string;
+  if (command === 'EXIT') {
+    try { exitFull(); } catch (error) { worker.workerPort.postMessage('ERROR ' + (error as Error).message); }
+  } else if (command === 'START') {
+    start().catch((error: Error): void => { worker.workerPort.postMessage('ERROR ' + error.message); });
+  } else { worker.workerPort.postMessage('ERROR unknown command'); }
+};
