@@ -106,7 +106,7 @@ def scenario_plan(route):
     return tuple(scenario for scenario in SCENARIOS if scenario in selected)
 
 
-def assess_group(matrix_id, *, route, candidate_digest, run_id, observations, route_ownership=None):
+def assess_group(matrix_id, *, route, candidate_digest, run_id, observations, route_ownership=None, related_ordinary=None):
     """Assess controller-owned current-run observations, never a saved report.
 
     Each scenario envelope is {candidate_digest, run_id, observation}, where
@@ -136,6 +136,31 @@ def assess_group(matrix_id, *, route, candidate_digest, run_id, observations, ro
             and isinstance(review.get("inventory_sha256"), str)
             and re.fullmatch(r"sha256:[0-9a-f]{64}", review["inventory_sha256"]) is not None)
         if source_bound:group = dict(group, gaps=())
+    if route == "kotlin" and matrix_id in ("worker-and-domain", "route-ownership", "generation-and-handles", "env-exit-full"):
+        envelope = route_ownership if isinstance(route_ownership, dict) else {}
+        evidence = envelope.get("observation", {})
+        review = evidence.get("source_review", {})
+        current = (envelope.get("candidate_digest") == candidate_digest and envelope.get("run_id") == run_id and
+            evidence.get("candidate_digest") == candidate_digest and evidence.get("route") == route)
+        source_bound = (current and evidence.get("status") == "bound" and review.get("status") == "bound" and
+            review.get("variant") == "test" and isinstance(evidence.get("producer_revision"), str) and bool(evidence["producer_revision"]) and
+            isinstance(evidence.get("inventory_sha256"), str) and re.fullmatch(r"sha256:[0-9a-f]{64}", evidence["inventory_sha256"]) is not None)
+        applicability = evidence.get("applicability", {})
+        applicable = (current and applicability.get("status") == "bound" and applicability.get("execution_domain") == "main-env-only" and
+            applicability.get("profile_id") == "c07-kotlin-arkts-aarch64-ohos23-test")
+        if (matrix_id in ("worker-and-domain", "route-ownership") and source_bound or
+            matrix_id == "generation-and-handles" and applicable or matrix_id == "env-exit-full" and applicable and source_bound):
+            group = dict(group, gaps=())
+    if matrix_id == "identity" and route in (*SUPPORTED_ROUTES, "kotlin"):
+        envelope = related_ordinary if isinstance(related_ordinary, dict) else {}
+        evidence = envelope.get("observation", {})
+        pair = evidence.get("pair", {})
+        if (envelope.get("candidate_digest") == candidate_digest and envelope.get("run_id") == run_id and
+            evidence.get("status") == pair.get("status") == "bound" and evidence.get("route") == route and
+            evidence.get("companion_candidate_digest") == pair.get("companion_candidate_digest") == candidate_digest and
+            evidence.get("ordinary_candidate_digest") == pair.get("ordinary_candidate_digest") and
+            isinstance(evidence.get("report"), dict) and re.fullmatch(r"sha256:[0-9a-f]{64}", evidence["report"].get("sha256", ""))):
+            group = dict(group, gaps=())
     return assess_mapped_group(matrix_id, group, supported, route=route, candidate_digest=candidate_digest,
                               run_id=run_id, observations=observations)
 

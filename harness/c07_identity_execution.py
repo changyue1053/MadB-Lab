@@ -23,6 +23,9 @@ class IdentitySession(ControlledSession):
         (target/"IdentityConfig.ets").write_text("export const IDENTITY_CASE: string = "+json.dumps(self.scenario)+";\n"+
             "export const IDENTITY_ERROR: string = "+json.dumps(error)+";\n"+
             "export const IDENTITY_EVENT: number = "+str(event)+";\n")
+        self.apply_fixture()
+
+    def apply_fixture(self):
         if self.fixture:
             member=self.fixture["replaced_member"]
             installed=self.root/"entry/oh_modules"/self.candidate["module"]/member.removeprefix("package/")

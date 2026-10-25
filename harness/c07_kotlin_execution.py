@@ -25,6 +25,7 @@ def kotlin_contracts(candidate):
              'settlement-frame.json':'generated/contract/test/settlement-frame.json',
              'memory-frame.json':'generated/contract/test/memory-frame.json',
              'subscription-frame.json':'generated/contract/test/subscription-frame.json',
+             'thread-frame.json':'generated/contract/test/thread-frame.json',
              'napi-observer-frame.json':'generated/contract/test/napi-observer-frame.json'}
     if not set(paths.values()) <= inventory:
         raise CandidateError('ArtifactMismatch','Kotlin companion lacks explicit candidate contract files')
@@ -68,6 +69,20 @@ def run_kotlin_companion(args,candidate):
             'candidate_digest':candidate['manifest']['candidate_digest'],'observations':{},
             'target':{},'contract_inputs':inputs,'certifies_c07':False,
             'scope':'current Kotlin companion; explicit normal main-env shutdown, no host VM destruction claim'}
+    from c07_kotlin_source_review import verify_kotlin_source_review
+    ownership=verify_kotlin_source_review(candidate)
+    ownership['route']='kotlin'
+    policy_name='generated/contract/runtime-policy.json'
+    inventory={v['path']:v for section in ('files','dependencies','build_evidence') for v in candidate['manifest'][section]}
+    if policy_name not in inventory:raise CandidateError('ArtifactMismatch','Kotlin runtime applicability policy is not explicit')
+    policy_raw=(candidate['root']/policy_name).read_bytes()
+    if file_digest(policy_raw)!=inventory[policy_name]['sha256'] or len(policy_raw)!=inventory[policy_name]['size']:
+        raise CandidateError('ArtifactMismatch','Kotlin runtime applicability policy changed')
+    policy=read_json(candidate['root']/policy_name)
+    ownership['applicability']={'status':'bound' if policy.get('execution_domain')=='main-env-only' else 'blocked',
+        'execution_domain':policy.get('execution_domain'),'profile_id':candidate['profile']['id'],'policy':ref(candidate['root']/policy_name,candidate['root']),
+        'scope':'Main-env-only normal Runtime shutdown; Worker-first refusal is tested separately, host VM destruction is not required'}
+    result['route_ownership']={'candidate_digest':result['candidate_digest'],'run_id':result['run_id'],'observation':ownership}
     parent=Session(args,candidate)
     parent.verify_tools();result['target']=parent.verify_target()
     native = candidate['root']/'native'
@@ -82,11 +97,28 @@ def run_kotlin_companion(args,candidate):
         parent.sdk/'openharmony/native/llvm/bin',inventory),timeout=120)
     binding=read_json(inventory/'binding.json')
     result['napi_static_binding']={'identity':identity,'files':[ref(path,args.output) for path in sorted(inventory.rglob('*')) if path.is_file()]}
+    from c07_kotlin_identity_observations import SCENARIOS as IDENTITY_SCENARIOS
+    from c07_kotlin_identity_fixtures import admit_kotlin_identity_fixtures
+    from c07_kotlin_identity_execution import KotlinIdentitySession
+    fixtures = None
+    fixture_path = getattr(args, 'identity_fixtures', None)
+    fixture_pin = getattr(args, 'identity_fixtures_sha256', None)
+    if bool(fixture_path) != bool(fixture_pin):raise CandidateError('ArtifactMismatch','identity fixtures require explicit collection and pin')
+    if fixture_path:
+        fixtures,fixture_refs=admit_kotlin_identity_fixtures(fixture_path,fixture_pin,candidate)
+        result['identity_fixture_inputs']=fixture_refs
     try:
-        for scenario in SCENARIOS:
+        for scenario in tuple(SCENARIOS)+tuple(IDENTITY_SCENARIOS):
             output=args.output/'scenarios'/scenario;output.mkdir(parents=True)
             child_args=copy(args);child_args.output=output
-            child=KotlinSession(child_args,candidate,scenario,contracts,binding,identity)
+            if scenario in IDENTITY_SCENARIOS and fixtures is None:
+                observed={'status':'unsupported','case':scenario,'route':'kotlin','nonce':None,'pid':None,'frames':{},
+                          'problems':['explicit matched identity-fixture collection not supplied'],'failures':[],'certifies_c07':False}
+                envelope={'candidate_digest':result['candidate_digest'],'run_id':result['run_id'],'observation':observed,'cleanup':'not-run','attachments':[]}
+                write_json(output/'result.json',envelope);result['observations'][scenario]=envelope
+                continue
+            child=(KotlinIdentitySession(child_args,candidate,scenario,contracts,fixtures[scenario.removeprefix('kotlin-identity-')])
+                   if scenario in IDENTITY_SCENARIOS else KotlinSession(child_args,candidate,scenario,contracts,binding,identity))
             observed=None
             try:
                 child.prepare();child.build();observed=child.execute()

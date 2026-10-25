@@ -77,9 +77,18 @@ async function subscriptions(runtime: Runtime, engine: Engine, emit: EmitNumbers
  for (let i: number = 0; i < subscriptions.length; i++) { await subscriptions[i].close(); }
  const next: Subscription = engine.observeState((_s: Snapshot): void => {}); await next.close(); emit('subscriptions-recovered', [1]);
 }
+async function closingWork(runtime: Runtime, deadline: number, label: string): Promise<void> {
+  let f: string[] = testControlFrame(runtime).split(',');
+  while (f[3] !== '2') { await nextTurn(deadline, label); f = testControlFrame(runtime).split(','); }
+  check(f.length === 31 && f[0] === '1' && f[6] === '5', label + ':cancelled-work-at-phase2');
+  const owned: number[] = testObserve(runtime);
+  check(owned[14] - owned[15] === 1, label + ':real-work-has-not-returned');
+}
 async function shared(name: string, runtime: Runtime, engine: Engine, deadline: number, emit: EmitNumbers, control: EmitControl): Promise<void> {
  const settling: boolean = name === 'kotlin-settling-reentry';
- testArmWork(engine, 1); const operation: Operation = engine.startOperation({ value: 41, text: 'held' });
+ testArmWork(engine, 1);
+ if (!settling) { testArmWork(engine, 2); } // Normal Runtime close must retain the same Work until release.
+ const operation: Operation = engine.startOperation({ value: 41, text: 'held' });
  await held(runtime, 1, deadline, emit, control);
  let source: Subscription | undefined = undefined; let reentered: boolean = false; let reentry: Promise<void> | undefined = undefined;
  if (settling) {
@@ -96,7 +105,11 @@ async function shared(name: string, runtime: Runtime, engine: Engine, deadline: 
  const full: number[] = observed(runtime); check(full[26] === 32, 'shared-real32'); emit('waiters-full', full);
  const denied: Promise<void> = rejectsVoid(() => operation.close(), 'ResourceExhausted', 'record33');
  let parent: Promise<void> | undefined = undefined;
- if (!settling) { parent = runtime.close(); check(parent === runtime.close(), 'memoized-parent-control'); check(observed(runtime)[26] === 32, 'parent-not-business-slot'); emit('parent-close-full', observed(runtime)); }
+ if (!settling) {
+  parent = runtime.close(); check(parent === runtime.close(), 'memoized-parent-control');
+  await closingWork(runtime, deadline, 'shared-parent-close-retains-work');
+  check(observed(runtime)[26] === 32, 'parent-not-business-slot'); emit('parent-close-full', observed(runtime));
+ }
  await denied; testReleaseWork(engine); await result;
  for (let i: number = 0; i < closes.length; i++) { await closes[i]; }
  if (settling) {

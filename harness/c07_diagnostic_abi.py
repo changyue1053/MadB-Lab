@@ -83,6 +83,10 @@ KOTLIN_LAYOUTS = {
         TEST + "subscription-frame.json",
         ("format", "length", "wire", "fields"),
     ),
+    "thread": (
+        TEST + "thread-frame.json",
+        ("format", "length", "wire", "max_bytes", "fields"),
+    ),
     "runtime": (
         "generated/contract/kotlin-frame-layout.json",
         ("format", "length", "fields", "zero_at_closed", "equal_at_closed"),
@@ -156,8 +160,22 @@ def reconstruct(candidate, route, declared):
     result = {}
     try:
         for identity, (path, selectors) in layouts.items():
-            ref = declared["sources"][identity]
-            if set(ref) != {"path", "sha256", "size"} or locked.get(ref["path"]) != ref:
+            source = declared["sources"][identity]
+            fields = {"path", "sha256", "size"}
+            if not isinstance(source, dict) or not (
+                set(source) == fields
+                or (
+                    set(source) == fields | {"schema"}
+                    and source["schema"] == "madb.source-input/1"
+                )
+            ):
+                raise CandidateError(
+                    "ArtifactMismatch", "invalid diagnostic source reference: " + identity
+                )
+            # Source uses the public tagged file_ref; Lock stores its byte pin.
+            # Only this exact tag is accepted; all byte/size checks remain below.
+            ref = {key: source[key] for key in fields}
+            if locked.get(ref["path"]) != ref:
                 raise CandidateError(
                     "ArtifactMismatch",
                     "diagnostic source is not a locked input: " + identity,

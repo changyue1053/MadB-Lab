@@ -28,6 +28,13 @@ async function gate(runtime: Runtime, baseline: number, count: number, deadline:
   const c: string[] = control(runtime, prefix + '-held-control', emitControl);
   check(f[41] === baseline + count && c[3] === '1' && c[4] !== '0' && c[5] !== '0', prefix + ':real-work-held');
 }
+async function closingWork(runtime: Runtime, deadline: number, label: string): Promise<void> {
+  let f: string[] = testControlFrame(runtime).split(',');
+  while (f[3] !== '2') { await nextTurn(deadline, label); f = testControlFrame(runtime).split(','); }
+  check(f.length === 31 && f[0] === '1' && f[6] === '5', label + ':cancelled-work-at-phase2');
+  const owned: number[] = testObserve(runtime);
+  check(owned[14] - owned[15] === 1, label + ':real-work-has-not-returned');
+}
 function closeMany(call: () => Promise<void>, count: number, out: Promise<void>[]): void {
   for (let i: number = 0; i < count; i++) {
     const p: Promise<void> = call();
@@ -48,7 +55,7 @@ async function mixed(runtime: Runtime, previous: Engine, deadline: number,
   await oldSub.close(); await retired.close();
   const engine: Engine = runtime.connect(); // Previous physical ACK precedes new connect.
   const baseline: number[] = native(runtime, 'kn-waiter-mixed-baseline-native', emit);
-  testArmWork(engine, 1);
+  testArmWork(engine, 1); testArmWork(engine, 2); // Cancel wins in phase1; close retains Work in phase2.
   const operation: Operation = engine.startOperation({ value: 41, text: 'mixed' });
   let callbacks: number = 0;
   const sub: Subscription = engine.observeEvents((_value: Snapshot): void => { callbacks++; });
@@ -59,6 +66,7 @@ async function mixed(runtime: Runtime, previous: Engine, deadline: number,
   closeMany((): Promise<void> => operation.close(), 10, closes);
   closeMany((): Promise<void> => sub.close(), 10, closes);
   closeMany((): Promise<void> => engine.close(), 11, closes);
+  await closingWork(runtime, deadline, 'mixed-close-retains-work');
   const full: number[] = native(runtime, 'kn-waiter-mixed-full-native', emit);
   check(full[26] === 32 && full[24] === 1 && full[25] === 1 && full[30] === 1, 'mixed-real32-with-both-owners');
   const settling: number[] = testSettleInspect(runtime);
@@ -92,6 +100,7 @@ async function distinct(kind: number, runtime: Runtime, engine: Engine, deadline
   const prefix: string = 'kn-waiter-distinct-' + String(kind);
   const baseline: number[] = native(runtime, prefix + '-baseline-native', emit);
   testArmWork(engine, 1);
+  if (kind === 2) { testArmWork(engine, 2); } // Only Engine close releases phase1 before explicit test release.
   const operation: Operation = engine.startOperation({ value: 41, text: 'distinct' });
   let callbacks: number = 0;
   const sub: Subscription = engine.observeEvents((_value: Snapshot): void => { callbacks++; });
@@ -119,7 +128,10 @@ async function distinct(kind: number, runtime: Runtime, engine: Engine, deadline
   }
   if (kind === 0) { await rejectsVoid(() => operation.close(), 'ResourceExhausted', 'distinct-op-close33'); }
   else if (kind === 1) { await rejectsVoid(() => sub.close(), 'ResourceExhausted', 'distinct-sub-close33'); }
-  else { await rejectsVoid(() => engine.close(), 'ResourceExhausted', 'distinct-engine-close33'); }
+  else {
+    await rejectsVoid(() => engine.close(), 'ResourceExhausted', 'distinct-engine-close33');
+    await closingWork(runtime, deadline, 'distinct-engine-close-retains-work');
+  }
   const denied: number[] = native(runtime, prefix + '-denied-native', emit);
   check(denied[26] === 32 && denied[24] === 1 && denied[25] === 1 && denied[30] === 1, 'denied-observer-keeps-real-work-source');
   if (kind === 1) {

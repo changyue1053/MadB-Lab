@@ -1,0 +1,46 @@
+// Independent consumer of the public test HAR; no private provider or full110.
+import { hilog } from '@kit.PerformanceAnalysisKit';
+import { Runtime, BoundaryError, openRuntime, testLastAdmissionAudit, testObserveNapi } from @MADB_PUBLIC_MODULE@;
+import { PROBE_NONCE } from '../ProbeConfig';
+import { IDENTITY_CASE, IDENTITY_ERROR } from '../IdentityConfig';
+import { check } from '../Assertions';
+let started: boolean = false;
+function emitText(label: string, raw: string): void {
+  hilog.info(0x0000, 'MadBC07Probe', 'KOTLIN_IDENTITY_FRAME %{public}s %{public}s %{public}s', PROBE_NONCE, label, JSON.stringify(raw));
+}
+function emitAdmission(label: string): void {
+  const values: number[] = testLastAdmissionAudit();
+  check(values.length === 13, 'identity-admission13');
+  for (let i: number = 0; i < values.length; i++) { check(Number.isSafeInteger(values[i]) && values[i] >= 0, 'identity-admission-safe'); }
+  hilog.info(0x0000, 'MadBC07Probe', 'KOTLIN_IDENTITY_FRAME %{public}s %{public}s %{public}s', PROBE_NONCE, label, JSON.stringify(values));
+}
+async function rejectWrongLibrary(): Promise<void> {
+  emitAdmission('before-admission'); emitText('before-napi', testObserveNapi());
+  let opened: Runtime | undefined = undefined;
+  emitText('stage', 'test-openRuntime-call');
+  try { opened = openRuntime(); }
+  catch (error) {
+    check(error instanceof BoundaryError, 'kotlin-identity-typed-error');
+    const code: string = (error as BoundaryError).code;
+    check(code === IDENTITY_ERROR, 'kotlin-identity-exact-error:expected=' + IDENTITY_ERROR + ':actual=' + code);
+    emitText('rejected', code);
+    emitAdmission('after-admission'); emitText('after-napi', testObserveNapi()); return;
+  }
+  if (opened !== undefined) { await opened.close(); }
+  throw new Error('LAB_ASSERT:kotlin-wrong-library-openRuntime-was-admitted');
+}
+@Entry
+@Component
+struct Index {
+  aboutToAppear(): void {
+    if (started) { return; } started = true;
+    hilog.info(0x0000, 'MadBC07Probe', 'PROBE_PAGE_READY %{public}s', PROBE_NONCE);
+    hilog.info(0x0000, 'MadBC07Probe', 'KOTLIN_IDENTITY_BEGIN %{public}s %{public}s', PROBE_NONCE, IDENTITY_CASE);
+    rejectWrongLibrary().then((): void => {
+      hilog.info(0x0000, 'MadBC07Probe', 'KOTLIN_IDENTITY_COMPLETE %{public}s %{public}s', PROBE_NONCE, IDENTITY_CASE);
+    }).catch((error: Error): void => {
+      hilog.error(0x0000, 'MadBC07Probe', 'PROBE_FAILED %{public}s %{public}s', PROBE_NONCE, error.message);
+    });
+  }
+  build() { Column() { Text('C07 Kotlin wrong-library input') } }
+}

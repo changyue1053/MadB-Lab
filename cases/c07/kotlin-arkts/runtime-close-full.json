@@ -19,8 +19,8 @@
   },
   "fixture": {
     "path": "harness/c07_kotlin_cases.py",
-    "sha256": "sha256:0b3fdbd15dd5ac280ba14313d4224f33bed2ad097b97c0c6b3c2a284ee70348c",
-    "size": 3770,
+    "sha256": "sha256:9f3bdcf6d9687b0cbcd3c7dfb2998f8bc4813763e618f57910ec3025cd517537",
+    "size": 3990,
     "schema": "madb.lab-source/1"
   },
   "setup": [

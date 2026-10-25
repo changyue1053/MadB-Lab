@@ -307,6 +307,206 @@ class DiagnosticAbiTests(unittest.TestCase):
             with self.assertRaises(CandidateError):
                 verify_abi(candidate, "kotlin", companion=True)
 
+    def test_thread_protocol_has_exact_attachment_and_semantic_selectors(self):
+        self.assertEqual(
+            KOTLIN_LAYOUTS["thread"],
+            (
+                "generated/contract/test/thread-frame.json",
+                ("format", "length", "wire", "max_bytes", "fields"),
+            ),
+        )
+        self.assertNotIn("thread", C_LAYOUTS)
+        original = {
+            "format": 70604,
+            "length": 21,
+            "wire": "uint64 CSV",
+            "max_bytes": 440,
+            "fields": [
+                {"index": i, "name": "Field" + str(i), "unit": "count", "notes": "old"}
+                for i in range(21)
+            ],
+            "scope": "original source commentary",
+            "source": "original/path",
+        }
+        selectors = KOTLIN_LAYOUTS["thread"][1]
+        expected = layout_semantics(original, selectors)
+        changed = deepcopy(original)
+        changed["scope"] = "different commentary"
+        changed["source"] = "different/path"
+        changed["fields"][0]["notes"] = "different commentary"
+        self.assertEqual(layout_semantics(changed, selectors), expected)
+        for key, value in (
+            ("format", 70605),
+            ("length", 20),
+            ("wire", "number[]"),
+            ("max_bytes", 441),
+        ):
+            changed = deepcopy(original)
+            changed[key] = value
+            self.assertNotEqual(layout_semantics(changed, selectors), expected, key)
+        for key, value in (("index", 20), ("name", "Wrong"), ("unit", "bytes")):
+            changed = deepcopy(original)
+            changed["fields"][0][key] = value
+            self.assertNotEqual(layout_semantics(changed, selectors), expected, key)
+        changed = deepcopy(original)
+        changed["fields"].reverse()
+        self.assertNotEqual(layout_semantics(changed, selectors), expected)
+
+    def test_thread_attachment_source_and_descriptor_are_all_required(self):
+        for mutation in (
+            "old-descriptor",
+            "missing",
+            "unlisted",
+            "unlocked",
+            "only-rehash",
+            "wrong-route",
+        ):
+            with self.subTest(mutation=mutation), tempfile.TemporaryDirectory() as tmp:
+                root = Path(tmp)
+                candidate, declared = fixture(root, "kotlin")
+                path = KOTLIN_LAYOUTS["thread"][0]
+                if mutation == "old-descriptor":
+                    del declared["protocols"]["thread"]
+                    del declared["sources"]["thread"]
+                elif mutation == "missing":
+                    (root / path).unlink()
+                elif mutation == "unlisted":
+                    candidate["manifest"]["files"] = [
+                        x for x in candidate["manifest"]["files"] if x["path"] != path
+                    ]
+                elif mutation == "unlocked":
+                    declared["sources"]["thread"]["sha256"] = "sha256:" + "0" * 64
+                elif mutation == "only-rehash":
+                    doc = json.loads((root / path).read_text())
+                    doc["max_bytes"] = 441
+                    raw = json.dumps(doc).encode()
+                    (root / path).write_bytes(raw)
+                    next(
+                        x for x in candidate["manifest"]["files"] if x["path"] == path
+                    ).update(sha256=file_digest(raw), size=len(raw))
+                    declared["sources"]["thread"].update(
+                        sha256=file_digest(raw), size=len(raw)
+                    )
+                    (root / "madb.lock").write_text(
+                        json.dumps({"inputs": list(declared["sources"].values())})
+                    )
+                with self.assertRaises(CandidateError):
+                    reconstruct(
+                        candidate,
+                        "c" if mutation == "wrong-route" else "kotlin",
+                        declared,
+                    )
+
+    def test_thread_complete_rehash_cannot_keep_old_embedded_abi(self):
+        with tempfile.TemporaryDirectory() as tmp:
+            root = Path(tmp)
+            candidate, declared = fixture(root, "kotlin")
+            c, d, p = inputs()
+            d["diagnostics"] = declared
+            (root / "declarations.json").write_text(json.dumps(d))
+            (root / "generated/contract/runtime-policy.json").write_text(json.dumps(p))
+            candidate.update(
+                contract=c,
+                identity={
+                    "abi_digest": semantic_digest("madb.c07-abi/1", abi_document(c, d, p))
+                },
+            )
+            verify_abi(candidate, "kotlin", companion=True)
+            # All attachment/lock/descriptor hashes agree, but the protocol changed.
+            path = KOTLIN_LAYOUTS["thread"][0]
+            doc = json.loads((root / path).read_text())
+            doc["max_bytes"] = 441
+            raw = json.dumps(doc).encode()
+            (root / path).write_bytes(raw)
+            next(x for x in candidate["manifest"]["files"] if x["path"] == path).update(
+                sha256=file_digest(raw), size=len(raw)
+            )
+            declared["sources"]["thread"].update(sha256=file_digest(raw), size=len(raw))
+            declared["protocols"]["thread"] = layout_semantics(
+                doc, KOTLIN_LAYOUTS["thread"][1]
+            )
+            (root / "madb.lock").write_text(
+                json.dumps({"inputs": list(declared["sources"].values())})
+            )
+            (root / "declarations.json").write_text(json.dumps(d))
+            with self.assertRaisesRegex(CandidateError, "public type/protocol"):
+                verify_abi(candidate, "kotlin", companion=True)
+
+    def test_thread_diagnostics_are_rejected_in_ordinary_even_with_matching_abi(self):
+        with tempfile.TemporaryDirectory() as tmp:
+            root = Path(tmp)
+            candidate, declared = fixture(root, "kotlin")
+            c, d, p = inputs()
+            d["diagnostics"] = declared
+            (root / "declarations.json").write_text(json.dumps(d))
+            (root / "generated/contract/runtime-policy.json").write_text(json.dumps(p))
+            candidate.update(
+                contract=c,
+                identity={
+                    "abi_digest": semantic_digest("madb.c07-abi/1", abi_document(c, d, p))
+                },
+            )
+            with self.assertRaisesRegex(CandidateError, "ordinary candidate"):
+                verify_abi(candidate, "kotlin", companion=False)
+
+    def test_exact_source_input_tag_matches_untagged_lock_on_every_route(self):
+        for route in ("c", "cpp", "rust", "kotlin"):
+            with self.subTest(route=route), tempfile.TemporaryDirectory() as tmp:
+                candidate, declared = fixture(Path(tmp), route)
+                for ref in declared["sources"].values():
+                    ref["schema"] = "madb.source-input/1"
+                self.assertEqual(
+                    reconstruct(candidate, route, declared), declared["protocols"]
+                )
+
+    def test_source_input_tag_does_not_accept_other_shapes_or_schema(self):
+        for mutation in ("unknown", "null", "extra", "missing", "not_object"):
+            with self.subTest(mutation=mutation), tempfile.TemporaryDirectory() as tmp:
+                candidate, declared = fixture(Path(tmp), "c")
+                ref = declared["sources"]["memory"]
+                ref["schema"] = "madb.source-input/1"
+                if mutation == "unknown":
+                    ref["schema"] = "madb.source-input/2"
+                elif mutation == "null":
+                    ref["schema"] = None
+                elif mutation == "extra":
+                    ref["trusted"] = True
+                elif mutation == "missing":
+                    del ref["size"]
+                else:
+                    declared["sources"]["memory"] = []
+                with self.assertRaisesRegex(CandidateError, "invalid diagnostic source"):
+                    reconstruct(candidate, "c", declared)
+
+    def test_tagged_source_cannot_change_digest_size_or_path(self):
+        for key, value in (
+            ("sha256", "sha256:" + "b" * 64),
+            ("size", 99999),
+            ("path", "authors/other.json"),
+        ):
+            with self.subTest(key=key), tempfile.TemporaryDirectory() as tmp:
+                candidate, declared = fixture(Path(tmp), "c")
+                ref = declared["sources"]["memory"]
+                ref.update(schema="madb.source-input/1")
+                ref[key] = value
+                with self.assertRaisesRegex(CandidateError, "not a locked input"):
+                    reconstruct(candidate, "c", declared)
+
+    def test_tagged_source_preserves_attachment_digest_and_size_checks(self):
+        for key, value in (("sha256", "sha256:" + "b" * 64), ("size", 99999)):
+            with self.subTest(key=key), tempfile.TemporaryDirectory() as tmp:
+                candidate, declared = fixture(Path(tmp), "c")
+                for ref in declared["sources"].values():
+                    ref["schema"] = "madb.source-input/1"
+                item = next(
+                    row
+                    for row in candidate["manifest"]["files"]
+                    if row["path"] == C_LAYOUTS["memory"][0]
+                )
+                item[key] = value
+                with self.assertRaisesRegex(CandidateError, "attachment bytes differ"):
+                    reconstruct(candidate, "c", declared)
+
 
 if __name__ == "__main__":
     unittest.main()

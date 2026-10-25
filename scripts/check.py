@@ -40,6 +40,8 @@ def main():
     parser.add_argument("--kotlin-configuration-sha256")
     parser.add_argument("--identity-fixtures", type=Path)
     parser.add_argument("--identity-fixtures-sha256")
+    parser.add_argument("--related-ordinary-report", type=Path)
+    parser.add_argument("--related-ordinary-report-sha256")
     parser.add_argument("--managed-root", type=Path)
     parser.add_argument("--candidates", type=Path)
     parser.add_argument("--output", type=Path, default=None)
@@ -74,7 +76,7 @@ def main():
                    "--java-home", str(arguments.java_home), "--output", str(arguments.output)]
         for name in ("target", "target_kind", "generator_cli", "generation_fixtures", "cli_inventory", "cli_inventory_sha256",
                      "madb_image", "madb_sha256", "finalizer_image", "finalizer_sha256",
-                     "rust_configuration", "rust_configuration_sha256", "kotlin_configuration", "kotlin_configuration_sha256", "identity_fixtures", "identity_fixtures_sha256"):
+                     "rust_configuration", "rust_configuration_sha256", "kotlin_configuration", "kotlin_configuration_sha256", "identity_fixtures", "identity_fixtures_sha256", "related_ordinary_report", "related_ordinary_report_sha256"):
             if getattr(arguments, name) is not None:
                 command.extend(["--" + name.replace("_", "-"), str(getattr(arguments, name))])
         if arguments.community_debug_signing:

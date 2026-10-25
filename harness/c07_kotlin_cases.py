@@ -3,12 +3,14 @@
 A mapped scenario is not a result. Gaps remain blocked until independently
 implemented and executed with this exact public companion candidate.
 """
-from c07_kotlin_observations import SCENARIOS
+from c07_kotlin_observations import SCENARIOS as NORMAL_SCENARIOS
+from c07_kotlin_identity_observations import SCENARIOS as IDENTITY_SCENARIOS
+SCENARIOS=tuple(NORMAL_SCENARIOS)+tuple(IDENTITY_SCENARIOS)
 
 GROUPS = {
- 'identity': {'scenarios':('kotlin-admission',), 'gaps':('Six exact wrong-identity bootstrap/provider library substitutions and real bootstrap resource deltas remain required.',)},
+ 'identity': {'scenarios':('kotlin-admission',)+tuple(IDENTITY_SCENARIOS), 'gaps':('Matched ordinary HAR six actual wrong-library rejection observations remain required separately from test admission/observer deltas.',)},
  'getters-and-reentry': {'scenarios':('kotlin-getters',), 'gaps':()},
- 'worker-and-domain': {'scenarios':('kotlin-terminal-success','kotlin-terminal-domain'), 'gaps':('Actual live owner/business/cleanup thread witnesses and genuine Kotlin computation/free source binding remain required.',)},
+ 'worker-and-domain': {'scenarios':('kotlin-terminal-success','kotlin-terminal-domain','kotlin-live-threads'), 'gaps':('Actual live owner/business/cleanup thread witnesses and genuine Kotlin computation/free source binding remain required.',)},
  'terminal-winner': {'scenarios':('kotlin-terminal-cancel','kotlin-terminal-success','kotlin-terminal-domain','kotlin-cancel-race'), 'gaps':()},
  'single-claim': {'scenarios':('kotlin-terminal-cancel','kotlin-terminal-success','kotlin-terminal-domain','kotlin-claim-rollback','kotlin-cancel-race'), 'gaps':()},
  'result-transfer-failures': {'scenarios':('kotlin-after-guard','kotlin-getters','kotlin-fanout-allocation','kotlin-fault-before-guard','kotlin-fault-after-accepted'), 'gaps':()},

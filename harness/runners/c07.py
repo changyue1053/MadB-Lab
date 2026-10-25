@@ -88,6 +88,8 @@ def main(argv=None):
     parser.add_argument("--kotlin-configuration-sha256")
     parser.add_argument("--identity-fixtures", type=Path)
     parser.add_argument("--identity-fixtures-sha256")
+    parser.add_argument("--related-ordinary-report", type=Path)
+    parser.add_argument("--related-ordinary-report-sha256")
     parser.add_argument("--lab-revision")
     parser.add_argument("--producer-revision")
     args = parser.parse_args(argv)
@@ -96,8 +98,11 @@ def main(argv=None):
         parser.error("--output must be empty; reports cannot overwrite earlier runs")
     args.output.mkdir(parents=True, exist_ok=True)
     identity_inputs = (args.identity_fixtures, args.identity_fixtures_sha256)
-    if any(identity_inputs) and (not all(identity_inputs) or not args.companion or args.generation_only):
-        parser.error("identity fixtures require companion execution and both collection/path SHA-256")
+    if any(identity_inputs) and (not all(identity_inputs) or args.generation_only):
+        parser.error("identity fixtures require target execution and both collection/path SHA-256")
+    related_inputs = (args.related_ordinary_report, args.related_ordinary_report_sha256)
+    if any(related_inputs) and (not all(related_inputs) or not args.companion or args.generation_only):
+        parser.error("related ordinary report requires companion target execution and both path/SHA-256")
     generation_inputs = (args.generator_cli, args.generation_fixtures, args.cli_inventory, args.cli_inventory_sha256,
                          args.madb_image, args.madb_sha256, args.finalizer_image, args.finalizer_sha256)
     if any(generation_inputs) and not all(generation_inputs):
@@ -143,7 +148,9 @@ def main(argv=None):
             "required_scope": candidate["scope"], "embedded_identity_binding": candidate["identity_binding"], "lab_source_digest": source_digest})
         execution_error, observed, target, session = None, None, {}, None
         generation, generation_error = None, None
+        generation_elapsed_ms = None
         controlled = None
+        ordinary_identity = None
         begin = time.monotonic()
         generation_budget = 1200 if args.route == "kotlin" else 600
         if not args.companion:
@@ -153,6 +160,8 @@ def main(argv=None):
                 if all(generation_inputs):
                     try:
                         generation = run_generation(session, deadline=begin + generation_budget)
+                        session.verify_closure("after-generation")
+                        generation_elapsed_ms = int((time.monotonic() - begin) * 1000)
                     except (OSError, RuntimeError, ValueError, KeyError, StopIteration) as error:
                         generation_error = str(error)
                 if not args.generation_only:
@@ -169,15 +178,31 @@ def main(argv=None):
                         session.stop()
                     except (OSError, RuntimeError) as error:
                         execution_error = (execution_error + "; " if execution_error else "") + "test recovery stop failed: " + str(error)
+        if not args.companion and args.identity_fixtures and not execution_error and observed is not None and observed.get("status") == "passed":
+            from c07_ordinary_identity_execution import run_ordinary_identity
+            try:
+                ordinary_identity = run_ordinary_identity(args, candidate)
+                write_json(args.output / "ordinary-identity-results.json", ordinary_identity)
+                session.verify_closure("after-ordinary-identity")
+            except (OSError, RuntimeError, ValueError, KeyError) as error:
+                execution_error = "ordinary identity execution: " + str(error)
         if args.companion:
             try:
+                related = None
+                if args.related_ordinary_report:
+                    from c07_related_ordinary import verify_related_ordinary
+                    related = verify_related_ordinary(args.related_ordinary_report, args.related_ordinary_report_sha256, candidate, lab_revision=revision)
+                    write_json(args.output / "related-ordinary-evidence.json", related)
                 controlled = run_companion(args, candidate)
+                if related is not None:
+                    controlled["related_ordinary"] = {"candidate_digest": candidate["manifest"]["candidate_digest"],
+                        "run_id": controlled["run_id"], "observation": related}
                 target = controlled.get("target", {})
                 write_json(args.output / "controlled-results.json", controlled)
             except (OSError, RuntimeError, ValueError, KeyError) as error:
                 execution_error = str(error)
         duration = int((time.monotonic() - begin) * 1000)
-        if generation is not None and duration >= generation_budget * 1000:
+        if generation is not None and generation_elapsed_ms is not None and generation_elapsed_ms >= generation_budget * 1000:
             generation_error = "overall generation watchdog expired including final tool closure check"
         final_candidate = verify_candidate(args.candidate, args.route, companion=args.companion)
         if (final_candidate["manifest"]["candidate_digest"] != candidate["manifest"]["candidate_digest"] or
@@ -202,7 +227,7 @@ def main(argv=None):
                 elif controlled:
                     assessment = assess_group(name, route=args.route, candidate_digest=candidate["manifest"]["candidate_digest"],
                                               run_id=controlled["run_id"], observations=controlled["observations"],
-                                              route_ownership=controlled.get("route_ownership"))
+                                              route_ownership=controlled.get("route_ownership"), related_ordinary=controlled.get("related_ordinary"))
                     status, reason = assessment["status"], assessment["reason"]
                 else:
                     status, reason = "blocked", "no controlled candidate observations"
@@ -252,7 +277,7 @@ def main(argv=None):
             report["extensions"] = {"madb.lab-source-state": "provisional", "madb.lab-source-digest": source_digest}
         write_json(args.output / "report.json", report)
         print("C07: " + ", ".join(item["case_id"] + "=" + item["status"] for item in results))
-        return 0 if all(item["status"] == "passed" for item in results) else 1
+        return 0 if all(item["status"] == "passed" for item in results) and (ordinary_identity is None or ordinary_identity["status"] == "passed") else 1
     except (CandidateError, RuntimeError, ValueError, OSError, KeyError) as error:
         write_json(args.output / "preflight-error.json", {"status": "error", "reason": str(error)})
         print("C07 failed: " + str(error), file=sys.stderr)

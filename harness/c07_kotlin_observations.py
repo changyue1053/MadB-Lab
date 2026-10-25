@@ -19,6 +19,7 @@ from c07_kotlin_handle_observations import SCENARIOS as HANDLE_SCENARIOS, predic
 from c07_kotlin_fault_observations import SCENARIOS as FAULT_SCENARIOS, predicates as fault_predicates
 from c07_kotlin_listener_observations import SCENARIOS as LISTENER_SCENARIOS, predicates as listener_predicates
 from c07_kotlin_waiter_observations import SCENARIOS as WAITER_SCENARIOS, predicates as waiter_predicates, EXPECTED_ENGINE_COUNTS
+from c07_kotlin_thread_observations import SCENARIOS as THREAD_SCENARIOS, FIELDS as THREAD_FIELDS, parse as parse_thread, predicates as thread_predicates
 ADMISSION_FIELDS = "InitAttempts InitFailures MainRejected IdentityRejected LibraryLoaded Initialized Slot Epoch RollbackAcks LastFailureStage Delivered Consumed TsfnAdmissionFailures".split()
 SETTLEMENT_FIELDS = "Arms Hits ResolveAccepted RejectAccepted Exceptions CurrentSettling MaxObservedWaiterMap TimerArmed TickInFlight".split()
 MEMORY_FIELDS = ['Format', 'LedgerCurrentBytes', 'LedgerPeakBytes', 'LedgerChargedBytes', 'LedgerRetiredBytes', 'ModelRequestedCurrentBytes', 'ModelRequestedPeakBytes', 'ModelAllocatedBytes', 'ModelFreedBytes', 'ModelAllocations', 'ModelFrees', 'StagingCurrentBytes', 'StagingPeakBytes', 'StagingAddedBytes', 'StagingCommittedBytes', 'StagingAbandonedBytes', 'Utf16CurrentRequestedBytes', 'Utf16PeakRequestedBytes', 'Utf16AllocatedBytes', 'Utf16FreedBytes', 'Utf16Allocations', 'Utf16Releases']
@@ -134,7 +135,7 @@ STREAM_SCENARIOS = {'kotlin-state': {'kn-stream-state-drained-native': 'native',
                               'kn-stream-clone-1-owned-before-control': 'control',
                               'kn-stream-clone-1-pre-after-control': 'control',
                               'kn-stream-clone-1-pre-before-control': 'control'}}
-SCENARIOS = {"kotlin-admission": ADMISSION_LABELS, **{name: {**labels, **COMMON_LABELS} for name, labels in {**VALUE_SCENARIOS, **WORK_SCENARIOS, **STREAM_SCENARIOS, **MEMORY_SCENARIOS, **OPERATION_SCENARIOS, **HANDLE_SCENARIOS, **FAULT_SCENARIOS, **LISTENER_SCENARIOS, **WAITER_SCENARIOS}.items()}}
+SCENARIOS = {"kotlin-admission": ADMISSION_LABELS, **{name: {**labels, **COMMON_LABELS} for name, labels in {**VALUE_SCENARIOS, **WORK_SCENARIOS, **STREAM_SCENARIOS, **MEMORY_SCENARIOS, **OPERATION_SCENARIOS, **HANDLE_SCENARIOS, **FAULT_SCENARIOS, **LISTENER_SCENARIOS, **WAITER_SCENARIOS, **THREAD_SCENARIOS}.items()}}
 
 
 def validate_kotlin_contracts(contracts, *, controls=False, admission=False, settling=False, memory=False):
@@ -195,6 +196,10 @@ def parse_kotlin(raw, *, nonce, pid, case, contracts, napi_binding=None, napi_id
         layout=contracts.get("subscription-frame.json",{})
         if layout.get("format")!=1 or layout.get("length")!=4 or [(f.get("index"),f.get("name")) for f in layout.get("fields",[])]!=list(enumerate(("Format","Closing","Closed","ListenerPresent"))):
             result.update(status="failed",problems=["missing exact retained Kotlin subscription-record contract"]);return result
+    if case in THREAD_SCENARIOS:
+        layout=contracts.get("thread-frame.json",{})
+        if layout.get("format")!=70604 or layout.get("length")!=21 or [(f.get("index"),f.get("name")) for f in layout.get("fields",[])]!=list(enumerate(THREAD_FIELDS)):
+            result.update(status="failed",problems=["missing exact Kotlin simultaneous-thread contract"]);return result
     lines=[line for line in raw.splitlines() if re.search(r"(?<![A-Za-z0-9_-])"+re.escape(nonce)+r"(?![A-Za-z0-9_-])",line)]
     result["lines"]=lines;frames=result["frames"]
     if any(len(line.split())<3 or line.split()[2]!=pid for line in lines):problems.append("nonce/PID mismatch")
@@ -214,6 +219,8 @@ def parse_kotlin(raw, *, nonce, pid, case, contracts, napi_binding=None, napi_id
                 parse_control_csv(value)
             elif kind=="memory":
                 parse_memory_csv(value)
+            elif kind=="thread":
+                parse_thread(value)
             elif kind=="napi":
                 parse_napi(value)
             else:
@@ -247,6 +254,7 @@ def parse_kotlin(raw, *, nonce, pid, case, contracts, napi_binding=None, napi_id
                 if case in VALUE_SCENARIOS:problems.extend(value_predicates(case,frames))
                 elif case in WORK_SCENARIOS:problems.extend(work_predicates(case,frames))
                 elif case in OPERATION_SCENARIOS:problems.extend(operation_predicates(case,frames))
+                elif case in THREAD_SCENARIOS:problems.extend(thread_predicates(frames))
                 elif case in WAITER_SCENARIOS:problems.extend(waiter_predicates(case,frames))
                 elif case in HANDLE_SCENARIOS:problems.extend(handle_predicates(frames))
                 elif case in FAULT_SCENARIOS:problems.extend(fault_predicates(case,frames))

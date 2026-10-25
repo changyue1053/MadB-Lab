@@ -1,0 +1,54 @@
+// Independent public witness: actual exit hold + existing cleanup pthread_join.
+import { Runtime, Engine, Operation, Snapshot, testObserve, testThreadWitness } from @MADB_PUBLIC_MODULE@;
+import { check, nextTurn, snapshot } from '../Assertions';
+type EmitNumbers = (label: string, values: number[]) => void;
+type EmitThread = (label: string, csv: string) => void;
+function read(runtime: Runtime, action: number, label: string, emit: EmitThread): string[] {
+  const raw: string = testThreadWitness(runtime, action);
+  const f: string[] = raw.split(',');
+  check(f.length === 21 && f[0] === '70604', 'thread21-format');
+  for (let i: number = 0; i < f.length; i++) { check(/^(0|[1-9][0-9]*)$/.test(f[i]), 'thread21-decimal'); }
+  check(f[20] === '0', 'thread21-native-probe-error');
+  emit(label, raw); return f;
+}
+function live(f: string[]): boolean {
+  return f[3] === '1' && f[4] === '1' && f[5] === '1' && f[6] === '1';
+}
+export async function runKotlinThreadCase(runtime: Runtime, engine: Engine, deadline: number,
+    emit: EmitNumbers, emitThread: EmitThread): Promise<void> {
+  const operation: Operation = engine.startOperation({ value: 41, text: 'thread-positive' });
+  const value: Snapshot = await operation.result(); snapshot(value, 42, 'thread-positive', 'thread-real-compute');
+  await operation.close(); emit('kn-thread-work', [42]);
+  const before: string[] = read(runtime, 0, 'kn-thread-before', emitThread);
+  check(before[1] !== '0' && before[2] !== '0' && before[4] === '1', 'thread-live-existing-executor');
+  const armed: string[] = read(runtime, 1, 'kn-thread-armed', emitThread);
+  check(armed[10] === '1' && armed[12] === '0', 'thread-arm-real-exit-hold');
+  let resolved: boolean = false; let rejected: boolean = false;
+  const parent: Promise<void> = runtime.close();
+  check(parent === runtime.close(), 'thread-parent-close-single-control');
+  const terminal: Promise<void> = parent.then((): void => { resolved = true; }, (_error: Error): void => { rejected = true; });
+  let heartbeat: number = 0; let first: string[] = [];
+  while (true) {
+    await nextTurn(deadline, 'thread-owner-loop-heartbeat'); heartbeat++;
+    check(!resolved && !rejected, 'thread-close-settled-before-release');
+    const raw: string = testThreadWitness(runtime, 0); const f: string[] = raw.split(',');
+    check(f.length === 21 && f[0] === '70604' && f[20] === '0', 'thread-poll-format-error');
+    if (live(f)) { first = f; emitThread('kn-thread-live-first', raw); break; }
+  }
+  check(first[7] === '1' && first[8] === '1' && first[9] === '1', 'three-actual-pthreads-distinct');
+  await nextTurn(deadline, 'thread-heartbeat-while-business-and-cleanup-live'); heartbeat++;
+  const second: string[] = read(runtime, 0, 'kn-thread-live-heartbeat', emitThread);
+  check(live(second) && second[7] === '1' && second[8] === '1' && second[9] === '1', 'three-live-after-another-owner-turn');
+  check(!resolved && !rejected && heartbeat >= 2, 'no-env-wait-or-early-parent-ack');
+  emit('kn-thread-heartbeat', [heartbeat, resolved ? 1 : 0, rejected ? 1 : 0]);
+  const pending: number[] = testObserve(runtime);
+  check(pending.length === 110 && pending[0] === 70501 && pending[12] === 1 && pending[13] === 0 && pending[2] === 0,
+    'actual-parent-close-still-pending-on-physical-join');
+  emit('kn-thread-close-pending', pending);
+  read(runtime, 2, 'kn-thread-released', emitThread);
+  await parent; await terminal;
+  check(resolved && !rejected, 'original-parent-close-completed-after-release');
+  read(runtime, 0, 'kn-thread-final', emitThread);
+  emit('kn-thread-closed-native', testObserve(runtime));
+  emit('kn-thread-close-outcome', [1, 0]);
+}

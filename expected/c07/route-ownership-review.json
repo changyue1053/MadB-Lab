@@ -1,6 +1,6 @@
 {
-  "status": "pending-independent-review",
-  "producer_revision": null,
+  "status": "reviewed",
+  "producer_revision": "c8e7e01c31a7bc23abf6716abcc85cb47d47f418",
   "scope": "Finite C07 C/Cpp/Rust original and composed source review inventory; same source/compiler/object/link/HAR binding is necessary and does not replace controlled target execution.",
   "original_bytes_in_candidate": false,
   "replay_scope": "Original sources and patches are not shipped by current candidates. Candidate checks align frozen references to this independently approved Lab review; no independent candidate-only patch replay is claimed.",

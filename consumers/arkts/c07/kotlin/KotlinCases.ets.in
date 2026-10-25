@@ -5,6 +5,7 @@ import { runKotlinAdmission } from './KotlinAdmissionCases';
 import { runKotlinValueCase } from './KotlinValueCases';
 import { runKotlinWorkCase } from './KotlinWorkCases';
 import { runKotlinStreamCase } from './KotlinStreamCases';
+import { runKotlinThreadCase } from './KotlinThreadCase';
 import { runKotlinWaiterCase } from './KotlinWaiterCases';
 import { runKotlinOperationCase } from './KotlinOperationCases';
 import { runKotlinHandleCase } from './KotlinHandleCases';
@@ -25,7 +26,8 @@ export async function runKotlinCase(name: string, emit: EmitNumbers,
   emit('runtime-open', testObserve(runtime));
   emitControl('napi-open', testObserveNapi());
   const failedClose: boolean = await runKotlinFaultCase(name, runtime, engine, deadline, emit, emitControl);
-  if (name === 'kotlin-generation-handles') { await runKotlinHandleCase(runtime, engine, deadline, emit, emitControl); }
+  if (name === 'kotlin-live-threads') { await runKotlinThreadCase(runtime, engine, deadline, emit, emitControl); }
+  else if (name === 'kotlin-generation-handles') { await runKotlinHandleCase(runtime, engine, deadline, emit, emitControl); }
   else if (name === 'kotlin-listener-lifetime') { await runKotlinListenerLifetime(runtime, engine, deadline, emit); }
   else { check(failedClose || await runKotlinValueCase(name, runtime, engine, deadline, emit) ||
     await runKotlinWorkCase(name, runtime, engine, deadline, emit, emitControl) ||

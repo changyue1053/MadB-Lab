@@ -22,7 +22,7 @@ def setup(root):
     write(normal/"madb.lock",{"inputs":[source]})
     inventory=[ref(normal/name,name) for name in (HEADER,FACADE,"madb.lock")]
     selector={"profile_id":"c07-c-arkts-aarch64-ohos23-test"}
-    candidate={"root":normal,"route":"c","module":"madbc07sdkctest","identity":{"expected_identity":expected},
+    candidate={"root":normal,"route":"c","companion":True,"module":"madbc07sdkctest","identity":{"expected_identity":expected},
         "manifest":{"generation_id":"generation","selector":selector,"files":inventory,"dependencies":[],"build_evidence":[]}}
     base=root/"fixtures";base.mkdir();references=[]
     for kind,(constant,error,event,index) in EXPECTED.items():
@@ -41,11 +41,11 @@ def setup(root):
         logs[1]["outputs"]=[ref(lib,"native/libmadbc07sdkctest.so")]
         original=[source,ref(normal/HEADER,HEADER),ref(normal/FACADE,FACADE)]
         fixture=[source,ref(edited,HEADER),ref(normal/FACADE,FACADE)]
-        receipt={"case":kind,"candidate":False,"build_status":"compiled-and-linked","generation_id":"generation","selector":selector,
+        receipt={"variant":"test","case":kind,"candidate":False,"build_status":"compiled-and-linked","generation_id":"generation","selector":selector,
             "native_module":lib.name,"changed_files":[HEADER],"unchanged_facade":ref(normal/FACADE,FACADE),
             "original_inputs":original,"fixture_inputs":fixture,"native_constant_edits":edits,"library":ref(lib),"phases":logs}
         dest=folder/"receipt.json";write(dest,receipt);references.append(ref(dest))
-    collection=base/"fixtures.json";write(collection,{"candidate":False,"fixtures":references})
+    collection=base/"fixtures.json";write(collection,{"variant":"test","candidate":False,"fixtures":references})
     return candidate,collection
 
 

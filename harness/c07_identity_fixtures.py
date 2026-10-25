@@ -51,6 +51,8 @@ def admit_identity_fixtures(collection_path, collection_sha256, candidate):
         used.append(value)
         return data
     collection = read_json(path)
+    variant = "test" if candidate.get("companion", False) else "ordinary"
+    require(collection.get("variant") == variant, "collection ordinary/test variant differs")
     require(collection.get("candidate") is False and len(collection.get("fixtures", [])) == 3, "not the exact three negative inputs")
     manifest = candidate["manifest"]
     inventory = {item["path"]: fields(item) for section in ("files","dependencies","build_evidence") for item in manifest[section]}
@@ -67,6 +69,7 @@ def admit_identity_fixtures(collection_path, collection_sha256, candidate):
     for reference in collection["fixtures"]:
         external(reference); receipt = read_json(Path(reference["path"]))
         kind = receipt.get("case")
+        require(receipt.get("variant") == variant, "receipt ordinary/test variant differs")
         require(kind in EXPECTED and kind not in admitted, "unknown or duplicate negative case")
         constant,error,event,component = EXPECTED[kind]
         require(receipt.get("candidate") is False and receipt.get("build_status")=="compiled-and-linked" and
