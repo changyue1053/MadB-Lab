@@ -1,0 +1,88 @@
+// Observe the actual subscription record's listener field, including after the
+// user retains a closed wrapper. This is not a GC or per-listener NAPI-ref test.
+import { Runtime, Engine, Subscription, Snapshot, testSubscriptionState,
+  testStagePublication, testFinishPublication, testArmDelivery, testDeliveryFrame, testReleaseDelivery, testObserve } from @MADB_PUBLIC_MODULE@;
+import { check, nextTurn, throwsCode, snapshot } from '../Assertions';
+type Emit = (label: string, values: number[]) => void;
+function observed(runtime: Runtime, label: string): number[] {
+  const f: number[] = testObserve(runtime);
+  check(f.length === 110 && f[0] === 70501, label + ':110'); return f;
+}
+
+function state(sub: Subscription, closing: number, closed: number, listener: number,
+               label: string, emit: Emit): void {
+  const values: number[] = testSubscriptionState(sub);
+  check(values.length === 4 && values[0] === 1 && values[1] === closing &&
+    values[2] === closed && values[3] === listener, label + ':actual-resource-record');
+  emit(label, values);
+}
+
+export async function runKotlinListenerLifetime(runtime: Runtime, engine: Engine,
+                                           deadline: number, emit: Emit): Promise<void> {
+  let sourceCalls: number = 0;
+  const source: Subscription = engine.observeEvents((_value: Snapshot): void => { sourceCalls++; });
+  state(source, 0, 0, 1, 'kn-listener-source-open', emit);
+  testStagePublication(engine, 1, { value: 1, text: 'source-held' });
+  const held: number[] = observed(runtime, 'kn-listener-source');
+  check(held[30] === 1 && held[28] === 1, 'kn-listener-source:real-held-source');
+  emit('kn-listener-source-native', held);
+  source.requestStop();
+  let sourceClosed: boolean = false;
+  const sourceClose: Promise<void> = source.close().then((): void => { sourceClosed = true; });
+  await nextTurn(deadline, 'kn-listener-source:wait-for-release');
+  check(!sourceClosed && sourceCalls === 0, 'kn-listener-source:pending-physical-close');
+  state(source, 1, 0, 1, 'kn-listener-source-retained', emit);
+  throwsCode(() => { testFinishPublication(engine, true); }, 'Closing', 'stopped-source-exact-typed-error');
+  await sourceClose;
+  state(source, 1, 1, 0, 'kn-listener-source-released', emit);
+
+  let pendingCalls: number = 0;
+  const pending: Subscription = engine.observeEvents((_value: Snapshot): void => { pendingCalls++; });
+  testArmDelivery(pending);
+  engine.publishEvent({ value: 2, text: 'preentry-held' });
+  while (testDeliveryFrame(pending).split(',')[7] !== '2') { await nextTurn(deadline, 'kn-listener-pending:real-lease'); }
+  const queued: number[] = observed(runtime, 'kn-listener-pending');
+  check(queued[28] === 1 && queued[31] === 0 && pendingCalls === 0, 'kn-listener-pending:not-entered');
+  emit('kn-listener-pending-native', queued);
+  state(pending, 0, 0, 1, 'kn-listener-pending-retained', emit);
+  pending.requestStop();
+  let pendingClosed: boolean = false;
+  const pendingClose: Promise<void> = pending.close().then((): void => { pendingClosed = true; });
+  await nextTurn(deadline, 'kn-listener-pending:stop-before-entry');
+  check(!pendingClosed && pendingCalls === 0, 'kn-listener-pending:lease-keeps-close-pending');
+  state(pending, 1, 0, 1, 'kn-listener-pending-stopped', emit);
+  testReleaseDelivery(pending); await pendingClose;
+  state(pending, 1, 1, 0, 'kn-listener-pending-released', emit);
+
+  let enteredCalls: number = 0;
+  let entered: Subscription | undefined = undefined;
+  let enteredClose: Promise<void> | undefined = undefined;
+  let enteredClosed: boolean = false;
+  entered = engine.observeEvents((value: Snapshot): void => {
+    enteredCalls++;
+    check(entered !== undefined, 'kn-listener-entered:wrapper-assigned');
+    const sub: Subscription = entered as Subscription;
+    const active: number[] = observed(runtime, 'kn-listener-entered');
+    check(active[25] === 1 && active[31] === 1, 'kn-listener-entered:actual-entered-ticket');
+    emit('kn-listener-entry-native', active);
+    state(sub, 0, 0, 1, 'kn-listener-entry-retained', emit);
+    sub.requestStop(); enteredClose = sub.close().then((): void => { enteredClosed = true; });
+    check(!enteredClosed, 'kn-listener-entered:wait-for-current-entry');
+    state(sub, 1, 0, 1, 'kn-listener-entry-stopped', emit);
+    snapshot(value, 3, 'entered-copy', 'kn-listener-entered:current-copy-survives-stop');
+  });
+  engine.publishEvent({ value: 3, text: 'entered-copy' });
+  while (!enteredClosed) { await nextTurn(deadline, 'kn-listener-entry:drain'); }
+  if (enteredClose !== undefined) { await enteredClose; }
+  check(entered !== undefined && sourceCalls === 0 && pendingCalls === 0 && enteredCalls === 1,
+    'kn-listener-lifetime:one-legal-entry');
+  state(entered as Subscription, 1, 1, 0, 'kn-listener-entry-released', emit);
+  // Keep all three wrappers alive and inspect again: map removal alone cannot pass.
+  state(source, 1, 1, 0, 'kn-listener-source-still-released', emit);
+  state(pending, 1, 1, 0, 'kn-listener-pending-still-released', emit);
+  emit('kn-listener-lifetime-counts', [sourceCalls, pendingCalls, enteredCalls]);
+  const drained: number[] = observed(runtime, 'kn-listener-lifetime:drained');
+  check(drained[25] === 0 && drained[28] === 0 && drained[30] === 0 && drained[31] === 0,
+    'kn-listener-lifetime:native-obligations-drained');
+  emit('kn-listener-lifetime-drained', drained);
+}

@@ -5,6 +5,11 @@ import { runKotlinAdmission } from './KotlinAdmissionCases';
 import { runKotlinValueCase } from './KotlinValueCases';
 import { runKotlinWorkCase } from './KotlinWorkCases';
 import { runKotlinStreamCase } from './KotlinStreamCases';
+import { runKotlinWaiterCase } from './KotlinWaiterCases';
+import { runKotlinOperationCase } from './KotlinOperationCases';
+import { runKotlinHandleCase } from './KotlinHandleCases';
+import { runKotlinFaultCase } from './KotlinFaultCases';
+import { runKotlinListenerLifetime } from './KotlinListenerLifetime';
 import { runKotlinMemoryCase } from './KotlinMemoryCases';
 
 type EmitNumbers = (label: string, values: number[]) => void;
@@ -19,11 +24,16 @@ export async function runKotlinCase(name: string, emit: EmitNumbers,
   const engine: Engine = runtime.connect();
   emit('runtime-open', testObserve(runtime));
   emitControl('napi-open', testObserveNapi());
-  check(await runKotlinValueCase(name, runtime, engine, deadline, emit) ||
+  const failedClose: boolean = await runKotlinFaultCase(name, runtime, engine, deadline, emit, emitControl);
+  if (name === 'kotlin-generation-handles') { await runKotlinHandleCase(runtime, engine, deadline, emit, emitControl); }
+  else if (name === 'kotlin-listener-lifetime') { await runKotlinListenerLifetime(runtime, engine, deadline, emit); }
+  else { check(failedClose || await runKotlinValueCase(name, runtime, engine, deadline, emit) ||
     await runKotlinWorkCase(name, runtime, engine, deadline, emit, emitControl) ||
+    await runKotlinOperationCase(name, runtime, engine, deadline, emit, emitControl) ||
+    await runKotlinWaiterCase(name, runtime, engine, deadline, emit, emitControl) ||
     await runKotlinStreamCase(name, runtime, engine, deadline, emit, emitControl) ||
-    await runKotlinMemoryCase(name, runtime, engine, deadline, emit, emitControl), 'known-kotlin-case');
-  await runtime.close();
+    await runKotlinMemoryCase(name, runtime, engine, deadline, emit, emitControl), 'known-kotlin-case'); }
+  if (!failedClose) { await runtime.close(); }
   // close is normal explicit shutdown while the host env remains valid. The
   // offline oracle must see all native, managed-ref and finalizer ACK counters.
   emit('runtime-closed', testObserve(runtime));

@@ -5,6 +5,7 @@ import { Runtime, Engine, Operation, Subscription, Snapshot, openRuntime,
   testAfterSettlement } from @MADB_PUBLIC_MODULE@;
 import { check, snapshot, throwsCode, rejectsSnapshot, rejectsVoid, nextTurn } from './Assertions';
 import { Emit, observed, facade, gate, finalClosed } from './SupportChecks';
+import { runCapacityAndStreamCase } from './CapacityAndStreamCases';
 import { runAdditional } from './AdditionalCases';
 import { runAdmissionDelivery, runEngineGeneration } from './AdmissionDeliveryCases';
 import { runDiagnostic } from './DiagnosticCases';
@@ -210,7 +211,7 @@ export async function runControlledCase(name: string, emit: Emit, timeoutMs: num
   else if (name === 'fanout-events') { await fanoutFailure(runtime, engine, 1, deadline, emit); }
   else if (name === 'listener-lifetime') { await runListenerLifetime(runtime, engine, deadline, emit); }
   else if (name === 'live-cleanup-threads' || name === 'child-ownership-baseline') { await runDiagnostic(name, runtime, engine, deadline, emit); }
-  else { check(await runCompletionCase(name, runtime, engine, deadline, emit) || await runSharedWaiters(name, runtime, engine, deadline, emit) || await runAdditional(name, runtime, engine, deadline, emit) || await runFailure(name, runtime, engine, deadline, emit), 'known-additional-case'); }
+  else { check(await runCapacityAndStreamCase(name, runtime, engine, deadline, emit) || await runCompletionCase(name, runtime, engine, deadline, emit) || await runSharedWaiters(name, runtime, engine, deadline, emit) || await runAdditional(name, runtime, engine, deadline, emit) || await runFailure(name, runtime, engine, deadline, emit), 'known-additional-case'); }
   await runtime.close(); await finalClosed(runtime, key, deadline, emit);
   emit('case-complete', [1]);
 }

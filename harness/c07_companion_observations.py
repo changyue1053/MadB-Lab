@@ -15,6 +15,8 @@ from c07_listener_lifetime_observations import SCENARIOS as LISTENER_SCENARIOS, 
 
 from c07_memory_observations import SCENARIOS as MEMORY_SCENARIOS, GATED as MEMORY_GATED, predicates as memory_predicates, validate_contracts as memory_contracts
 
+from c07_capacity_stream_observations import SCENARIOS as CAPACITY_STREAM_SCENARIOS, predicates as capacity_stream_predicates
+
 MAX_SAFE = 2**53 - 1
 RUNTIME_FIELDS = """Format Phase BusinessEntries ScratchLive Operations Subscriptions
 EventTickets StateTickets Sources Entered Bytes Waiters Admissions Work Executors
@@ -88,6 +90,7 @@ SCENARIOS.update(ADMISSION_SCENARIOS)
 SCENARIOS.update(DIAGNOSTIC_SCENARIOS)
 SCENARIOS.update(LISTENER_SCENARIOS)
 SCENARIOS.update(MEMORY_SCENARIOS)
+SCENARIOS.update(CAPACITY_STREAM_SCENARIOS)
 SCENARIOS.update({name:{} for name in IDENTITY_SCENARIOS})
 WORKER_CASES = {"worker-env-exit", "fault-before-guard", "fault-after-accepted"}
 GATED_CASES = {"full-waiters", "settling-reentry", "terminal-cancel", "terminal-success",
@@ -276,6 +279,7 @@ def _predicates(case, frames):
     problems.extend(admission_predicates(case, frames))
     problems.extend(diagnostic_predicates(case, frames))
     if case in LISTENER_SCENARIOS:problems.extend(listener_predicates(frames))
+    if case in CAPACITY_STREAM_SCENARIOS:problems.extend(capacity_stream_predicates(case, frames))
     if case in MEMORY_SCENARIOS:memory_predicates(case,frames,need,equal,delta)
     return problems
 

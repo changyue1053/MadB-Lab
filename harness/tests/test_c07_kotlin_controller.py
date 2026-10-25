@@ -74,6 +74,6 @@ class KotlinControllerTests(unittest.TestCase):
         self.assertEqual(self.parse(frames)['status'],'failed')
 
     def test_scenario_inventory_has_independent_routes_only(self):
-        self.assertEqual(len(SCENARIOS),23)
+        self.assertEqual(len(SCENARIOS),31)
         self.assertTrue(all(name.startswith('kotlin-') for name in SCENARIOS))
         self.assertNotIn('worker-env-exit',SCENARIOS)

@@ -1,0 +1,62 @@
+// Failure is still failure after cleanup: reject Runtime.close only after its real ACK.
+import { Runtime, Engine, Operation, Snapshot, BoundaryError, testObserve, testControlFrame,
+  testArmWork, testReleaseWork, testArmTransferFailure, testSettleProbe, testSettleInspect } from @MADB_PUBLIC_MODULE@;
+import { check, nextTurn, snapshot } from '../Assertions';
+type EmitNumbers = (label: string, values: number[]) => void;
+type EmitControl = (label: string, value: string) => void;
+export async function runKotlinFaultCase(name: string, runtime: Runtime, engine: Engine,
+  deadline: number, emit: EmitNumbers, control: EmitControl): Promise<boolean> {
+  if (name !== 'kotlin-fault-before-guard' && name !== 'kotlin-fault-after-accepted') { return false; }
+  const before: boolean = name === 'kotlin-fault-before-guard';
+  testArmWork(engine, 2);
+  const operation: Operation = engine.startOperation({ value: 41, text: '故障\u0000' });
+  while (true) {
+    const raw: string = testControlFrame(runtime); const f: string[] = raw.split(',');
+    check(f.length === 31, 'fault-control31');
+    if (f[3] === '2') {
+      check(f[6] === '0', 'actual-success-terminal-before-exit');
+      control('kn-fault-held-control', raw); emit('kn-fault-held-native', testObserve(runtime)); break;
+    }
+    await nextTurn(deadline, 'actual-terminal-work-hold');
+  }
+  let probeHits: number = 0;
+  if (before) { testArmTransferFailure(runtime, 2); }
+  else {
+    testSettleProbe(runtime, (): void => {
+      probeHits++;
+      emit('kn-fault-after-resolver', testSettleInspect(runtime));
+    }, true);
+  }
+  let resolved: number = 0; let rejected: number = 0;
+  const result: Promise<void> = operation.result().then((v: Snapshot): void => {
+    resolved++; check(!before, 'before-guard-cannot-resolve'); snapshot(v, 42, '故障\u0000', 'accepted-result-exact');
+  }, (error: Error): void => {
+    rejected++; check(before && error instanceof BoundaryError && (error as BoundaryError).code === 'BridgeFailure', 'before-guard-exact-failure');
+  });
+  await result;
+  emit('kn-fault-settlements', [resolved, rejected, probeHits]);
+  emit('kn-fault-residual-native', testObserve(runtime));
+  control('kn-fault-residual-control', testControlFrame(runtime));
+  emit('kn-fault-settler', testSettleInspect(runtime));
+  let closeResolved: number = 0; let closeRejected: number = 0;
+  const close: Promise<void> = runtime.close();
+  check(close === runtime.close(), 'failed-runtime-parent-control-still-memoized');
+  const completed: Promise<void> = close.then((): void => { closeResolved++; }, (error: Error): void => {
+    closeRejected++;
+    check(error instanceof BoundaryError && (error as BoundaryError).code === 'BridgeFailure', 'original-failure-after-cleanup');
+  });
+  await nextTurn(deadline, 'failed-runtime-awaits-actual-owner-exit');
+  check(closeResolved === 0 && closeRejected === 0, 'failed-close-cannot-report-before-work-exit');
+  emit('kn-fault-close-pending', testObserve(runtime));
+  testReleaseWork(engine);
+  await completed;
+  emit('kn-fault-close-outcome', [closeResolved, closeRejected]);
+  emit('kn-fault-closed-native', testObserve(runtime));
+  emit('kn-fault-final-settler', testSettleInspect(runtime));
+  await nextTurn(deadline, 'no-late-second-settlement');
+  check(resolved === (before ? 0 : 1) && rejected === (before ? 1 : 0) && closeResolved === 0 && closeRejected === 1, 'exactly-once-fault-settlement');
+  emit('kn-fault-late-settlements', [resolved, rejected, closeResolved, closeRejected]);
+  // Caller must not await close as success again. It records final raw110/CSV
+  // after this completed failed-close scope, separate from normal-close NAPI oracle.
+  return true;
+}

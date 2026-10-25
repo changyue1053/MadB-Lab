@@ -17,8 +17,8 @@
   },
   "fixture": {
     "path": "harness/c07_kotlin_cases.py",
-    "sha256": "sha256:1cf4528d51c950680261d9427008676316b3cfa82bd524ff39dfdf51769efd5a",
-    "size": 4253,
+    "sha256": "sha256:0b3fdbd15dd5ac280ba14313d4224f33bed2ad097b97c0c6b3c2a284ee70348c",
+    "size": 3770,
     "schema": "madb.lab-source/1"
   },
   "setup": [
@@ -34,6 +34,12 @@
       "id": "scenario-1",
       "action": "call",
       "entrypoint": "runKotlinCase:kotlin-admission",
+      "arguments": []
+    },
+    {
+      "id": "scenario-2",
+      "action": "call",
+      "entrypoint": "runKotlinCase:kotlin-generation-handles",
       "arguments": []
     }
   ],
@@ -61,7 +67,7 @@
     }
   ],
   "timeout_policy": {
-    "timeout_ms": 50000,
+    "timeout_ms": 100000,
     "on_timeout": "error",
     "recovery": "isolate"
   }

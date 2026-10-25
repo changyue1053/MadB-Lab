@@ -1,0 +1,163 @@
+// Public consumer only. Each scene starts with one outer Runtime/Engine.
+import { Runtime, Engine, Operation, Subscription, Snapshot, testObserve, testControlFrame,
+  testArmWork, testReleaseWork, testStagePublication, testFinishPublication,
+  testSettleInspect, testSubscriptionState } from @MADB_PUBLIC_MODULE@;
+import { check, nextTurn, snapshot, throwsCode, rejectsSnapshot, rejectsVoid } from '../Assertions';
+type EmitNumbers = (label: string, values: number[]) => void;
+type EmitControl = (label: string, csv: string) => void;
+
+function native(runtime: Runtime, label: string, emit: EmitNumbers): number[] {
+  const f: number[] = testObserve(runtime);
+  check(f.length === 110 && f[0] === 70501, label + ':110');
+  for (let i: number = 0; i < f.length; i++) { check(Number.isSafeInteger(f[i]) && f[i] >= 0, label + ':counter'); }
+  check(f[8] === 0, label + ':owner-error'); emit(label, f); return f;
+}
+function control(runtime: Runtime, label: string, emit: EmitControl): string[] {
+  const raw: string = testControlFrame(runtime); const f: string[] = raw.split(',');
+  check(f.length === 31 && f[0] === '1', label + ':31');
+  for (let i: number = 0; i < f.length; i++) {
+    check(/^(0|[1-9][0-9]*|-1)$/.test(f[i]) && (f[i] !== '-1' || i === 6), label + ':decimal');
+  }
+  // Generation, WorkId and SubscriptionId stay raw strings at 4/5/8.
+  emit(label, raw); return f;
+}
+async function gate(runtime: Runtime, baseline: number, count: number, deadline: number,
+                    prefix: string, emit: EmitNumbers, emitControl: EmitControl): Promise<void> {
+  while (testObserve(runtime)[41] < baseline + count) { await nextTurn(deadline, prefix + ':work-entered'); }
+  const f: number[] = native(runtime, prefix + '-held-native', emit);
+  const c: string[] = control(runtime, prefix + '-held-control', emitControl);
+  check(f[41] === baseline + count && c[3] === '1' && c[4] !== '0' && c[5] !== '0', prefix + ':real-work-held');
+}
+function closeMany(call: () => Promise<void>, count: number, out: Promise<void>[]): void {
+  for (let i: number = 0; i < count; i++) {
+    const p: Promise<void> = call();
+    check(out.indexOf(p) === -1, 'ordinary-close-observations-not-memoized'); out.push(p);
+  }
+}
+async function joinAll(promises: Promise<void>[]): Promise<void> {
+  for (let i: number = 0; i < promises.length; i++) { await promises[i]; }
+}
+
+async function mixed(runtime: Runtime, previous: Engine, deadline: number,
+                     emit: EmitNumbers, emitControl: EmitControl): Promise<void> {
+  // Actual closed wrappers, not unused variables or synthetic records.
+  const retired: Engine = previous;
+  const oldOp: Operation = retired.startOperation({ value: 41, text: 'retired' });
+  snapshot(await oldOp.result(), 42, 'retired', 'closed-value-positive-work'); await oldOp.close();
+  const oldSub: Subscription = retired.observeEvents((_value: Snapshot): void => { throw new Error('unexpected-retired-event'); });
+  await oldSub.close(); await retired.close();
+  const engine: Engine = runtime.connect(); // Previous physical ACK precedes new connect.
+  const baseline: number[] = native(runtime, 'kn-waiter-mixed-baseline-native', emit);
+  testArmWork(engine, 1);
+  const operation: Operation = engine.startOperation({ value: 41, text: 'mixed' });
+  let callbacks: number = 0;
+  const sub: Subscription = engine.observeEvents((_value: Snapshot): void => { callbacks++; });
+  testStagePublication(engine, 1, { value: 1, text: '' });
+  await gate(runtime, baseline[41], 1, deadline, 'kn-waiter-mixed', emit, emitControl);
+  const result: Promise<void> = rejectsSnapshot(() => operation.result(), 'Cancelled', 'mixed-result-latched-cancel');
+  const closes: Promise<void>[] = [];
+  closeMany((): Promise<void> => operation.close(), 10, closes);
+  closeMany((): Promise<void> => sub.close(), 10, closes);
+  closeMany((): Promise<void> => engine.close(), 11, closes);
+  const full: number[] = native(runtime, 'kn-waiter-mixed-full-native', emit);
+  check(full[26] === 32 && full[24] === 1 && full[25] === 1 && full[30] === 1, 'mixed-real32-with-both-owners');
+  const settling: number[] = testSettleInspect(runtime);
+  check(settling.length === 9 && settling[5] === 0, 'current-settlement9');
+  emit('kn-waiter-mixed-settling', settling);
+  await rejectsVoid(() => engine.close(), 'ResourceExhausted', 'mixed33');
+  // Already-Closed close succeeds even while every ordinary slot is occupied.
+  await oldOp.close(); await oldSub.close(); await retired.close();
+  const values: number[] = native(runtime, 'kn-waiter-mixed-closed-values-native', emit);
+  check(values[26] === 32, 'closed-value-does-not-consume-waiter');
+  emit('kn-waiter-mixed-closed-values', [3, closes.length, callbacks]);
+  const parent: Promise<void> = runtime.close();
+  check(parent === runtime.close(), 'parent-control-is-memoized');
+  const parentFull: number[] = native(runtime, 'kn-waiter-mixed-parent-full-native', emit);
+  check(parentFull[26] === 32 && parentFull[30] === 1 && parentFull[13] === 1, 'parent-full-retains-work-and-source');
+  emit('kn-waiter-mixed-parent-control', [1]);
+  testFinishPublication(engine, false); testReleaseWork(engine);
+  await result; await joinAll(closes);
+  await operation.close(); await sub.close(); await engine.close();
+  await parent;
+  const finalJs: number[] = testSettleInspect(runtime);
+  check(finalJs.length === 9 && finalJs[5] === 0 && finalJs[7] === 0 && finalJs[8] === 0, 'parent-ack-clears-settling-timer-and-tick');
+  emit('kn-waiter-mixed-final-settling', finalJs);
+  const drained: number[] = native(runtime, 'kn-waiter-mixed-drained-native', emit);
+  check(drained[26] === 0 && drained[24] === 0 && drained[25] === 0 && drained[30] === 0 && callbacks === 0, 'mixed-all-observations-drained');
+  emit('kn-waiter-mixed-completed', [1, 10, 10, 11, callbacks]);
+}
+
+async function distinct(kind: number, runtime: Runtime, engine: Engine, deadline: number,
+                        emit: EmitNumbers, emitControl: EmitControl): Promise<void> {
+  const prefix: string = 'kn-waiter-distinct-' + String(kind);
+  const baseline: number[] = native(runtime, prefix + '-baseline-native', emit);
+  testArmWork(engine, 1);
+  const operation: Operation = engine.startOperation({ value: 41, text: 'distinct' });
+  let callbacks: number = 0;
+  const sub: Subscription = engine.observeEvents((_value: Snapshot): void => { callbacks++; });
+  testStagePublication(engine, 1, { value: 7, text: '' });
+  await gate(runtime, baseline[41], 1, deadline, prefix, emit, emitControl);
+  let result: Promise<void> | undefined = undefined;
+  const closes: Promise<void>[] = [];
+  if (kind === 0) {
+    // Target Operation differs from the source-held filler Subscription. Its
+    // pre-existing result is the cancellation witness; no other request targets it.
+    result = rejectsSnapshot(() => operation.result(), 'Cancelled', 'distinct-close-request-cancels');
+    closeMany((): Promise<void> => sub.close(), 31, closes);
+  } else {
+    // Target Subscription or Engine differs from the work-held filler Operation.
+    closeMany((): Promise<void> => operation.close(), 32, closes);
+  }
+  const full: number[] = native(runtime, prefix + '-full-native', emit);
+  check(full[26] === 32 && full[39] === 1 && full[24] === 1 && full[25] === 1 && full[30] === 1, 'distinct-target-genuinely-pending-on-single-engine');
+  snapshot(engine.roundtrip({ value: 5, text: 'open-before-denial' }), 5, 'open-before-denial', 'filler-request-does-not-close-engine');
+  emit(prefix + '-open-before-denial', [5]);
+  if (kind === 1) {
+    const beforeState: number[] = testSubscriptionState(sub);
+    check(beforeState.length === 4 && beforeState[1] === 0 && beforeState[2] === 0 && beforeState[3] === 1, 'target-sub-not-already-stopped-by-filler');
+    emit(prefix + '-sub-before', beforeState);
+  }
+  if (kind === 0) { await rejectsVoid(() => operation.close(), 'ResourceExhausted', 'distinct-op-close33'); }
+  else if (kind === 1) { await rejectsVoid(() => sub.close(), 'ResourceExhausted', 'distinct-sub-close33'); }
+  else { await rejectsVoid(() => engine.close(), 'ResourceExhausted', 'distinct-engine-close33'); }
+  const denied: number[] = native(runtime, prefix + '-denied-native', emit);
+  check(denied[26] === 32 && denied[24] === 1 && denied[25] === 1 && denied[30] === 1, 'denied-observer-keeps-real-work-source');
+  if (kind === 1) {
+    const afterState: number[] = testSubscriptionState(sub);
+    check(afterState.length === 4 && afterState[1] === 1 && afterState[2] === 0 && afterState[3] === 1, 'denied-observer-still-requested-sub-stop');
+    emit(prefix + '-sub-after', afterState);
+    // Only the denied target close stopped this selected Subscription. Filler
+    // Operation close cannot account for this publication's Closing rejection.
+    throwsCode((): void => { testFinishPublication(engine, true); }, 'Closing', 'denied-sub-close-already-stopped');
+  } else {
+    if (kind === 2) {
+      throwsCode((): void => { engine.roundtrip({ value: 5, text: 'gated' }); }, 'Closing', 'denied-engine-close-already-gates');
+    }
+    testFinishPublication(engine, false);
+  }
+  emit(prefix + '-request-effect', [kind === 0 ? 0 : 1, callbacks]);
+  testReleaseWork(engine);
+  await joinAll(closes); if (result !== undefined) { await result; }
+  const capacity: number[] = native(runtime, prefix + '-capacity-native', emit);
+  check(capacity[26] === 0, 'capacity-returned-before-retry');
+  if (kind === 0) { await operation.close(); }
+  else if (kind === 1) { await sub.close(); }
+  else { await engine.close(); }
+  emit(prefix + '-retry', [1, kind === 0 ? 5 : 0, callbacks]);
+  await operation.close(); await sub.close(); await engine.close();
+  const drained: number[] = native(runtime, prefix + '-drained-native', emit);
+  check(drained[26] === 0 && drained[24] === 0 && drained[25] === 0 && drained[30] === 0 && drained[39] === 0 && callbacks === 0, 'distinct-owner-drained-before-next-engine');
+}
+
+export async function runKotlinWaiterCase(name: string, runtime: Runtime, engine: Engine,
+    deadline: number, emitNumbers: EmitNumbers, emitControl: EmitControl): Promise<boolean> {
+  if (name === 'kotlin-mixed-waiters') { await mixed(runtime, engine, deadline, emitNumbers, emitControl); }
+  else if (name === 'kotlin-distinct-close-denied') {
+    let current: Engine = engine;
+    for (let kind: number = 0; kind < 3; kind++) {
+      await distinct(kind, runtime, current, deadline, emitNumbers, emitControl);
+      if (kind < 2) { current = runtime.connect(); } // Prior Engine's physical ACK already awaited.
+    }
+  } else { return false; }
+  return true;
+}

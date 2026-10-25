@@ -12,8 +12,13 @@ IDENTITY_INDICES={4,5,8}
 from c07_kotlin_value_observations import SCENARIOS as VALUE_SCENARIOS, predicates as value_predicates
 from c07_kotlin_work_observations import SCENARIOS as WORK_SCENARIOS, predicates as work_predicates
 from c07_kotlin_stream_observations import validate as validate_stream
-from c07_kotlin_napi_observations import parse as parse_napi, validate as validate_napi
+from c07_kotlin_napi_observations import parse as parse_napi, validate as validate_napi, inventory as napi_inventory
 from c07_kotlin_memory_observations import SCENARIOS as MEMORY_SCENARIOS, predicates as memory_predicates, parse_memory_csv
+from c07_kotlin_operation_observations import SCENARIOS as OPERATION_SCENARIOS, predicates as operation_predicates
+from c07_kotlin_handle_observations import SCENARIOS as HANDLE_SCENARIOS, predicates as handle_predicates
+from c07_kotlin_fault_observations import SCENARIOS as FAULT_SCENARIOS, predicates as fault_predicates
+from c07_kotlin_listener_observations import SCENARIOS as LISTENER_SCENARIOS, predicates as listener_predicates
+from c07_kotlin_waiter_observations import SCENARIOS as WAITER_SCENARIOS, predicates as waiter_predicates, EXPECTED_ENGINE_COUNTS
 ADMISSION_FIELDS = "InitAttempts InitFailures MainRejected IdentityRejected LibraryLoaded Initialized Slot Epoch RollbackAcks LastFailureStage Delivered Consumed TsfnAdmissionFailures".split()
 SETTLEMENT_FIELDS = "Arms Hits ResolveAccepted RejectAccepted Exceptions CurrentSettling MaxObservedWaiterMap TimerArmed TickInFlight".split()
 MEMORY_FIELDS = ['Format', 'LedgerCurrentBytes', 'LedgerPeakBytes', 'LedgerChargedBytes', 'LedgerRetiredBytes', 'ModelRequestedCurrentBytes', 'ModelRequestedPeakBytes', 'ModelAllocatedBytes', 'ModelFreedBytes', 'ModelAllocations', 'ModelFrees', 'StagingCurrentBytes', 'StagingPeakBytes', 'StagingAddedBytes', 'StagingCommittedBytes', 'StagingAbandonedBytes', 'Utf16CurrentRequestedBytes', 'Utf16PeakRequestedBytes', 'Utf16AllocatedBytes', 'Utf16FreedBytes', 'Utf16Allocations', 'Utf16Releases']
@@ -129,7 +134,7 @@ STREAM_SCENARIOS = {'kotlin-state': {'kn-stream-state-drained-native': 'native',
                               'kn-stream-clone-1-owned-before-control': 'control',
                               'kn-stream-clone-1-pre-after-control': 'control',
                               'kn-stream-clone-1-pre-before-control': 'control'}}
-SCENARIOS = {"kotlin-admission": ADMISSION_LABELS, **{name: {**labels, **COMMON_LABELS} for name, labels in {**VALUE_SCENARIOS, **WORK_SCENARIOS, **STREAM_SCENARIOS, **MEMORY_SCENARIOS}.items()}}
+SCENARIOS = {"kotlin-admission": ADMISSION_LABELS, **{name: {**labels, **COMMON_LABELS} for name, labels in {**VALUE_SCENARIOS, **WORK_SCENARIOS, **STREAM_SCENARIOS, **MEMORY_SCENARIOS, **OPERATION_SCENARIOS, **HANDLE_SCENARIOS, **FAULT_SCENARIOS, **LISTENER_SCENARIOS, **WAITER_SCENARIOS}.items()}}
 
 
 def validate_kotlin_contracts(contracts, *, controls=False, admission=False, settling=False, memory=False):
@@ -186,6 +191,10 @@ def parse_kotlin(raw, *, nonce, pid, case, contracts, napi_binding=None, napi_id
     if not isinstance(nonce,str) or not re.fullmatch(r"[A-Za-z0-9_-]+",nonce) or result["pid"] is None or result["pid"]<=0:
         problems.append("missing exact nonce/live PID")
     if problems:result["status"]="failed";return result
+    if case in LISTENER_SCENARIOS or case == "kotlin-distinct-close-denied":
+        layout=contracts.get("subscription-frame.json",{})
+        if layout.get("format")!=1 or layout.get("length")!=4 or [(f.get("index"),f.get("name")) for f in layout.get("fields",[])]!=list(enumerate(("Format","Closing","Closed","ListenerPresent"))):
+            result.update(status="failed",problems=["missing exact retained Kotlin subscription-record contract"]);return result
     lines=[line for line in raw.splitlines() if re.search(r"(?<![A-Za-z0-9_-])"+re.escape(nonce)+r"(?![A-Za-z0-9_-])",line)]
     result["lines"]=lines;frames=result["frames"]
     if any(len(line.split())<3 or line.split()[2]!=pid for line in lines):problems.append("nonce/PID mismatch")
@@ -222,13 +231,26 @@ def parse_kotlin(raw, *, nonce, pid, case, contracts, napi_binding=None, napi_id
         if not problems:
             if case=="kotlin-admission":problems.extend(admission_predicates(frames))
             else:
-                problems.extend(normal_shutdown(frames))
+                problems.extend(normal_shutdown(frames, expected_engines=EXPECTED_ENGINE_COUNTS.get(case, 2 if case in HANDLE_SCENARIOS else 1)))
                 try:
-                    result["napi_observation"] = validate_napi(frames["napi-before-open"],frames["napi-open"],
-                        frames["napi-final"],napi_binding,napi_identity)
+                    if case in FAULT_SCENARIOS:
+                        napi_inventory(napi_binding,napi_identity)
+                        if parse_napi(frames["napi-before-open"])["provider"] is not None:
+                            raise ValueError("failed-close scenario was not a fresh unloaded provider")
+                        result["napi_observation"]={"scope":"failed-close raw checkpoints and inspected ELF only; no normal-close oracle attribution",
+                            "env_validity":"unobserved","candidate_hash_binding":napi_identity,
+                            "raw":{k:frames[k] for k in ("napi-before-open","napi-open","napi-final")}}
+                    else:
+                        result["napi_observation"] = validate_napi(frames["napi-before-open"],frames["napi-open"],
+                            frames["napi-final"],napi_binding,napi_identity)
                 except (ValueError,KeyError,TypeError) as error:problems.append("NAPI observation: "+str(error))
                 if case in VALUE_SCENARIOS:problems.extend(value_predicates(case,frames))
                 elif case in WORK_SCENARIOS:problems.extend(work_predicates(case,frames))
+                elif case in OPERATION_SCENARIOS:problems.extend(operation_predicates(case,frames))
+                elif case in WAITER_SCENARIOS:problems.extend(waiter_predicates(case,frames))
+                elif case in HANDLE_SCENARIOS:problems.extend(handle_predicates(frames))
+                elif case in FAULT_SCENARIOS:problems.extend(fault_predicates(case,frames))
+                elif case in LISTENER_SCENARIOS or case == "kotlin-distinct-close-denied":problems.extend(listener_predicates(frames))
                 elif case in MEMORY_SCENARIOS:problems.extend(memory_predicates(case,frames))
                 elif case in STREAM_SCENARIOS:
                     try:
@@ -239,7 +261,7 @@ def parse_kotlin(raw, *, nonce, pid, case, contracts, napi_binding=None, napi_id
     return result
 
 
-def normal_shutdown(frames):
+def normal_shutdown(frames, *, expected_engines=1):
     from c07_kotlin_admission_observations import ZERO, PAIRS
     initial, final = frames["runtime-open"], frames["runtime-closed"]
     problems = []
@@ -249,8 +271,8 @@ def normal_shutdown(frames):
         problems.append("actual normal runtime physical ACK not consumed")
     if any(final[i] != 0 for i in ZERO):problems.append("Kotlin native/managed responsibility or error remains")
     if any(final[a] != final[b] for a,b in PAIRS):problems.append("Kotlin actual resource lifetime pairs differ")
-    if final[12] != 1 or final[13] != 1 or any(final[i] <= 0 for i in (45,48,78,102,108)):
-        problems.append("fresh single-engine scenario lacks actual worker/ref/lifecycle/TSFN activity")
+    if final[12] != expected_engines or final[13] != expected_engines or any(final[i] <= 0 for i in (45,48,78,102,108)):
+        problems.append("scenario lacks exact engine-generation work/ref/lifecycle/TSFN activity")
     if initial[39] != 1 or initial[7] != 1 or initial[1] != 1:
         problems.append("scenario was not observed on a fresh open Kotlin runtime")
     return problems

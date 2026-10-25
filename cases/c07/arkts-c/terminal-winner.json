@@ -17,8 +17,8 @@
   },
   "fixture": {
     "path": "harness/c07_companion_cases.py",
-    "sha256": "sha256:1b0bf5c3aa4958a0320ee896d5c1241af14c7bb1cf3a67c68510615d81fb4d2d",
-    "size": 10430,
+    "sha256": "sha256:15b8119b218fd31820ef7b9f4ca07d73a099c38846b3092be1f3df38022c7f48",
+    "size": 10501,
     "schema": "madb.lab-source/1"
   },
   "setup": [
@@ -62,7 +62,7 @@
       "expected": [
         {
           "kind": "string",
-          "value": "Deterministically cancel before terminal \u2192 Cancelled; commit Success then cancel \u2192 original success; commit DomainOverflow then cancel \u2192 original domain failure. An actual race permits only one legal winner/settlement and one free. Work held after terminal keeps close pending. No C06 cancel-overwrites rule."
+          "value": "Deterministically cancel before terminal → Cancelled; commit Success then cancel → original success; commit DomainOverflow then cancel → original domain failure. An actual race permits only one legal winner/settlement and one free. Work held after terminal keeps close pending. No C06 cancel-overwrites rule."
         }
       ]
     }

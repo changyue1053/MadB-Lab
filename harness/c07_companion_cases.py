@@ -40,16 +40,16 @@ GROUPS = {
         "gaps": (),
     },
     "dropped-promise": {"scenarios": ("dropped-promise",), "gaps": ()},
-    "operations": {"scenarios": ("operations-capacity",), "gaps": ()},
+    "operations": {"scenarios": ("operations-capacity", "operations-terminal-capacity"), "gaps": ()},
     "subscriptions": {
         "scenarios": ("subscriptions-capacity", "source-stop", "event-entered", "listener-lifetime"),
         "gaps": (),
     },
     "state": {
-        "scenarios": ("state-entered", "delivery-and-handle-admission"),
+        "scenarios": ("state-entered", "delivery-and-handle-admission", "stream-isolation"),
         "gaps": (),
     },
-    "event-fifo-and-atomic": {"scenarios": ("event-atomic", "state-entered"), "gaps": ()},
+    "event-fifo-and-atomic": {"scenarios": ("event-atomic", "state-entered", "stream-isolation"), "gaps": ()},
     "fanout-allocation": {"scenarios": ("fanout-state", "fanout-events"), "gaps": ()},
     "state-staging-bytes": {
         "scenarios": ("state-staging", "memory-state-staging"),

@@ -1,0 +1,135 @@
+// Independent C/C++/Rust consumer. No work gate: all eight actual operations
+// finish before any result() claim. The outer runner owns final Runtime cleanup.
+import { Runtime, Engine, Operation, Subscription, Snapshot, testObserveOperation } from @MADB_PUBLIC_MODULE@;
+import { check, snapshot, throwsCode, nextTurn } from './Assertions';
+import { Emit, observed, facade } from './SupportChecks';
+
+async function workFinished(runtime: Runtime, baselineCalls: number, count: number,
+                            deadline: number): Promise<void> {
+  while (true) {
+    const current: number[] = observed(runtime, 'terminal-capacity:work');
+    check(current[36] <= baselineCalls + count, 'terminal-capacity:no-extra-work');
+    if (current[36] === baselineCalls + count && current[13] === 0) { return; }
+    await nextTurn(deadline, 'terminal-capacity:real-work-finished');
+  }
+}
+
+function terminal(operation: Operation, label: string, emit: Emit): void {
+  const value: number[] = testObserveOperation(operation);
+  check(value.length === 10 && value[0] === 1 && value[1] === 1 && value[2] === 0 &&
+    value[3] === 0 && value[8] === 0 && value[9] === 0,
+    label + ':actual-success-before-claim-with-work-finished');
+  emit(label, value);
+}
+
+export async function runCapacityAndStreamCase(name: string, runtime: Runtime,
+    engine: Engine, deadline: number, emit: Emit): Promise<boolean> {
+  if (name === 'stream-isolation') { await streamIsolation(runtime, engine, deadline, emit); return true; }
+  if (name !== 'operations-terminal-capacity') { return false; }
+  const before: number[] = observed(runtime, 'terminal-capacity:before');
+  check(before[4] === 0 && before[10] === 0 && before[11] === 0 && before[13] === 0 &&
+    before[35] === 0, 'terminal-capacity:empty-child-baseline');
+  emit('terminal-capacity-before', before);
+  emit('terminal-capacity-facade-before', facade(runtime, 'terminal-capacity:before'));
+  const operations: Operation[] = [];
+  for (let i: number = 0; i < 8; i++) {
+    operations.push(engine.startOperation({ value: 10 + i, text: '' }));
+  }
+  await workFinished(runtime, before[36], 8, deadline);
+  for (let i: number = 0; i < 8; i++) {
+    terminal(operations[i], 'terminal-capacity-operation-' + String(i), emit);
+  }
+  const full: number[] = observed(runtime, 'terminal-capacity:unclaimed');
+  check(full[4] === 8 && full[10] === 0 && full[11] === 0 && full[12] === 0 &&
+    full[13] === 0 && full[19] === 0 && full[35] === 8 && full[36] === before[36] + 8,
+    'terminal-capacity:eight-terminal-unclaimed-not-byte-or-work-pressure');
+  emit('terminal-capacity-unclaimed', full);
+  emit('terminal-capacity-facade-unclaimed', facade(runtime, 'terminal-capacity:unclaimed'));
+  throwsCode(() => { engine.startOperation({ value: 99, text: '' }); },
+    'ResourceExhausted', 'terminal-capacity:ninth-terminal-handle');
+  emit('terminal-capacity-ninth-rejected', [1]);
+  const denied: number[] = observed(runtime, 'terminal-capacity:denied');
+  check(denied[4] === 8 && denied[33] === full[33] && denied[34] === full[34] &&
+    denied[35] === 8 && denied[36] === full[36], 'terminal-capacity:rejection-has-no-provider-effect');
+  emit('terminal-capacity-denied', denied);
+
+  const values: number[] = [];
+  const first: Snapshot = await operations[0].result();
+  snapshot(first, 11, '', 'terminal-capacity:first-result'); values.push(first.value);
+  await operations[0].close();
+  const released: number[] = observed(runtime, 'terminal-capacity:one-released');
+  check(released[4] === 7 && released[35] === 7, 'terminal-capacity:one-actual-close-returns-one-slot');
+  emit('terminal-capacity-one-released', released);
+
+  const recovered: Operation = engine.startOperation({ value: 99, text: '' });
+  await workFinished(runtime, before[36], 9, deadline);
+  terminal(recovered, 'terminal-capacity-recovery-operation', emit);
+  const reused: number[] = observed(runtime, 'terminal-capacity:reused');
+  check(reused[4] === 8 && reused[35] === 8 && reused[13] === 0,
+    'terminal-capacity:concurrent-not-lifetime-bound');
+  emit('terminal-capacity-reused', reused);
+  for (let i: number = 1; i < 8; i++) {
+    const result: Snapshot = await operations[i].result();
+    snapshot(result, 11 + i, '', 'terminal-capacity:old-result-' + String(i));
+    values.push(result.value); await operations[i].close();
+    emit('terminal-capacity-consumed-' + String(i), observed(runtime, 'terminal-capacity:consumed'));
+  }
+  const final: Snapshot = await recovered.result();
+  snapshot(final, 100, '', 'terminal-capacity:recovery-result'); values.push(final.value);
+  await recovered.close();
+  const drained: number[] = observed(runtime, 'terminal-capacity:drained');
+  check(drained[4] === 0 && drained[10] === 0 && drained[11] === 0 && drained[13] === 0 &&
+    drained[35] === 0 && drained[33] - before[33] === drained[34] - before[34] &&
+    drained[36] === before[36] + 9, 'terminal-capacity:paired-real-model-free');
+  emit('terminal-capacity-drained', drained); emit('terminal-capacity-values', values);
+  return true;
+}
+
+
+async function streamIsolation(runtime: Runtime, engine: Engine, deadline: number,
+                               emit: Emit): Promise<void> {
+  const states: number[] = []; const events: number[] = []; const lateValues: number[] = [];
+  let late: Subscription | undefined = undefined;
+  const state: Subscription = engine.observeState((value: Snapshot): void => {
+    check(value.value === 11 || value.value === 12, 'stream-isolation:state-only-values');
+    snapshot(value, value.value, value.value === 11 ? 'state-1' : 'state-2', 'stream-isolation:state-text');
+    states.push(value.value);
+  });
+  const event: Subscription = engine.observeEvents((value: Snapshot): void => {
+    check(value.value === 21 || value.value === 22, 'stream-isolation:event-only-values');
+    snapshot(value, value.value, value.value === 21 ? 'event-1' : 'event-2', 'stream-isolation:event-text');
+    events.push(value.value);
+  });
+  emit('isolation-before', observed(runtime, 'isolation:before'));
+  for (let round: number = 1; round <= 2; round++) {
+    engine.publishState({ value: 10 + round, text: 'state-' + String(round) });
+    engine.publishEvent({ value: 20 + round, text: 'event-' + String(round) });
+    while (states.length < round || events.length < round || (round === 2 && lateValues.length < 1)) {
+      await nextTurn(deadline, 'stream-isolation:actual-delivery');
+    }
+    await nextTurn(deadline, 'stream-isolation:no-extra-delivery');
+    check(states.length === round && events.length === round, 'stream-isolation:one-per-stream-per-round');
+    emit('isolation-state-' + String(round), states);
+    emit('isolation-event-' + String(round), events);
+    emit('isolation-native-' + String(round), observed(runtime, 'isolation:delivered'));
+    if (round === 1) {
+      late = engine.observeState((value: Snapshot): void => {
+        snapshot(value, 12, 'state-2', 'stream-isolation:late-subscriber-future-only');
+        lateValues.push(value.value);
+      });
+      await nextTurn(deadline, 'stream-isolation:late-registration-empty');
+      check(lateValues.length === 0, 'stream-isolation:no-prior-current-replay');
+      emit('isolation-late-empty', lateValues);
+      emit('isolation-late-registered', observed(runtime, 'isolation:late-registration'));
+    }
+
+  }
+  check(states[0] === 11 && states[1] === 12 && events[0] === 21 && events[1] === 22,
+    'stream-isolation:independent-state-event-traces');
+  check(lateValues.length === 1 && lateValues[0] === 12, 'stream-isolation:late-observes-only-next-publication');
+  emit('isolation-late-next', lateValues);
+  await state.close(); await event.close();
+  check(late !== undefined, 'stream-isolation:late-subscriber-created');
+  if (late !== undefined) { await late.close(); }
+  emit('isolation-drained', observed(runtime, 'isolation:closed'));
+}

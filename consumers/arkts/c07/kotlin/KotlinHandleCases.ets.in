@@ -1,0 +1,60 @@
+// Typed public controls exercise actual native admission; no raw handle enters Lab.
+import { Runtime, Engine, Operation, Subscription, Snapshot, testObserve,
+  testArmWork, testReleaseWork, testControlFrame, testEngineHandle,
+  testOperationHandle, testSubscriptionHandle } from @MADB_PUBLIC_MODULE@;
+import { check, nextTurn, snapshot, throwsCode, rejectsSnapshot } from '../Assertions';
+type EmitNumbers = (label: string, values: number[]) => void;
+type EmitControl = (label: string, value: string) => void;
+export async function runKotlinHandleCase(runtime: Runtime, first: Engine, deadline: number,
+  emit: EmitNumbers, control: EmitControl): Promise<void> {
+  const oldOperation: Operation = first.startOperation({ value: 41, text: 'old-generation' });
+  snapshot(await oldOperation.result(), 42, 'old-generation', 'first-provider-result');
+  await oldOperation.close();
+  const oldSubscription: Subscription = first.observeEvents((_value: Snapshot): void => { throw new Error('stopped-old-listener'); });
+  await oldSubscription.close();
+  first.requestClose();
+  // Observe request-only retirement from the actual owner. No retrying connect or sleep ACK.
+  while (true) {
+    const f: number[] = testObserve(runtime);
+    check(f.length === 110 && f[0] === 70501, 'generation110');
+    if (f[39] === 0 && f[13] === 1) { emit('kn-handles-first-retired', f); break; }
+    await nextTurn(deadline, 'first-engine-physical-retirement');
+  }
+  const second: Engine = runtime.connect();
+  const opened: number[] = testObserve(runtime);
+  check(opened[36] === 2 && opened[39] === 1 && opened[12] === 2 && opened[13] === 1, 'exact-second-engine-generation');
+  emit('kn-handles-second-open', opened);
+  await first.close(); await oldOperation.close(); await oldSubscription.close();
+  throwsCode(() => { first.roundtrip({ value: 1, text: '' }); }, 'Closed', 'old-engine-rejected');
+  await rejectsSnapshot(() => oldOperation.result(), 'Closed', 'old-operation-rejected');
+  oldOperation.requestCancel(); oldSubscription.requestStop(); first.requestClose();
+  testArmWork(second, 1);
+  const current: Operation = second.startOperation({ value: 51, text: 'new-generation\u0000中' });
+  while (true) {
+    const raw: string = testControlFrame(runtime); const c: string[] = raw.split(',');
+    check(c.length === 31, 'typed-control31');
+    if (c[3] === '1') { control('kn-handles-work-held', raw); break; }
+    await nextTurn(deadline, 'second-engine-work-held');
+  }
+  const subscription: Subscription = second.observeEvents((_value: Snapshot): void => {});
+  const before: number[] = testObserve(runtime); emit('kn-handles-before', before);
+  testEngineHandle(second, 0); testOperationHandle(current, 0); testSubscriptionHandle(subscription, 0);
+  const cases: number[] = [1, 2, 3, 4, 5]; const results: number[] = [];
+  for (let i: number = 0; i < cases.length; i++) {
+    const n: number = cases[i]; const expected: string = n === 2 ? 'InvalidHandleRetired' : 'InvalidHandle';
+    throwsCode(() => { testEngineHandle(second, n); }, expected, 'engine-typed-handle');
+    throwsCode(() => { testOperationHandle(current, n); }, expected, 'operation-typed-handle');
+    throwsCode(() => { testSubscriptionHandle(subscription, n); }, expected, 'subscription-typed-handle');
+    results.push(n);
+  }
+  emit('kn-handles-negative-cases', results);
+  emit('kn-handles-after', testObserve(runtime));
+  const result: Promise<Snapshot> = current.result();
+  testReleaseWork(second);
+  snapshot(await result, 52, 'new-generation\u0000中', 'new-owner-unaffected');
+  await current.close(); await subscription.close();
+  // Keep all old wrappers alive through the new result and one final old close.
+  await first.close(); oldOperation.requestCancel(); oldSubscription.requestStop();
+  snapshot(second.roundtrip({ value: 71, text: 'still-open' }), 71, 'still-open', 'old-wrapper-cannot-close-new');
+  emit('kn-handles-recovered', [42, 52, 71, 15]);
+}

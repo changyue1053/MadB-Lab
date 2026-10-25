@@ -24,6 +24,7 @@ def kotlin_contracts(candidate):
              'admission-frame.json':'generated/contract/test/admission-frame.json',
              'settlement-frame.json':'generated/contract/test/settlement-frame.json',
              'memory-frame.json':'generated/contract/test/memory-frame.json',
+             'subscription-frame.json':'generated/contract/test/subscription-frame.json',
              'napi-observer-frame.json':'generated/contract/test/napi-observer-frame.json'}
     if not set(paths.values()) <= inventory:
         raise CandidateError('ArtifactMismatch','Kotlin companion lacks explicit candidate contract files')

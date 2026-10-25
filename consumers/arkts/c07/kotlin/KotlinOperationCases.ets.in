@@ -1,0 +1,165 @@
+// Independent Lab operation tests. No test gate or native control changes timing.
+import { Runtime, Engine, Operation, Snapshot, BoundaryError, testObserve,
+  testControlFrame, testSettleProbe, testSettleInspect } from @MADB_PUBLIC_MODULE@;
+import { check, nextTurn, snapshot, throwsCode, rejectsSnapshot } from '../Assertions';
+
+type EmitNumbers = (label: string, values: number[]) => void;
+type EmitControl = (label: string, values: string) => void;
+const RACE_ATTEMPTS: number = 64;
+
+function observed(runtime: Runtime): number[] {
+  const result: number[] = testObserve(runtime);
+  check(result.length === 110 && result[0] === 70501, 'kn-op-native110');
+  for (let i: number = 0; i < result.length; i++) {
+    check(Number.isSafeInteger(result[i]) && result[i] >= 0, 'kn-op-native-range');
+  }
+  return result;
+}
+function settlement(runtime: Runtime): number[] {
+  const result: number[] = testSettleInspect(runtime);
+  check(result.length === 9, 'kn-op-settlement9');
+  for (let i: number = 0; i < result.length; i++) {
+    check(Number.isSafeInteger(result[i]) && result[i] >= 0, 'kn-op-settlement-range');
+  }
+  return result;
+}
+function noGate(runtime: Runtime, label: string, emit: EmitControl): void {
+  const raw: string = testControlFrame(runtime);
+  const fields: string[] = raw.split(',');
+  check(fields.length === 31 && fields[0] === '1', 'kn-op-controls31');
+  // Preserve generation/id fields as strings. No arm/release helper is imported.
+  check(fields[3] === '0' && fields[7] === '0' && fields[12] === '0' &&
+        fields[23] === '0' && fields[24] === '0', 'kn-op-no-control-gates-or-faults');
+  emit(label, raw);
+}
+function idle(value: number[], label: string): void {
+  check(value[11] === 0 && value[24] === 0 && value[26] === 0 && value[27] === 0 &&
+        value[14] === value[15], label + ':no-retained-operation-or-work');
+}
+async function terminalCapacity(runtime: Runtime, engine: Engine, deadline: number,
+                                emit: EmitNumbers, control: EmitControl): Promise<void> {
+  const before: number[] = observed(runtime);
+  idle(before, 'kn-op-capacity-baseline');
+  emit('kn-op-capacity-before', before);
+  noGate(runtime, 'kn-op-capacity-control-before', control);
+  const initialSettlement: number[] = settlement(runtime);
+  emit('kn-op-capacity-settlement-before', initialSettlement);
+  const operations: Operation[] = [];
+  for (let i: number = 0; i < 8; i++) {
+    operations.push(engine.startOperation({ value: i, text: 'terminal' }));
+  }
+  let terminal: number[] = observed(runtime);
+  while (terminal[15] - before[15] < 8) {
+    await nextTurn(deadline, 'eight-real-work-exits-with-unclaimed-results');
+    terminal = observed(runtime);
+  }
+  check(terminal[14] - before[14] === 8 && terminal[15] - before[15] === 8 &&
+        terminal[24] === 8 && terminal[11] === 8 && terminal[26] === 0 &&
+        terminal[9] - before[9] === 8 && terminal[10] === before[10],
+        'eight-terminal-unclaimed-models-and-handles');
+  emit('kn-op-capacity-terminal', terminal);
+  emit('kn-op-capacity-settlement-unclaimed', settlement(runtime));
+  throwsCode((): void => { engine.startOperation({ value: 9, text: 'ninth' }); },
+             'ResourceExhausted', 'terminal-handles-still-count-toward-eight');
+  emit('kn-op-capacity-denied', observed(runtime));
+  const values: number[] = [];
+  for (let i: number = 0; i < operations.length; i++) {
+    const result: Snapshot = await operations[i].result();
+    snapshot(result, i + 1, 'terminal', 'terminal-capacity-result');
+    values.push(result.value);
+    await operations[i].close();
+    const after: number[] = observed(runtime);
+    check(after[24] === 7 - i && after[11] === 7 - i && after[26] === 0 &&
+          after[10] - before[10] === i + 1, 'one-result-one-close-one-free');
+    emit('kn-op-capacity-consumed-' + String(i), after);
+  }
+  emit('kn-op-capacity-values', values);
+  const recovered: Operation = engine.startOperation({ value: 41, text: 'recovered' });
+  snapshot(await recovered.result(), 42, 'recovered', 'terminal-capacity-recovery');
+  await recovered.close();
+  emit('kn-op-capacity-recovered', observed(runtime));
+  emit('kn-op-capacity-recovery-value', [42]);
+  noGate(runtime, 'kn-op-capacity-control-after', control);
+}
+async function cancelRace(runtime: Runtime, engine: Engine, deadline: number,
+                          emit: EmitNumbers, control: EmitControl): Promise<void> {
+  noGate(runtime, 'kn-op-race-control-before', control);
+  let active: number = 0;
+  let workCalls: number = 0;
+  let successes: number = 0;
+  let cancellations: number = 0;
+  for (let index: number = 0; index < RACE_ATTEMPTS; index++) {
+    check(Date.now() < deadline, 'kn-op-race-within-external-deadline');
+    const prefix: string = 'kn-op-race-' + String(index) + '-';
+    const before: number[] = observed(runtime);
+    idle(before, 'kn-op-race-baseline');
+    const settleBefore: number[] = settlement(runtime);
+    let hooks: number = 0;
+    let hookFrame: number[] = [];
+    testSettleProbe(runtime, (): void => { hooks++; hookFrame = settlement(runtime); }, false);
+    const operation: Operation = engine.startOperation({ value: 41, text: 'race' });
+    // This read observes but does not pause the native worker. There is no await,
+    // test gate or prescribed winner between submission and cancellation.
+    // An instantaneous in-flight sample is recorded, not required for success.
+    let delivered: number = 0;
+    let winner: number = -1;
+    const completion: Promise<void> = operation.result().then((value: Snapshot): void => {
+      delivered++; winner = 0; snapshot(value, 42, 'race', 'race-success');
+    }, (error: Error): void => {
+      delivered++; check(error instanceof BoundaryError && (error as BoundaryError).code === 'Cancelled',
+                         'race-only-success-or-cancelled');
+      winner = 5;
+    });
+    const beforeCancel: number[] = observed(runtime);
+    if (beforeCancel[14] > beforeCancel[15]) { active++; }
+    operation.requestCancel();
+    await completion;
+    check(delivered === 1 && hooks === 1 && (winner === 0 || winner === 5),
+          'one-terminal-result-one-settlement');
+    const afterResult: number[] = settlement(runtime);
+    check(afterResult[2] - settleBefore[2] === (winner === 0 ? 1 : 0) &&
+          afterResult[3] - settleBefore[3] === (winner === 5 ? 1 : 0) &&
+          afterResult[4] === settleBefore[4] && afterResult[5] === 0,
+          'one-actual-accepted-settler-return');
+    await rejectsSnapshot(() => operation.result(), 'AlreadyConsumed', 'race-one-claim');
+    // Await the separate resource close only after measuring the result's one
+    // settlement; its own close observation must not be confused with result.
+    await operation.close();
+    const closed: number[] = observed(runtime);
+    idle(closed, 'kn-op-race-closed');
+    check(closed[9] - before[9] === 1 && closed[10] - before[10] === 1,
+          'one-real-model-paired-free');
+    workCalls += closed[14] - before[14];
+    const closedSettlement: number[] = settlement(runtime);
+    await nextTurn(deadline, 'late-race-completion');
+    await nextTurn(deadline, 'late-race-completion-again');
+    const late: number[] = observed(runtime);
+    const lateSettlement: number[] = settlement(runtime);
+    check(delivered === 1 && hooks === 1 && late[9] === closed[9] && late[10] === closed[10] &&
+          lateSettlement[2] === closedSettlement[2] && lateSettlement[3] === closedSettlement[3],
+          'late-completion-must-not-resettle-or-free-again');
+    emit(prefix + 'before', before);
+    emit(prefix + 'before-cancel', beforeCancel);
+    emit(prefix + 'settlement-before', settleBefore);
+    emit(prefix + 'settlement-hook', hookFrame);
+    emit(prefix + 'settlement-result', afterResult);
+    emit(prefix + 'closed', closed);
+    emit(prefix + 'settlement-closed', closedSettlement);
+    emit(prefix + 'late', late);
+    emit(prefix + 'settlement-late', lateSettlement);
+    emit(prefix + 'outcome', [winner, delivered, hooks, 1]);
+    if (winner === 0) { successes++; } else { cancellations++; }
+  }
+  noGate(runtime, 'kn-op-race-control-after', control);
+  emit('kn-op-race-summary', [RACE_ATTEMPTS, active, successes, cancellations, workCalls]);
+  check(workCalls > 0, 'kn-op-stress-had-no-actual-native-work');
+}
+export async function runKotlinOperationCase(name: string, runtime: Runtime, engine: Engine,
+  deadline: number, emit: EmitNumbers, control: EmitControl): Promise<boolean> {
+  if (name === 'kotlin-terminal-capacity') {
+    await terminalCapacity(runtime, engine, deadline, emit, control);
+  } else if (name === 'kotlin-cancel-race') {
+    await cancelRace(runtime, engine, deadline, emit, control);
+  } else { return false; }
+  return true;
+}
