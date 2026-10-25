@@ -16,8 +16,8 @@
   },
   "fixture": {
     "path": "consumers/arkts/c07/OrdinaryCases.ets.in",
-    "sha256": "sha256:5f893cdad8c4964f62a895aa859377013ff5e78efb0fb321307468886e94298d",
-    "size": 9603,
+    "sha256": "sha256:2e0c9af6502ebd887199ad2f8f44215664c7c7e6d90955d618c52a077b435671",
+    "size": 9677,
     "schema": "madb.lab-source/1"
   },
   "setup": [
@@ -43,7 +43,7 @@
       "expected": [
         {
           "kind": "string",
-          "value": "Int32 min/max, -0\u2192+0, empty/ASCII/\u4e2d\u6587/combining/supplementary Unicode/NUL; independently constructed 1024-byte ASCII, CJK and emoji boundaries accepted, 1025 rejected. Reject bool/string/null, NaN, infinities, fractions, overflow and isolated surrogates before conversion. No normalization or strlen truncation."
+          "value": "Int32 min/max, -0→+0, empty/ASCII/中文/combining/supplementary Unicode/NUL; independently constructed 1024-byte ASCII, CJK and emoji boundaries accepted, 1025 rejected. Reject bool/string/null, NaN, infinities, fractions, overflow and isolated surrogates before conversion. No normalization or strlen truncation."
         }
       ]
     }

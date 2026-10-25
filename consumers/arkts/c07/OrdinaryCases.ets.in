@@ -141,7 +141,7 @@ async function reopenRuntime(oldRuntime: Runtime, oldEngine: Engine, oldOperatio
     const pending: Promise<Snapshot> = operation.result();
     // Retained, already-closed wrappers retain their own immutable close result.
     // They must not address this new runtime's live operation/subscription slots.
-    oldOperation.requestCancel(); await oldOperation.close();
+    throwsCode(() => { oldOperation.requestCancel(); }, 'Closed', 'old-operation-cannot-cancel-new-epoch'); await oldOperation.close();
     oldSubscription.requestStop(); await oldSubscription.close();
     await oldEngine.close(); await oldRuntime.close();
     snapshot(await pending, 42, 'new-runtime\u0000中', 'new-runtime-work-survives-old-wrappers');
