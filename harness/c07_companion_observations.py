@@ -5,6 +5,7 @@ Kotlin requires its own layout and is deliberately unsupported here.
 """
 import json
 import re
+from c07_completion_observations import SCENARIOS as COMPLETION_SCENARIOS, GATED as COMPLETION_GATED, predicates as completion_predicates
 
 MAX_SAFE = 2**53 - 1
 RUNTIME_FIELDS = """Format Phase BusinessEntries ScratchLive Operations Subscriptions
@@ -74,11 +75,13 @@ SCENARIOS = {
         "fault-settlement-counts": "vector", "fault-close-rejected": "one",
         "parent-fault-residual": "native", "worker-exit-request": "native"},
 }
+SCENARIOS.update(COMPLETION_SCENARIOS)
 WORKER_CASES = {"worker-env-exit", "fault-before-guard", "fault-after-accepted"}
 GATED_CASES = {"full-waiters", "settling-reentry", "terminal-cancel", "terminal-success",
     "terminal-domain", "claim-rollback", "bytes-scratch", "operations-capacity",
     "mixed-waiters-engine-close", "pending-sub-close-denied", "result-capacity-retry",
     "after-guard", "dropped-promise", "fault-before-guard", "fault-after-accepted"}
+GATED_CASES.update(COMPLETION_GATED)
 ZERO_OWNERS = (2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 18, 19, 20, 21, 22,
                23, 24, 25, 26, 28, 29, 35, 37, 77)
 PAIRS = (33, 38, 40, 42, 44, 46, 48, 50, 52)
@@ -252,6 +255,8 @@ def _predicates(case, frames):
         equal("parent-fault-residual", {13: 1, 14: 1, 55: 0})
         need(frames["parent-fault-residual"][1] != 3, "fault residual misreported as closed")
         need(frames["fault-settlement-counts"] == ([0, 1] if before else [1, 0]), "fault settled incorrectly or more than once")
+    if case in COMPLETION_SCENARIOS:
+        problems.extend(completion_predicates(case, frames))
     return problems
 
 

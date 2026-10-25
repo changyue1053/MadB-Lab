@@ -20,24 +20,24 @@ GROUPS = {
         "gaps": ("Actual wrong-artifact, wrong-ABI and wrong-profile DSO replacements with exact bootstrap error/stage and unchanged pre-admission business/ref/TSFN/worker totals are not wired.",),
     },
     "getters-and-reentry": {
-        "scenarios": (),
-        "gaps": ("The controlled candidate schedule must combine actual getter read/exception/recovery assertions with close-in-getter admission and allocation observations; an ordinary-baseline run is not yet mapped here.",),
+        "scenarios": ('getters-observed',),
+        "gaps": (),
     },
     "worker-and-domain": {
         "scenarios": ("terminal-success", "terminal-domain"),
         "gaps": ("Bind computation/free to the actual route implementation and record the required live cleanup-thread witness separately from historical thread IDs.",),
     },
     "terminal-winner": {
-        "scenarios": ("terminal-cancel", "terminal-success", "terminal-domain"),
-        "gaps": ("The deterministic winners are implemented; an actual cancel/terminal race with exactly one legal settlement and free is not yet wired.",),
+        "scenarios": ('terminal-cancel', 'terminal-success', 'terminal-domain', 'cancel-terminal-race'),
+        "gaps": (),
     },
     "single-claim": {
         "scenarios": ("terminal-cancel", "terminal-success", "terminal-domain", "claim-rollback", "result-capacity-retry"),
         "gaps": (),
     },
     "result-transfer-failures": {
-        "scenarios": ("fault-before-guard", "after-guard", "fault-after-accepted", "nonnull-owned-error"),
-        "gaps": ("Bind the actual inherited-setter positive control and zero SDK setter invocations from this companion candidate to these transfer-failure observations.",),
+        "scenarios": ('fault-before-guard', 'after-guard', 'fault-after-accepted', 'nonnull-owned-error', 'getters-observed'),
+        "gaps": (),
     },
     "dropped-promise": {"scenarios": ("dropped-promise",), "gaps": ()},
     "operations": {"scenarios": ("operations-capacity",), "gaps": ()},
@@ -57,8 +57,8 @@ GROUPS = {
     },
     "event-outstanding": {"scenarios": ("event-entered", "source-stop"), "gaps": ()},
     "source-stop": {
-        "scenarios": ("source-stop",),
-        "gaps": ("Stop during an actual entered callback, then prove the current call returns and no later callback starts.",),
+        "scenarios": ('source-stop', 'listener-stop-throw'),
+        "gaps": (),
     },
     "retained-bytes-and-scratch": {
         "scenarios": ("bytes-scratch", "operations-capacity"),
@@ -69,17 +69,17 @@ GROUPS = {
         "gaps": (),
     },
     "request-before-observer": {
-        "scenarios": ("full-waiters", "mixed-waiters-engine-close", "pending-sub-close-denied"),
-        "gaps": ("At a full ordinary waiter budget, reject the first close observer of a distinct still-open pending Operation and prove that this rejected observer already requested its close; the existing full-waiter Operation was closed by earlier calls.",),
+        "scenarios": ('full-waiters', 'mixed-waiters-engine-close', 'pending-sub-close-denied', 'distinct-operation-denied'),
+        "gaps": (),
     },
     "settling-reentry": {"scenarios": ("settling-reentry",), "gaps": ()},
     "listener-throw-close": {
-        "scenarios": (),
-        "gaps": ("Execute close/requestStop from the entered listener and a throwing listener with retained payload/ref checks, isolated CallbackFailure, sibling recovery and Engine.close recovery.",),
+        "scenarios": ('listener-stop-throw',),
+        "gaps": (),
     },
     "request-only-retirement": {
-        "scenarios": (),
-        "gaps": ("Bind more-than-eight request-only retirement, actual join/new-generation admission, immutable failure tombstone and waiter-count observations within this companion candidate.",),
+        "scenarios": ('request-only-observed',),
+        "gaps": ('Request-only Engine generation retirement/reuse with true join remains to be wired; this scenario proves sixteen subscriptions and the immutable failed-subscription tombstone.',),
     },
     "generation-and-handles": {
         "scenarios": (),

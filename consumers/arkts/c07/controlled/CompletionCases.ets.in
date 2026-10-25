@@ -1,0 +1,148 @@
+// Independent public-SDK consumers. Diagnostics observe existing owners only.
+import { Runtime, Engine, Operation, Subscription, Snapshot, BoundaryError,
+  testArmWork, testReleaseWork, testObserveOperation, testHoldPublication, testReleasePublication } from @MADB_PUBLIC_MODULE@;
+import { check, code, snapshot, throwsCode, rejectsVoid, nextTurn } from './Assertions';
+import { runNegativeInputs, runClosingGetter } from './NegativeInputs';
+import { Emit, observed, facade, gate } from './SupportChecks';
+
+async function getters(runtime: Runtime, engine: Engine, emit: Emit): Promise<void> {
+  const result: number[] = runNegativeInputs((input: Snapshot): Snapshot => engine.roundtrip(input),
+    (error: Error): boolean => error instanceof BoundaryError);
+  const expected: number[] = [16, 1, 1, 2, 1, 0, 2];
+  check(result.length === expected.length, 'getter-report-length');
+  for (let i: number = 0; i < expected.length; i++) { check(result[i] === expected[i], 'getter-report:' + String(i)); }
+  emit('getter-report', result);
+  const before: number[] = observed(runtime, 'getter-before-close');
+  runClosingGetter((input: Snapshot): Snapshot => engine.roundtrip(input), (): void => engine.requestClose());
+  const after: number[] = observed(runtime, 'getter-after-close');
+  check(after[33] === before[33] && after[36] === before[36], 'closed-getter-admits-no-provider-work');
+  check(after[2] === 0 && after[3] === 0 && after[52] === after[53], 'getter-entry-scratch-returned');
+  emit('getter-before-close', before); emit('getter-after-close', after);
+  await engine.close();
+}
+
+async function listener(runtime: Runtime, engine: Engine, deadline: number, emit: Emit): Promise<void> {
+  const selfValues: number[] = []; const siblingValues: number[] = [];
+  let self: Subscription | undefined = undefined;
+  let pending: Promise<void> | undefined = undefined;
+  let closeDone: boolean = false;
+  self = engine.observeEvents((value: Snapshot): void => {
+    selfValues.push(value.value);
+    check(self !== undefined, 'listener-reference-ready');
+    const active: Subscription = self as Subscription;
+    emit('listener-entered', observed(runtime, 'listener-entered'));
+    emit('listener-entered-facade', facade(runtime, 'listener-entered'));
+    active.requestStop();
+    pending = active.close().then((): void => { closeDone = true; });
+    engine.publishEvent({ value: 2, text: 'sibling-only' });
+    check(!closeDone, 'stop-must-wait-current-entry');
+    snapshot(value, 1, 'first', 'entered-copy-survives-stop');
+    emit('listener-stopped-entered', observed(runtime, 'listener-stopped-entered'));
+  });
+  const sibling: Subscription = engine.observeEvents((value: Snapshot): void => { siblingValues.push(value.value); });
+  engine.publishEvent({ value: 1, text: 'first' });
+  while (!closeDone || siblingValues.length < 2) { await nextTurn(deadline, 'listener-drain'); }
+  if (pending !== undefined) { await pending; }
+  check(selfValues.length === 1 && selfValues[0] === 1 && siblingValues.length === 2 &&
+    siblingValues[0] === 1 && siblingValues[1] === 2, 'stop-keeps-current-and-sibling-fifo');
+  const drained: number[] = observed(runtime, 'listener-stopped');
+  const js: number[] = facade(runtime, 'listener-stopped');
+  check(drained[5] === 1 && drained[6] === 0 && drained[9] === 0 && js[3] === 1,
+    'only-sibling-listener-retained');
+  emit('listener-stopped', drained); emit('listener-stopped-facade', js);
+  emit('listener-values', [selfValues.length, siblingValues.length, siblingValues[0], siblingValues[1]]);
+  let failedCalls: number = 0;
+  const failed: Subscription = engine.observeEvents((_value: Snapshot): void => {
+    failedCalls++; throw new Error('LAB_INDEPENDENT_LISTENER_FAILURE');
+  });
+  engine.publishEvent({ value: 3, text: 'throwing-sibling' });
+  while (failedCalls === 0 || siblingValues.length < 3) { await nextTurn(deadline, 'listener-failure'); }
+  await rejectsVoid(() => failed.close(), 'CallbackFailure', 'failed-listener-outcome');
+  engine.publishEvent({ value: 4, text: 'recovered-sibling' });
+  while (siblingValues.length < 4) { await nextTurn(deadline, 'listener-sibling-recovery'); }
+  check(failedCalls === 1 && siblingValues[2] === 3 && siblingValues[3] === 4, 'failure-isolated');
+  snapshot(engine.roundtrip({ value: 7, text: 'engine-live' }), 7, 'engine-live', 'engine-after-listener-failure');
+  await rejectsVoid(() => failed.close(), 'CallbackFailure', 'failure-tombstone-stable');
+  await sibling.close();
+  const end: number[] = observed(runtime, 'listener-all-closed');
+  check(end[5] === 0 && end[6] === 0 && end[9] === 0 && end[29] === 0 && end[33] === end[34], 'listener-owners-released');
+  emit('listener-all-closed', end); emit('listener-failure-values', [failedCalls, siblingValues.length, siblingValues[2], siblingValues[3]]);
+  await engine.close();
+}
+
+async function requestOnly(runtime: Runtime, engine: Engine, deadline: number, emit: Emit): Promise<void> {
+  let calls: number = 0;
+  const failed: Subscription = engine.observeEvents((_value: Snapshot): void => { calls++; throw new Error('LAB_REQUEST_ONLY_FAILURE'); });
+  engine.publishEvent({ value: 1, text: 'failed' });
+  while (calls === 0) { await nextTurn(deadline, 'request-only-failed-listener'); }
+  const old: Subscription[] = [];
+  for (let i: number = 0; i < 16; i++) {
+    let next: Subscription | undefined = undefined;
+    while (next === undefined) {
+      try { next = engine.observeEvents((_value: Snapshot): void => { throw new Error('LAB_UNEXPECTED_CALLBACK'); }); }
+      catch (error) { if (code(error as Error) !== 'ResourceExhausted') { throw error as Error; } }
+      if (next === undefined) { await nextTurn(deadline, 'request-only-capacity'); }
+    }
+    const sub: Subscription = next as Subscription;
+    sub.requestStop(); old.push(sub);
+    const f: number[] = observed(runtime, 'request-only'); const j: number[] = facade(runtime, 'request-only');
+    check(f[11] === 0 && f[19] === 0 && j[1] === 0, 'request-only-no-close-waiter');
+    await nextTurn(deadline, 'request-only-progress');
+  }
+  for (let i: number = 0; i < old.length; i++) { await old[i].close(); }
+  await rejectsVoid(() => failed.close(), 'CallbackFailure', 'old-failure-after-sixteen-reuses');
+  const after: number[] = observed(runtime, 'request-only-after'); const js: number[] = facade(runtime, 'request-only-after');
+  check(after[5] === 0 && after[11] === 0 && after[19] === 0 && after[29] === 0 && js[3] === 0 && js[13] === 0, 'request-only-final-owners');
+  check(calls === 1, 'request-only-failure-one-call');
+  emit('request-only-counts', [old.length, calls]); emit('request-only-after', after); emit('request-only-facade', js);
+}
+
+async function deniedOperation(runtime: Runtime, engine: Engine, deadline: number, emit: Emit): Promise<void> {
+  testArmWork(engine, 1);
+  const distinct: Operation = engine.startOperation({ value: 41, text: 'held-running-work' });
+  await gate(runtime, distinct, 1, deadline, emit);
+  const held: Subscription = engine.observeEvents((_value: Snapshot): void => { throw new Error('LAB_UNEXPECTED_HELD_SOURCE_CALLBACK'); });
+  testHoldPublication(engine, 1, { value: 9, text: 'shared-waiter-owner' });
+  const waiters: Promise<void>[] = [];
+  for (let i: number = 0; i < 32; i++) { waiters.push(held.close()); }
+  const before: number[] = testObserveOperation(distinct);
+  check(before[1] === 0 && before[2] === 0, 'distinct-operation-still-open');
+  const denied: Promise<void> = rejectsVoid(() => distinct.close(), 'ResourceExhausted', 'first-close-observer-denied');
+  const after: number[] = testObserveOperation(distinct);
+  const native: number[] = observed(runtime, 'distinct-close-denied');
+  check(after[1] === 3 && native[11] === 32 && native[19] === 32, 'denied-observer-requested-distinct-close');
+  emit('distinct-before-close', before); emit('distinct-after-denial', after); emit('distinct-close-budget', native);
+  try { await denied; }
+  finally { testReleasePublication(engine, 0); testReleaseWork(engine); }
+  for (let i: number = 0; i < waiters.length; i++) { await waiters[i]; }
+  await distinct.close();
+}
+
+async function terminalRace(runtime: Runtime, engine: Engine, deadline: number, emit: Emit): Promise<void> {
+  testArmWork(engine, 1);
+  const op: Operation = engine.startOperation({ value: 41, text: 'race' });
+  await gate(runtime, op, 1, deadline, emit);
+  let fulfilled: number = 0; let rejected: number = 0;
+  const result: Promise<void> = op.result().then((value: Snapshot): void => {
+    snapshot(value, 42, 'race', 'race-success'); fulfilled++;
+  }).catch((error: Error): void => { check(code(error) === 'Cancelled', 'race-cancellation'); rejected++; });
+  // The real native worker races this env; no preselected terminal winner.
+  testReleaseWork(engine); op.requestCancel();
+  await result;
+  const terminal: number[] = testObserveOperation(op);
+  check(fulfilled + rejected === 1 && ((terminal[1] === 1 && fulfilled === 1) ||
+    (terminal[1] === 3 && rejected === 1)), 'one-legal-race-winner');
+  emit('race-terminal', terminal); emit('race-settlements', [terminal[1], fulfilled, rejected]);
+  await op.close();
+}
+
+export async function runCompletionCase(name: string, runtime: Runtime, engine: Engine,
+                                        deadline: number, emit: Emit): Promise<boolean> {
+  if (name === 'getters-observed') { await getters(runtime, engine, emit); }
+  else if (name === 'listener-stop-throw') { await listener(runtime, engine, deadline, emit); }
+  else if (name === 'request-only-observed') { await requestOnly(runtime, engine, deadline, emit); }
+  else if (name === 'distinct-operation-denied') { await deniedOperation(runtime, engine, deadline, emit); }
+  else if (name === 'cancel-terminal-race') { await terminalRace(runtime, engine, deadline, emit); }
+  else { return false; }
+  return true;
+}
