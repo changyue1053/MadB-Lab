@@ -1,0 +1,117 @@
+{
+  "schema": "madb.case/1",
+  "id": "c07.arkts-rust.route-ownership",
+  "kind": "template",
+  "problem_ids": [
+    "CAP-001",
+    "LIFE-001",
+    "LIFE-002",
+    "LIFE-004",
+    "LIFE-007",
+    "VERIFY-001"
+  ],
+  "source_ids": [],
+  "selector": null,
+  "requires": {
+    "features": [],
+    "environment": []
+  },
+  "fixture": {
+    "path": "harness/c07_companion_cases.py",
+    "sha256": "sha256:44a199bb68fe4056fcdb113f64e2ea7441da962e6cbeaa80735c5d8c22f17aa9",
+    "size": 10469,
+    "schema": "madb.lab-source/1"
+  },
+  "setup": [
+    {
+      "id": "admission",
+      "action": "environment",
+      "entrypoint": "exact-candidate-current-run-public-companion-har",
+      "arguments": []
+    }
+  ],
+  "steps": [
+    {
+      "id": "scenario-1",
+      "action": "call",
+      "entrypoint": "runControlledCase:terminal-success",
+      "arguments": []
+    },
+    {
+      "id": "scenario-2",
+      "action": "call",
+      "entrypoint": "runControlledCase:terminal-domain",
+      "arguments": []
+    },
+    {
+      "id": "scenario-3",
+      "action": "call",
+      "entrypoint": "runControlledCase:operations-capacity",
+      "arguments": []
+    },
+    {
+      "id": "scenario-4",
+      "action": "call",
+      "entrypoint": "runControlledCase:subscriptions-capacity",
+      "arguments": []
+    },
+    {
+      "id": "scenario-5",
+      "action": "call",
+      "entrypoint": "runControlledCase:nonnull-owned-error",
+      "arguments": []
+    },
+    {
+      "id": "scenario-6",
+      "action": "call",
+      "entrypoint": "runControlledCase:partial-open",
+      "arguments": []
+    },
+    {
+      "id": "scenario-7",
+      "action": "call",
+      "entrypoint": "runControlledCase:fault-before-guard",
+      "arguments": []
+    },
+    {
+      "id": "scenario-8",
+      "action": "call",
+      "entrypoint": "runControlledCase:fault-after-accepted",
+      "arguments": []
+    },
+    {
+      "id": "scenario-9",
+      "action": "call",
+      "entrypoint": "runControlledCase:worker-env-exit",
+      "arguments": []
+    }
+  ],
+  "assertions": [
+    {
+      "observation": "route-ownership",
+      "operator": "equals",
+      "expected": [
+        {
+          "kind": "string",
+          "value": "Every admitted model, callback owner and worker belongs to the declared C/C++/Rust/Kotlin implementation. Allocation/free totals match actual destructor/free sites; rejected failure outputs are included. Baseline-preserving operation close differs from entire-runtime zero; sentinel/metadata/class refs and runtime hook/TSFN/context obligations are all included in final shutdown."
+        }
+      ]
+    }
+  ],
+  "expected_result": {
+    "kind": "success"
+  },
+  "cleanup": [
+    {
+      "id": "physical-retirement",
+      "action": "cleanup",
+      "entrypoint": "scenario-static-physical-ack-and-facade-retirement",
+      "arguments": []
+    }
+  ],
+  "timeout_policy": {
+    "timeout_ms": 450000,
+    "on_timeout": "error",
+    "recovery": "isolate"
+  }
+}

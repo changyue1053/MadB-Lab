@@ -1,0 +1,84 @@
+{
+  "schema": "madb.case/1",
+  "id": "c07.arkts-c.shared-waiters",
+  "kind": "template",
+  "problem_ids": [
+    "ASYNC-002",
+    "LIFE-001",
+    "LIFE-005"
+  ],
+  "source_ids": [],
+  "selector": null,
+  "requires": {
+    "features": [],
+    "environment": []
+  },
+  "fixture": {
+    "path": "harness/c07_companion_cases.py",
+    "sha256": "sha256:44a199bb68fe4056fcdb113f64e2ea7441da962e6cbeaa80735c5d8c22f17aa9",
+    "size": 10469,
+    "schema": "madb.lab-source/1"
+  },
+  "setup": [
+    {
+      "id": "admission",
+      "action": "environment",
+      "entrypoint": "exact-candidate-current-run-public-companion-har",
+      "arguments": []
+    }
+  ],
+  "steps": [
+    {
+      "id": "scenario-1",
+      "action": "call",
+      "entrypoint": "runControlledCase:full-waiters",
+      "arguments": []
+    },
+    {
+      "id": "scenario-2",
+      "action": "call",
+      "entrypoint": "runControlledCase:mixed-waiters-engine-close",
+      "arguments": []
+    },
+    {
+      "id": "scenario-3",
+      "action": "call",
+      "entrypoint": "runControlledCase:pending-sub-close-denied",
+      "arguments": []
+    },
+    {
+      "id": "scenario-4",
+      "action": "call",
+      "entrypoint": "runControlledCase:result-capacity-retry",
+      "arguments": []
+    }
+  ],
+  "assertions": [
+    {
+      "observation": "shared-waiters",
+      "operator": "equals",
+      "expected": [
+        {
+          "kind": "string",
+          "value": "Exactly one admitted result plus31 pending Operation.close calls gives32 actual ordinary claims in one env turn. Observer33 rejects ResourceExhausted. Separate pending Subscription/Engine close variants share this same budget; already-Closed close is value-only. No hidden allocator or child-close memoization makes this test pass."
+        }
+      ]
+    }
+  ],
+  "expected_result": {
+    "kind": "success"
+  },
+  "cleanup": [
+    {
+      "id": "physical-retirement",
+      "action": "cleanup",
+      "entrypoint": "scenario-static-physical-ack-and-facade-retirement",
+      "arguments": []
+    }
+  ],
+  "timeout_policy": {
+    "timeout_ms": 200000,
+    "on_timeout": "error",
+    "recovery": "isolate"
+  }
+}

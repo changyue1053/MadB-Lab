@@ -1,0 +1,74 @@
+{
+  "schema": "madb.case/1",
+  "id": "c07.arkts-rust.worker-and-domain",
+  "kind": "template",
+  "problem_ids": [
+    "ASYNC-005",
+    "ERR-001",
+    "LIFE-001",
+    "THR-001",
+    "THR-002"
+  ],
+  "source_ids": [],
+  "selector": null,
+  "requires": {
+    "features": [],
+    "environment": []
+  },
+  "fixture": {
+    "path": "harness/c07_companion_cases.py",
+    "sha256": "sha256:44a199bb68fe4056fcdb113f64e2ea7441da962e6cbeaa80735c5d8c22f17aa9",
+    "size": 10469,
+    "schema": "madb.lab-source/1"
+  },
+  "setup": [
+    {
+      "id": "admission",
+      "action": "environment",
+      "entrypoint": "exact-candidate-current-run-public-companion-har",
+      "arguments": []
+    }
+  ],
+  "steps": [
+    {
+      "id": "scenario-1",
+      "action": "call",
+      "entrypoint": "runControlledCase:terminal-success",
+      "arguments": []
+    },
+    {
+      "id": "scenario-2",
+      "action": "call",
+      "entrypoint": "runControlledCase:terminal-domain",
+      "arguments": []
+    }
+  ],
+  "assertions": [
+    {
+      "observation": "worker-and-domain",
+      "operator": "equals",
+      "expected": [
+        {
+          "kind": "string",
+          "value": "Native worker computes 41→42, preserves text, and returns DomainOverflow for INT32_MAX. Actual owner/business/cleanup thread witnesses differ while alive. Provider computation/free counters bind the genuine route implementation, not a substituted C++ business function."
+        }
+      ]
+    }
+  ],
+  "expected_result": {
+    "kind": "success"
+  },
+  "cleanup": [
+    {
+      "id": "physical-retirement",
+      "action": "cleanup",
+      "entrypoint": "scenario-static-physical-ack-and-facade-retirement",
+      "arguments": []
+    }
+  ],
+  "timeout_policy": {
+    "timeout_ms": 100000,
+    "on_timeout": "error",
+    "recovery": "isolate"
+  }
+}

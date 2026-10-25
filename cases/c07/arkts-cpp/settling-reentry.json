@@ -1,0 +1,67 @@
+{
+  "schema": "madb.case/1",
+  "id": "c07.arkts-cpp.settling-reentry",
+  "kind": "template",
+  "problem_ids": [
+    "ASYNC-002",
+    "LIFE-001",
+    "LIFE-008",
+    "THR-004"
+  ],
+  "source_ids": [],
+  "selector": null,
+  "requires": {
+    "features": [],
+    "environment": []
+  },
+  "fixture": {
+    "path": "harness/c07_companion_cases.py",
+    "sha256": "sha256:44a199bb68fe4056fcdb113f64e2ea7441da962e6cbeaa80735c5d8c22f17aa9",
+    "size": 10469,
+    "schema": "madb.lab-source/1"
+  },
+  "setup": [
+    {
+      "id": "admission",
+      "action": "environment",
+      "entrypoint": "exact-candidate-current-run-public-companion-har",
+      "arguments": []
+    }
+  ],
+  "steps": [
+    {
+      "id": "scenario-1",
+      "action": "call",
+      "entrypoint": "runControlledCase:settling-reentry",
+      "arguments": []
+    }
+  ],
+  "assertions": [
+    {
+      "observation": "settling-reentry",
+      "operator": "equals",
+      "expected": [
+        {
+          "kind": "string",
+          "value": "While result/close is ready, entered or JS settling, the permit remains charged. Reenter at the real resolver/finally seam and observe capacity rejection until that settlement exits. No second native32 table or payload copy is created."
+        }
+      ]
+    }
+  ],
+  "expected_result": {
+    "kind": "success"
+  },
+  "cleanup": [
+    {
+      "id": "physical-retirement",
+      "action": "cleanup",
+      "entrypoint": "scenario-static-physical-ack-and-facade-retirement",
+      "arguments": []
+    }
+  ],
+  "timeout_policy": {
+    "timeout_ms": 50000,
+    "on_timeout": "error",
+    "recovery": "isolate"
+  }
+}

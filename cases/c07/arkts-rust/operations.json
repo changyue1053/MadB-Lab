@@ -1,0 +1,67 @@
+{
+  "schema": "madb.case/1",
+  "id": "c07.arkts-rust.operations",
+  "kind": "template",
+  "problem_ids": [
+    "ASYNC-005",
+    "LIFE-001",
+    "LIFE-005",
+    "LIFE-006"
+  ],
+  "source_ids": [],
+  "selector": null,
+  "requires": {
+    "features": [],
+    "environment": []
+  },
+  "fixture": {
+    "path": "harness/c07_companion_cases.py",
+    "sha256": "sha256:44a199bb68fe4056fcdb113f64e2ea7441da962e6cbeaa80735c5d8c22f17aa9",
+    "size": 10469,
+    "schema": "madb.lab-source/1"
+  },
+  "setup": [
+    {
+      "id": "admission",
+      "action": "environment",
+      "entrypoint": "exact-candidate-current-run-public-companion-har",
+      "arguments": []
+    }
+  ],
+  "steps": [
+    {
+      "id": "scenario-1",
+      "action": "call",
+      "entrypoint": "runControlledCase:operations-capacity",
+      "arguments": []
+    }
+  ],
+  "assertions": [
+    {
+      "observation": "operations",
+      "operator": "equals",
+      "expected": [
+        {
+          "kind": "string",
+          "value": "Eight accepted operation handles remain charged even after terminal/unclaimed result; ninth rejects. Closing one returns capacity after true work/payload drain; successful later admission proves a concurrent bound rather than an eight-lifetime cap."
+        }
+      ]
+    }
+  ],
+  "expected_result": {
+    "kind": "success"
+  },
+  "cleanup": [
+    {
+      "id": "physical-retirement",
+      "action": "cleanup",
+      "entrypoint": "scenario-static-physical-ack-and-facade-retirement",
+      "arguments": []
+    }
+  ],
+  "timeout_policy": {
+    "timeout_ms": 50000,
+    "on_timeout": "error",
+    "recovery": "isolate"
+  }
+}

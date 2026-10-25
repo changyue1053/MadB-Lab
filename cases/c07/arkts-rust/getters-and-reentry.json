@@ -1,0 +1,68 @@
+{
+  "schema": "madb.case/1",
+  "id": "c07.arkts-rust.getters-and-reentry",
+  "kind": "template",
+  "problem_ids": [
+    "ERR-002",
+    "ERR-003",
+    "LIFE-005",
+    "THR-004",
+    "TYPE-006"
+  ],
+  "source_ids": [],
+  "selector": null,
+  "requires": {
+    "features": [],
+    "environment": []
+  },
+  "fixture": {
+    "path": "harness/c07_companion_cases.py",
+    "sha256": "sha256:44a199bb68fe4056fcdb113f64e2ea7441da962e6cbeaa80735c5d8c22f17aa9",
+    "size": 10469,
+    "schema": "madb.lab-source/1"
+  },
+  "setup": [
+    {
+      "id": "admission",
+      "action": "environment",
+      "entrypoint": "exact-candidate-current-run-public-companion-har",
+      "arguments": []
+    }
+  ],
+  "steps": [
+    {
+      "id": "required-schedule",
+      "action": "call",
+      "entrypoint": "unimplemented-companion-schedule",
+      "arguments": []
+    }
+  ],
+  "assertions": [
+    {
+      "observation": "getters-and-reentry",
+      "operator": "equals",
+      "expected": [
+        {
+          "kind": "string",
+          "value": "Read each declared property once, preserve an actual thrown Error object, and recover. A getter closes its own Engine: original generation stays alive through the entry, later admission recheck rejects without business allocation. No Core lock is held across getters."
+        }
+      ]
+    }
+  ],
+  "expected_result": {
+    "kind": "success"
+  },
+  "cleanup": [
+    {
+      "id": "physical-retirement",
+      "action": "cleanup",
+      "entrypoint": "scenario-static-physical-ack-and-facade-retirement",
+      "arguments": []
+    }
+  ],
+  "timeout_policy": {
+    "timeout_ms": 50000,
+    "on_timeout": "error",
+    "recovery": "isolate"
+  }
+}

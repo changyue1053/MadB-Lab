@@ -1,0 +1,67 @@
+{
+  "schema": "madb.case/1",
+  "id": "c07.arkts-rust.identity",
+  "kind": "template",
+  "problem_ids": [
+    "BUILD-002",
+    "CAP-001",
+    "COMP-001",
+    "LIFE-001"
+  ],
+  "source_ids": [],
+  "selector": null,
+  "requires": {
+    "features": [],
+    "environment": []
+  },
+  "fixture": {
+    "path": "harness/c07_companion_cases.py",
+    "sha256": "sha256:44a199bb68fe4056fcdb113f64e2ea7441da962e6cbeaa80735c5d8c22f17aa9",
+    "size": 10469,
+    "schema": "madb.lab-source/1"
+  },
+  "setup": [
+    {
+      "id": "admission",
+      "action": "environment",
+      "entrypoint": "exact-candidate-current-run-public-companion-har",
+      "arguments": []
+    }
+  ],
+  "steps": [
+    {
+      "id": "scenario-1",
+      "action": "call",
+      "entrypoint": "runControlledCase:partial-open",
+      "arguments": []
+    }
+  ],
+  "assertions": [
+    {
+      "observation": "identity",
+      "operator": "equals",
+      "expected": [
+        {
+          "kind": "string",
+          "value": "Unmodified facade expectations come from the admitted candidate. Replace the actual library separately with wrong artifact, ABI and profile fixtures. Exact declared error/stage, and zero new business worker/ref/TSFN/engine owners before rejection. Missing exports/load failure is distinct from a successful bootstrap check."
+        }
+      ]
+    }
+  ],
+  "expected_result": {
+    "kind": "success"
+  },
+  "cleanup": [
+    {
+      "id": "physical-retirement",
+      "action": "cleanup",
+      "entrypoint": "scenario-static-physical-ack-and-facade-retirement",
+      "arguments": []
+    }
+  ],
+  "timeout_policy": {
+    "timeout_ms": 50000,
+    "on_timeout": "error",
+    "recovery": "isolate"
+  }
+}

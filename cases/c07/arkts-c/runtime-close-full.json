@@ -1,0 +1,76 @@
+{
+  "schema": "madb.case/1",
+  "id": "c07.arkts-c.runtime-close-full",
+  "kind": "template",
+  "problem_ids": [
+    "ASYNC-002",
+    "LIFE-001",
+    "LIFE-004",
+    "LIFE-005",
+    "LIFE-006",
+    "LIFE-007",
+    "THR-002"
+  ],
+  "source_ids": [],
+  "selector": null,
+  "requires": {
+    "features": [],
+    "environment": []
+  },
+  "fixture": {
+    "path": "harness/c07_companion_cases.py",
+    "sha256": "sha256:44a199bb68fe4056fcdb113f64e2ea7441da962e6cbeaa80735c5d8c22f17aa9",
+    "size": 10469,
+    "schema": "madb.lab-source/1"
+  },
+  "setup": [
+    {
+      "id": "admission",
+      "action": "environment",
+      "entrypoint": "exact-candidate-current-run-public-companion-har",
+      "arguments": []
+    }
+  ],
+  "steps": [
+    {
+      "id": "scenario-1",
+      "action": "call",
+      "entrypoint": "runControlledCase:full-waiters",
+      "arguments": []
+    },
+    {
+      "id": "scenario-2",
+      "action": "call",
+      "entrypoint": "runControlledCase:mixed-waiters-engine-close",
+      "arguments": []
+    }
+  ],
+  "assertions": [
+    {
+      "observation": "runtime-close-full",
+      "operator": "equals",
+      "expected": [
+        {
+          "kind": "string",
+          "value": "At32 ordinary claims plus real held work/source, Runtime.close starts using its pre-reserved parent control; repeated Runtime.close shares that control. Release holds, finish every child settlement, join actual thread/TLS and obtain static physical ACK, then timerArmed/tickInFlight=0. No33rd business waiter, no cleanup allocation from exhausted business capacity, no ACK waiting for itself."
+        }
+      ]
+    }
+  ],
+  "expected_result": {
+    "kind": "success"
+  },
+  "cleanup": [
+    {
+      "id": "physical-retirement",
+      "action": "cleanup",
+      "entrypoint": "scenario-static-physical-ack-and-facade-retirement",
+      "arguments": []
+    }
+  ],
+  "timeout_policy": {
+    "timeout_ms": 100000,
+    "on_timeout": "error",
+    "recovery": "isolate"
+  }
+}

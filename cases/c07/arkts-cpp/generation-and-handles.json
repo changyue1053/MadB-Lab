@@ -1,0 +1,68 @@
+{
+  "schema": "madb.case/1",
+  "id": "c07.arkts-cpp.generation-and-handles",
+  "kind": "template",
+  "problem_ids": [
+    "LIFE-003",
+    "LIFE-005",
+    "LIFE-006",
+    "TYPE-003",
+    "TYPE-007"
+  ],
+  "source_ids": [],
+  "selector": null,
+  "requires": {
+    "features": [],
+    "environment": []
+  },
+  "fixture": {
+    "path": "harness/c07_companion_cases.py",
+    "sha256": "sha256:44a199bb68fe4056fcdb113f64e2ea7441da962e6cbeaa80735c5d8c22f17aa9",
+    "size": 10469,
+    "schema": "madb.lab-source/1"
+  },
+  "setup": [
+    {
+      "id": "admission",
+      "action": "environment",
+      "entrypoint": "exact-candidate-current-run-public-companion-har",
+      "arguments": []
+    }
+  ],
+  "steps": [
+    {
+      "id": "required-schedule",
+      "action": "call",
+      "entrypoint": "unimplemented-companion-schedule",
+      "arguments": []
+    }
+  ],
+  "assertions": [
+    {
+      "observation": "generation-and-handles",
+      "operator": "equals",
+      "expected": [
+        {
+          "kind": "string",
+          "value": "Second operational engine rejected; new generation admitted only after old business + waiters + JS settling + notifications drain. Old immutable tombstone cannot address reused slots. Public companion malformed/wrong-kind/env/generation/overflow handle fixtures reject before work, with full uint64 decimal precision retained."
+        }
+      ]
+    }
+  ],
+  "expected_result": {
+    "kind": "success"
+  },
+  "cleanup": [
+    {
+      "id": "physical-retirement",
+      "action": "cleanup",
+      "entrypoint": "scenario-static-physical-ack-and-facade-retirement",
+      "arguments": []
+    }
+  ],
+  "timeout_policy": {
+    "timeout_ms": 50000,
+    "on_timeout": "error",
+    "recovery": "isolate"
+  }
+}

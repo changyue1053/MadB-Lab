@@ -1,0 +1,72 @@
+{
+  "schema": "madb.case/1",
+  "id": "c07.arkts-cpp.retained-bytes-and-scratch",
+  "kind": "template",
+  "problem_ids": [
+    "LIFE-001",
+    "LIFE-002",
+    "PERF-001"
+  ],
+  "source_ids": [],
+  "selector": null,
+  "requires": {
+    "features": [],
+    "environment": []
+  },
+  "fixture": {
+    "path": "harness/c07_companion_cases.py",
+    "sha256": "sha256:44a199bb68fe4056fcdb113f64e2ea7441da962e6cbeaa80735c5d8c22f17aa9",
+    "size": 10469,
+    "schema": "madb.lab-source/1"
+  },
+  "setup": [
+    {
+      "id": "admission",
+      "action": "environment",
+      "entrypoint": "exact-candidate-current-run-public-companion-har",
+      "arguments": []
+    }
+  ],
+  "steps": [
+    {
+      "id": "scenario-1",
+      "action": "call",
+      "entrypoint": "runControlledCase:bytes-scratch",
+      "arguments": []
+    },
+    {
+      "id": "scenario-2",
+      "action": "call",
+      "entrypoint": "runControlledCase:operations-capacity",
+      "arguments": []
+    }
+  ],
+  "assertions": [
+    {
+      "observation": "retained-bytes-and-scratch",
+      "operator": "equals",
+      "expected": [
+        {
+          "kind": "string",
+          "value": "Hold four operations with1024-byte inputs →4096 retained; a fifth one-byte input rejects although only four op slots are used. A1024-byte roundtrip still succeeds using its independent scratch, returns an independent copy and returns scratch immediately. Separately use zero-byte values to exercise the eighth operation without conflating byte exhaustion. Record model/UTF conversion overhead separately from the4096 ledger."
+        }
+      ]
+    }
+  ],
+  "expected_result": {
+    "kind": "success"
+  },
+  "cleanup": [
+    {
+      "id": "physical-retirement",
+      "action": "cleanup",
+      "entrypoint": "scenario-static-physical-ack-and-facade-retirement",
+      "arguments": []
+    }
+  ],
+  "timeout_policy": {
+    "timeout_ms": 100000,
+    "on_timeout": "error",
+    "recovery": "isolate"
+  }
+}

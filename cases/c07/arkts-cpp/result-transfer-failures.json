@@ -1,0 +1,86 @@
+{
+  "schema": "madb.case/1",
+  "id": "c07.arkts-cpp.result-transfer-failures",
+  "kind": "template",
+  "problem_ids": [
+    "ASYNC-002",
+    "ERR-002",
+    "ERR-003",
+    "LIFE-001",
+    "LIFE-008"
+  ],
+  "source_ids": [],
+  "selector": null,
+  "requires": {
+    "features": [],
+    "environment": []
+  },
+  "fixture": {
+    "path": "harness/c07_companion_cases.py",
+    "sha256": "sha256:44a199bb68fe4056fcdb113f64e2ea7441da962e6cbeaa80735c5d8c22f17aa9",
+    "size": 10469,
+    "schema": "madb.lab-source/1"
+  },
+  "setup": [
+    {
+      "id": "admission",
+      "action": "environment",
+      "entrypoint": "exact-candidate-current-run-public-companion-har",
+      "arguments": []
+    }
+  ],
+  "steps": [
+    {
+      "id": "scenario-1",
+      "action": "call",
+      "entrypoint": "runControlledCase:fault-before-guard",
+      "arguments": []
+    },
+    {
+      "id": "scenario-2",
+      "action": "call",
+      "entrypoint": "runControlledCase:after-guard",
+      "arguments": []
+    },
+    {
+      "id": "scenario-3",
+      "action": "call",
+      "entrypoint": "runControlledCase:fault-after-accepted",
+      "arguments": []
+    },
+    {
+      "id": "scenario-4",
+      "action": "call",
+      "entrypoint": "runControlledCase:nonnull-owned-error",
+      "arguments": []
+    }
+  ],
+  "assertions": [
+    {
+      "observation": "result-transfer-failures",
+      "operator": "equals",
+      "expected": [
+        {
+          "kind": "string",
+          "value": "Guard-before failure leaves a truthful native residual until explicit cleanup; guard-after conversion failure really frees once and rejects once. Error after accepted resolve cannot attempt reject/reconsume. Inherited setter trap remains uncalled. Genuine typed clone failures with a non-null output still pair that output with its route free."
+        }
+      ]
+    }
+  ],
+  "expected_result": {
+    "kind": "success"
+  },
+  "cleanup": [
+    {
+      "id": "physical-retirement",
+      "action": "cleanup",
+      "entrypoint": "scenario-static-physical-ack-and-facade-retirement",
+      "arguments": []
+    }
+  ],
+  "timeout_policy": {
+    "timeout_ms": 200000,
+    "on_timeout": "error",
+    "recovery": "isolate"
+  }
+}
