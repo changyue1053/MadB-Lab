@@ -48,6 +48,10 @@ class ControlledSession(Session):
             stream.write("export const EXPECTED_OBSERVATION_PREFIX: string = " + json.dumps(
                 "madb-observe/1/" + self.args.route + "/" + self.candidate["identity"]["expected_identity"]) + ";\n")
 
+    def parse_observation(self, raw, pid):
+        return parse_controlled(raw, nonce=self.nonce, pid=pid, case=self.scenario,
+            route=self.args.route, contracts=self.contracts)
+
     def execute(self):
         started = time.monotonic()
         deadline = started + 50
@@ -67,8 +71,7 @@ class ControlledSession(Session):
             if not pid and self.nonce not in raw:
                 time.sleep(min(.1, remaining()))
                 continue
-            observation = parse_controlled(raw, nonce=self.nonce, pid=pid, case=self.scenario,
-                route=self.args.route, contracts=self.contracts)
+            observation = self.parse_observation(raw, pid)
             write_json(self.args.output / f"{self.nonce}-observation-{time.time_ns()}.json", observation)
             if observation["status"] in ("passed", "failed", "unsupported"):
                 observation["duration_ms"] = int((time.monotonic() - started) * 1000)
@@ -86,6 +89,17 @@ def run_companion(args, candidate):
     if not plan:
         result["reason"] = "route has no independent controlled executor"
         return result
+    from c07_identity_execution import IdentitySession
+    from c07_identity_observations import SCENARIOS as IDENTITY_SCENARIOS
+    from c07_identity_fixtures import admit_identity_fixtures
+    fixture_path = getattr(args, "identity_fixtures", None)
+    fixture_pin = getattr(args, "identity_fixtures_sha256", None)
+    if bool(fixture_path) != bool(fixture_pin):
+        raise CandidateError("ArtifactMismatch", "identity fixtures require both explicit collection and SHA-256")
+    fixtures = None
+    if fixture_path:
+        fixtures, fixture_refs = admit_identity_fixtures(fixture_path, fixture_pin, candidate)
+        result["identity_fixture_inputs"] = fixture_refs
     contracts, inputs = companion_contracts(candidate)
     result["contract_inputs"] = inputs
     session = Session(args, candidate)
@@ -97,7 +111,16 @@ def run_companion(args, candidate):
             output.mkdir(parents=True)
             scenario_args = copy(args)
             scenario_args.output = output
-            child = ControlledSession(scenario_args, candidate, scenario, contracts)
+            if scenario in IDENTITY_SCENARIOS and fixtures is None:
+                observed = {"status":"unsupported","case":scenario,"route":args.route,"nonce":None,"pid":None,
+                    "frames":{},"problems":["explicit matched identity-fixture collection not supplied"],"failures":[],"certifies_c07":False}
+                envelope = {"candidate_digest":result["candidate_digest"],"run_id":result["run_id"],
+                    "observation":observed,"cleanup":"not-run","attachments":[]}
+                write_json(output/"result.json",envelope);result["observations"][scenario]=envelope
+                continue
+            child = (IdentitySession(scenario_args, candidate, scenario, contracts,
+                fixtures.get(scenario.removeprefix("identity-"))) if scenario in IDENTITY_SCENARIOS
+                else ControlledSession(scenario_args, candidate, scenario, contracts))
             observed = None
             try:
                 child.prepare()

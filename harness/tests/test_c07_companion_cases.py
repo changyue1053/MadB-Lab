@@ -16,7 +16,7 @@ RUN = "new-controller-run"
 READY_GROUPS = {"single-claim", "dropped-promise", "operations", "event-fifo-and-atomic",
                 "fanout-allocation", "event-outstanding", "shared-waiters", "settling-reentry",
                 "runtime-close-full", "env-exit-full", "getters-and-reentry", "terminal-winner",
-                "result-transfer-failures", "source-stop", "request-before-observer", "listener-throw-close", "state", "request-only-retirement", "generation-and-handles"}
+                "result-transfer-failures", "source-stop", "request-before-observer", "listener-throw-close", "state", "request-only-retirement", "generation-and-handles", "identity"}
 
 
 def observations():
@@ -36,20 +36,20 @@ class CompanionCoverageTests(unittest.TestCase):
         arguments.update(changes)
         return assess_group(group, **arguments)
 
-    def test_exact_existing_25_groups_and_35_unique_scenarios(self):
+    def test_exact_existing_25_groups_and_39_unique_scenarios(self):
         requirements = json.loads((ROOT / "consumers/arkts/c07/requirements.json").read_text())
         for route in ("c", "cpp", "rust"):
             profile = next(item for item in requirements["profiles"] if item["profile_id"] == "c07-" + route + "-arkts-aarch64-ohos23-test")
             self.assertEqual(set(GROUPS), {name.rsplit(".", 1)[1] for name in profile["required_cases"]})
             plan = scenario_plan(route)
-            self.assertEqual(len(plan), 35)
+            self.assertEqual(len(plan), 39)
             self.assertEqual(set(plan), set(SCENARIOS))
         self.assertEqual(scenario_plan("kotlin"), ())
 
     def test_successful_scenarios_close_only_the_reviewed_groups(self):
         statuses = {group: self.assess(group)["status"] for group in GROUPS}
         self.assertEqual({name for name, status in statuses.items() if status == "passed"}, READY_GROUPS)
-        self.assertEqual(sum(status == "blocked" for status in statuses.values()), 6)
+        self.assertEqual(sum(status == "blocked" for status in statuses.values()), 5)
         for group in set(GROUPS) - READY_GROUPS:
             self.assertTrue(self.assess(group)["gaps"], group)
 

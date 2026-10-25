@@ -16,8 +16,8 @@ SUPPORTED_ROUTES = ("c", "cpp", "rust")
 # The expected behavior remains verbatim in the corresponding registered cases.
 GROUPS = {
     "identity": {
-        "scenarios": ("partial-open",),
-        "gaps": ("Actual wrong-artifact, wrong-ABI and wrong-profile DSO replacements with exact bootstrap error/stage and unchanged pre-admission business/ref/TSFN/worker totals are not wired.",),
+        "scenarios": ("partial-open", "identity-positive", "identity-wrong-abi", "identity-wrong-profile", "identity-wrong-build"),
+        "gaps": (),
     },
     "getters-and-reentry": {
         "scenarios": ('getters-observed',),

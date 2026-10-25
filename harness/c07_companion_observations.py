@@ -10,6 +10,8 @@ from c07_completion_observations import SCENARIOS as COMPLETION_SCENARIOS, GATED
 from c07_admission_observations import SCENARIOS as ADMISSION_SCENARIOS, GATED as ADMISSION_GATED, TWO_GENERATIONS, predicates as admission_predicates, validate_contracts as admission_contracts
 from c07_diagnostic_observations import SCENARIOS as DIAGNOSTIC_SCENARIOS, GATED as DIAGNOSTIC_GATED, predicates as diagnostic_predicates
 
+from c07_identity_observations import SCENARIOS as IDENTITY_SCENARIOS
+
 MAX_SAFE = 2**53 - 1
 RUNTIME_FIELDS = """Format Phase BusinessEntries ScratchLive Operations Subscriptions
 EventTickets StateTickets Sources Entered Bytes Waiters Admissions Work Executors
@@ -81,6 +83,7 @@ SCENARIOS = {
 SCENARIOS.update(COMPLETION_SCENARIOS)
 SCENARIOS.update(ADMISSION_SCENARIOS)
 SCENARIOS.update(DIAGNOSTIC_SCENARIOS)
+SCENARIOS.update({name:{} for name in IDENTITY_SCENARIOS})
 WORKER_CASES = {"worker-env-exit", "fault-before-guard", "fault-after-accepted"}
 GATED_CASES = {"full-waiters", "settling-reentry", "terminal-cancel", "terminal-success",
     "terminal-domain", "claim-rollback", "bytes-scratch", "operations-capacity",
@@ -275,7 +278,7 @@ def parse_controlled(raw, *, nonce, pid, case, route, contracts):
               "pid": int(pid) if isinstance(pid, str) and pid.isdigit() else None,
               "frames": {}, "failures": [], "problems": [], "lines": [], "certifies_c07": False,
               "scope": "one independently asserted controlled scenario; no matrix-group inference"}
-    if route not in ("c", "cpp", "rust") or case not in SCENARIOS:
+    if route not in ("c", "cpp", "rust") or case not in SCENARIOS or case in IDENTITY_SCENARIOS:
         result["problems"] = ["unsupported route layout or unimplemented controlled scenario"]
         return result
     problems = result["problems"]

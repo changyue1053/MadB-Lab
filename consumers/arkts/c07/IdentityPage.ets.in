@@ -1,0 +1,45 @@
+import { openRuntime, BoundaryError, testBootstrapTotals, testObserve } from @MADB_PUBLIC_MODULE@;
+import { hilog } from '@kit.PerformanceAnalysisKit';
+import { PROBE_NONCE } from '../ProbeConfig';
+import { IDENTITY_CASE, IDENTITY_ERROR, IDENTITY_EVENT } from '../IdentityConfig';
+function check(ok: boolean, label: string): void { if (!ok) { throw new Error('LAB_IDENTITY:' + label); } }
+function emit(label: string, values: number[]): void {
+ hilog.info(0, 'MadBC07Probe', 'IDENTITY_FRAME %{public}s %{public}s %{public}s', PROBE_NONCE, label, JSON.stringify(values));
+}
+async function run(): Promise<void> {
+ const before: number[] = testBootstrapTotals(); emit('before', before);
+ check(before.length === 16 && before[0] === 1, 'bootstrap-format');
+ if (IDENTITY_CASE === 'identity-positive') {
+  const runtime = openRuntime(); const engine = runtime.connect();
+  const copied = engine.roundtrip({ value: 41, text: 'identity-control' });
+  check(copied.value === 41 && copied.text === 'identity-control', 'positive-business');
+  await runtime.close(); emit('closed', testObserve(runtime));
+ } else {
+  let caught: boolean = false;
+  try { openRuntime(); }
+  catch (error) {
+   caught = true; check(error instanceof BoundaryError, 'BoundaryError');
+   check((error as BoundaryError).code === IDENTITY_ERROR, 'exact-bootstrap-rejection');
+  }
+  check(caught, 'bootstrap-must-reject'); emit('rejected', [IDENTITY_EVENT]);
+ }
+ const after: number[] = testBootstrapTotals(); emit('after', after);
+ check(after.length === 16 && after[0] === 1, 'after-format');
+ if (IDENTITY_CASE !== 'identity-positive') {
+  for (let i: number = 1; i < 16; i++) {
+   check(after[i] - before[i] === ((i === 1 || i === IDENTITY_EVENT) ? 1 : 0), 'actual-event-delta:' + String(i));
+  }
+ }
+ hilog.info(0, 'MadBC07Probe', 'IDENTITY_COMPLETE %{public}s %{public}s', PROBE_NONCE, IDENTITY_CASE);
+}
+let started: boolean = false;
+@Entry @Component
+struct Index {
+ aboutToAppear(): void {
+  if (started) { return; } started = true;
+  hilog.info(0, 'MadBC07Probe', 'PROBE_PAGE_READY %{public}s', PROBE_NONCE);
+  hilog.info(0, 'MadBC07Probe', 'IDENTITY_BEGIN %{public}s %{public}s', PROBE_NONCE, IDENTITY_CASE);
+  run().catch((error: Error) => { hilog.error(0, 'MadBC07Probe', 'PROBE_FAILED %{public}s %{public}s', PROBE_NONCE, error.message); });
+ }
+ build() { Column() { Text('Independent identity admission') } }
+}
