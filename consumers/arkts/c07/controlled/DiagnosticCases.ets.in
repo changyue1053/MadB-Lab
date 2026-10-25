@@ -1,0 +1,68 @@
+// Fixed Lab observations through the public companion. No private handles or SDK source imports.
+import { Runtime, Engine, Operation, Subscription, Snapshot, testArmWork, testReleaseWork } from @MADB_PUBLIC_MODULE@;
+import { check, nextTurn, snapshot, rejectsSnapshot } from './Assertions';
+import { Emit, observed, gate } from './SupportChecks';
+
+async function liveCleanup(runtime: Runtime, engine: Engine, deadline: number, emit: Emit): Promise<void> {
+  testArmWork(engine, 1);
+  const operation: Operation = engine.startOperation({ value: 41, text: 'live-cleanup\u0000中文' });
+  await gate(runtime, operation, 1, deadline, emit);
+  const result: Promise<void> = rejectsSnapshot(() => operation.result(), 'Cancelled', 'cleanup-held-result');
+  let closed: boolean = false;
+  const close: Promise<void> = engine.close().then((): void => { closed = true; });
+  try {
+    while (true) {
+      const current: number[] = observed(runtime, 'live-cleanup-wait');
+      if (current[68] === 1 && current[64] > 0) {
+        check(!closed && current[13] === 1 && current[14] === 1 && current[17] === 0 && current[69] === 0,
+              'cleanup-join-blocked-by-real-held-worker');
+        check(current[58] === 1 && current[59] === 0 && current[60] === 0 && current[66] === 0 && current[67] === 0,
+              'business-thread-and-tls-still-live');
+        check(current[62] > 0 && current[63] > 0 && current[62] !== current[63] &&
+              current[62] !== current[64] && current[63] !== current[64], 'three-concurrently-live-thread-witnesses');
+        emit('live-cleanup-held', current);
+        break;
+      }
+      await nextTurn(deadline, 'actual-cleanup-join-start');
+    }
+  } finally { testReleaseWork(engine); }
+  await result;
+  await close;
+  emit('live-cleanup-returned', observed(runtime, 'live-cleanup-returned'));
+}
+
+async function childBaseline(runtime: Runtime, engine: Engine, deadline: number, emit: Emit): Promise<void> {
+  const before: number[] = observed(runtime, 'child-open-baseline');
+  emit('child-open-baseline', before);
+  snapshot(engine.roundtrip({ value: 7, text: 'clone\u0000中文' }), 7, 'clone\u0000中文', 'actual-route-roundtrip');
+  const operation: Operation = engine.startOperation({ value: 41, text: 'worker\u0000中文' });
+  snapshot(await operation.result(), 42, 'worker\u0000中文', 'actual-route-worker');
+  await operation.close();
+  let seen: number = 0;
+  const subscription: Subscription = engine.observeEvents((value: Snapshot): void => {
+    snapshot(value, 9, 'callback\u0000中文', 'actual-route-event'); seen++;
+  });
+  engine.publishEvent({ value: 9, text: 'callback\u0000中文' });
+  while (seen === 0) { await nextTurn(deadline, 'actual-route-event-return'); }
+  check(seen === 1, 'one-real-event-callback');
+  await subscription.close();
+  const after: number[] = observed(runtime, 'child-returned-baseline');
+  const retained: number[] = [2,3,4,5,6,7,8,9,10,11,12,13,18,19,20,21,24,25,28,29,35];
+  for (let i: number = 0; i < retained.length; i++) {
+    check(after[retained[i]] === before[retained[i]], 'child-retained-baseline:' + String(retained[i]));
+  }
+  check(after[14] === 1 && after[16] === 0 && after[17] === 0 && after[40] === 1 && after[41] === 0 &&
+        after[44] === 1 && after[45] === 0 && after[50] === 1 && after[51] === 0, 'child-close-preserves-live-runtime-engine');
+  check(after[33] > before[33] && after[33] - before[33] === after[34] - before[34] &&
+        after[36] === before[36] + 1, 'actual-route-work-and-model-free-deltas');
+  emit('child-returned-baseline', after);
+  emit('child-baseline-values', [42, seen]);
+}
+
+export async function runDiagnostic(name: string, runtime: Runtime, engine: Engine,
+                                    deadline: number, emit: Emit): Promise<boolean> {
+  if (name === 'live-cleanup-threads') { await liveCleanup(runtime, engine, deadline, emit); }
+  else if (name === 'child-ownership-baseline') { await childBaseline(runtime, engine, deadline, emit); }
+  else { return false; }
+  return true;
+}
