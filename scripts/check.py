@@ -30,6 +30,10 @@ def main():
     parser.add_argument("--generation-fixtures", type=Path)
     parser.add_argument("--cli-inventory", type=Path)
     parser.add_argument("--cli-inventory-sha256")
+    parser.add_argument("--madb-image", type=Path)
+    parser.add_argument("--madb-sha256")
+    parser.add_argument("--finalizer-image", type=Path)
+    parser.add_argument("--finalizer-sha256")
     parser.add_argument("--managed-root", type=Path)
     parser.add_argument("--candidates", type=Path)
     parser.add_argument("--output", type=Path, default=None)
@@ -62,7 +66,8 @@ def main():
         command = [sys.executable, "scripts/verify_c07.py", "--candidate", str(arguments.candidates),
                    "--route", arguments.route, "--command-line-tools", str(arguments.command_line_tools),
                    "--java-home", str(arguments.java_home), "--output", str(arguments.output)]
-        for name in ("target", "target_kind", "generator_cli", "generation_fixtures", "cli_inventory", "cli_inventory_sha256"):
+        for name in ("target", "target_kind", "generator_cli", "generation_fixtures", "cli_inventory", "cli_inventory_sha256",
+                     "madb_image", "madb_sha256", "finalizer_image", "finalizer_sha256"):
             if getattr(arguments, name) is not None:
                 command.extend(["--" + name.replace("_", "-"), str(getattr(arguments, name))])
         if arguments.community_debug_signing:

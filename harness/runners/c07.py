@@ -76,6 +76,10 @@ def main(argv=None):
     parser.add_argument("--generation-fixtures", type=Path)
     parser.add_argument("--cli-inventory", type=Path)
     parser.add_argument("--cli-inventory-sha256")
+    parser.add_argument("--madb-image", type=Path)
+    parser.add_argument("--madb-sha256")
+    parser.add_argument("--finalizer-image", type=Path)
+    parser.add_argument("--finalizer-sha256")
     parser.add_argument("--lab-revision")
     parser.add_argument("--producer-revision")
     args = parser.parse_args(argv)
@@ -83,9 +87,10 @@ def main(argv=None):
     if args.output.exists() and any(args.output.iterdir()):
         parser.error("--output must be empty; reports cannot overwrite earlier runs")
     args.output.mkdir(parents=True, exist_ok=True)
-    generation_inputs = (args.generator_cli, args.generation_fixtures, args.cli_inventory, args.cli_inventory_sha256)
+    generation_inputs = (args.generator_cli, args.generation_fixtures, args.cli_inventory, args.cli_inventory_sha256,
+                         args.madb_image, args.madb_sha256, args.finalizer_image, args.finalizer_sha256)
     if any(generation_inputs) and not all(generation_inputs):
-        parser.error("generation requires --generator-cli, --generation-fixtures, --cli-inventory and --cli-inventory-sha256")
+        parser.error("generation requires the public CLI, author fixtures, CLI inventory and both pinned MadB tool images")
     if args.generation_only and (not all(generation_inputs) or args.companion or args.route != "c"):
         parser.error("--generation-only currently requires all public generation inputs and ordinary --route c")
     if not args.generation_only:

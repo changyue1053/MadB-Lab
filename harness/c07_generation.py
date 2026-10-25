@@ -126,8 +126,39 @@ def validate_rejection(output, command, fixture):
             "committed_source": False}
 
 
-def public_inputs(cli, fixtures, inventory):
-    paths = [cli, inventory, Path(sys.executable).resolve(strict=True)]
+def generation_images(args, candidate):
+    """Use candidate-bound host/finalizer bytes, without importing producer code."""
+    references = []
+    for name, key in (("madb", "c07-madb-host"), ("finalizer", "c07-finalizer")):
+        path = getattr(args, name + "_image").resolve(strict=True)
+        expected = "sha256:" + getattr(args, name + "_sha256").removeprefix("sha256:")
+        data = path.read_bytes()
+        actual = {"sha256": file_digest(data), "size": len(data)}
+        require(actual["sha256"] == expected, name + " image differs from explicit pin")
+        selected = [tool for tool in candidate["toolchain"]["tools"] if tool["id"] == key]
+        require(len(selected) == 1 and all(selected[0].get(k) == v for k, v in actual.items()),
+                name + " image differs from admitted candidate tool")
+        references.append({"path": str(path), **actual})
+    return references
+
+
+def verify_generation_tools(output, candidate, images):
+    """The author fixture may change declarations, never compiler images."""
+    result = read_json(output / "result.json")
+    for key, image in zip(("host", "finalizer"), images):
+        require(result.get(key) == {k: image[k] for k in ("sha256", "size")},
+                key + " result does not bind the selected image")
+    actual = read_json(output / "tool-observation.json")["public"]["tools"]
+    expected = candidate["toolchain"]["tools"]
+    def identities(tools):
+        mapped = {tool["id"]: {key: tool[key] for key in ("version", "sha256", "size")} for tool in tools}
+        require(len(mapped) == len(tools), "duplicate generation tool identity")
+        return mapped
+    require(identities(actual) == identities(expected), "generation tool closure differs from candidate")
+
+
+def public_inputs(cli, fixtures, inventory, images):
+    paths = [cli, inventory, Path(sys.executable).resolve(strict=True), *[Path(item["path"]) for item in images]]
     paths.extend(fixtures / name / item for name in FIXTURES for item in ("Boundary.ets.in", "runtime-policy.json"))
     return [{"path": str(path), "sha256": file_digest(path.read_bytes()), "size": path.stat().st_size} for path in paths]
 
@@ -145,7 +176,8 @@ def run_generation(session, *, deadline):
     inventory = args.cli_inventory.resolve(strict=True)
     require(file_digest(inventory.read_bytes()) == "sha256:" + args.cli_inventory_sha256.removeprefix("sha256:"),
             "acquisition inventory hash differs from explicit pin")
-    inputs_before = public_inputs(cli, fixtures, inventory)
+    images = generation_images(args, session.candidate)
+    inputs_before = public_inputs(cli, fixtures, inventory, images)
     write_json(args.output / "generation-inputs-before.json", inputs_before)
 
     def git_state(phase):
@@ -170,14 +202,17 @@ def run_generation(session, *, deadline):
             "--cli-root", session.toolkit, "--cli-inventory", inventory,
             "--cli-inventory-sha256", args.cli_inventory_sha256.removeprefix("sha256:"),
             "--python-image", Path(sys.executable).resolve(), "--java-home", session.jdk,
+            "--madb-image", images[0]["path"], "--madb-sha256", images[0]["sha256"],
+            "--finalizer-image", images[1]["path"], "--finalizer-sha256", images[1]["sha256"],
             "--author-fixture", fixtures / name, "--output", output]
         if args.allow_dirty:
             command.append("--allow-dirty")
         actual = timer.run(session, "generation-" + name, command, 180, expected=None, inherit_env=True,
                              extra_env={"PYTHONDONTWRITEBYTECODE": "1"})
+        verify_generation_tools(output, session.candidate, images)
         observations.append(validate_rename(output, actual) if name == "rename-record" else validate_rejection(output, actual, name))
     after = git_state("after")
-    inputs_after = public_inputs(cli, fixtures, inventory)
+    inputs_after = public_inputs(cli, fixtures, inventory, images)
     write_json(args.output / "generation-inputs-after.json", inputs_after)
     require(inputs_before == inputs_after, "public CLI, fixtures or input tool bytes changed during generation")
     bound = before == after == {"head": expected_revision, "status": ""} and tracked_result["exit_code"] == 0 and not session.candidate["provenance"].get("provisional", False)
