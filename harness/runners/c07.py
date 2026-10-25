@@ -84,6 +84,10 @@ def main(argv=None):
     parser.add_argument("--finalizer-sha256")
     parser.add_argument("--rust-configuration", type=Path)
     parser.add_argument("--rust-configuration-sha256")
+    parser.add_argument("--kotlin-configuration", type=Path)
+    parser.add_argument("--kotlin-configuration-sha256")
+    parser.add_argument("--identity-fixtures", type=Path)
+    parser.add_argument("--identity-fixtures-sha256")
     parser.add_argument("--lab-revision")
     parser.add_argument("--producer-revision")
     args = parser.parse_args(argv)
@@ -91,17 +95,25 @@ def main(argv=None):
     if args.output.exists() and any(args.output.iterdir()):
         parser.error("--output must be empty; reports cannot overwrite earlier runs")
     args.output.mkdir(parents=True, exist_ok=True)
+    identity_inputs = (args.identity_fixtures, args.identity_fixtures_sha256)
+    if any(identity_inputs) and (not all(identity_inputs) or not args.companion or args.generation_only):
+        parser.error("identity fixtures require companion execution and both collection/path SHA-256")
     generation_inputs = (args.generator_cli, args.generation_fixtures, args.cli_inventory, args.cli_inventory_sha256,
                          args.madb_image, args.madb_sha256, args.finalizer_image, args.finalizer_sha256)
     if any(generation_inputs) and not all(generation_inputs):
         parser.error("generation requires the public CLI, author fixtures, CLI inventory and both pinned MadB tool images")
-    if args.generation_only and (not all(generation_inputs) or args.companion or args.route not in ("c", "cpp", "rust")):
-        parser.error("--generation-only currently requires all public generation inputs and ordinary --route c/cpp/rust")
+    if args.generation_only and (not all(generation_inputs) or args.companion or args.route not in ("c", "cpp", "rust", "kotlin")):
+        parser.error("--generation-only currently requires all public generation inputs and ordinary --route c/cpp/rust/kotlin")
     rust_inputs = (args.rust_configuration, args.rust_configuration_sha256)
     if any(rust_inputs) and (args.route != "rust" or not all(rust_inputs)):
         parser.error("Rust generation configuration and pin require --route rust and both inputs")
     if all(generation_inputs) and args.route == "rust" and not all(rust_inputs):
         parser.error("Rust generation requires its public configuration and SHA-256 pin")
+    kotlin_inputs = (args.kotlin_configuration, args.kotlin_configuration_sha256)
+    if any(kotlin_inputs) and (args.route != "kotlin" or not all(kotlin_inputs)):
+        parser.error("Kotlin generation configuration and pin require --route kotlin and both inputs")
+    if all(generation_inputs) and args.route == "kotlin" and not all(kotlin_inputs):
+        parser.error("Kotlin generation requires its public configuration and SHA-256 pin")
     if not args.generation_only:
         if not args.target or any(char.isspace() or ord(char) < 32 for char in args.target) or args.target.startswith("-"):
             parser.error("--target must name one explicit target")

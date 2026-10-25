@@ -8,7 +8,7 @@ ROUTES = {
     "c": {"route": "ARKTS-C-NAPI", "prefix": "arkts-c", "module": "madbc07sdkc"},
     "cpp": {"route": "ARKTS-CPP-NAPI", "prefix": "arkts-cpp", "module": "madbc07sdkcpp"},
     "rust": {"route": "ARKTS-RUST-NAPI", "prefix": "arkts-rust", "module": "madbc07sdkrust"},
-    "kotlin": {"route": "KN-ARKTS-NAPI", "prefix": "kotlin-arkts", "module": "madbkotlinowned"},
+    "kotlin": {"route": "KN-ARKTS-NAPI", "prefix": "kotlin-arkts", "module": "madbc07sdkkotlin"},
 }
 TARGET = "aarch64-linux-ohos"
 ORDINARY_EXPORTS = {"BoundaryError", "Engine", "Operation", "Runtime", "Snapshot", "Subscription", "openRuntime"}

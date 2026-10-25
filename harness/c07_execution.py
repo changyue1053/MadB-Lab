@@ -29,6 +29,42 @@ def inherited_environment(environment):
     return {key: value for key, value in environment.items() if key in allowed}
 
 
+BASE_SYSTEM_LIBRARIES = frozenset({
+    "libace_napi.z.so", "libc.so", "libdl.so", "libm.so", "libuv.so"})
+KOTLIN_SYSTEM_LIBRARIES = BASE_SYSTEM_LIBRARIES | frozenset({
+    "libhilog_ndk.z.so", "libffrt.z.so", "libtime_service_ndk.so",
+    "libhitrace_ndk.z.so", "libqos.so", "libohhidebug.so",
+    "libdeviceinfo_ndk.z.so", "libhiappevent_ndk.z.so", "libz.so"})
+
+
+def verify_system_dependencies(route, needed, declared, sdk):
+    """Resolve external ELF dependencies against the selected route and SDK stubs.
+
+    The SDK stub proves the platform-library identity, not API23 target loading.
+    The latter is observed only by the subsequent HAP execution.
+    """
+    if route not in {"c", "cpp", "rust", "kotlin"}:
+        raise CandidateError("ProfileMismatch", "unknown native dependency route")
+    allowed = KOTLIN_SYSTEM_LIBRARIES if route == "kotlin" else BASE_SYSTEM_LIBRARIES
+    if (not isinstance(declared, list) or any(not isinstance(name, str) for name in declared)
+            or len(declared) != len(set(declared)) or not set(declared) <= allowed):
+        raise CandidateError("ArtifactMismatch", "invalid route platform-library declaration")
+    external = {name for values in needed.values() for name in values} - set(needed)
+    if not external <= set(declared):
+        raise CandidateError("ArtifactMismatch", "native dependency has no explicit runtime owner")
+    stubs = []
+    for name in sorted(external):
+        path = sdk / "openharmony/native/sysroot/usr/lib/aarch64-linux-ohos" / name
+        if not path.is_file() or not path.resolve().is_relative_to(sdk.resolve()):
+            raise CandidateError("ArtifactMismatch", "platform library is absent from selected SDK: " + name)
+        data = path.read_bytes()
+        if data[:6] != b"\x7fELF\x02\x01" or data[18:20] != b"\xb7\x00":
+            raise CandidateError("ArtifactMismatch", "platform SDK stub is not AArch64 ELF: " + name)
+        stubs.append({"path": path.relative_to(sdk).as_posix(), "sha256": file_digest(data), "size": len(data)})
+    return {"needed": needed, "system_libraries": sorted(external), "sdk_platform_stubs": stubs,
+            "scope": "selected SDK platform stubs; runtime availability requires target execution"}
+
+
 def write_json(path, value):
     path.parent.mkdir(parents=True, exist_ok=True)
     with path.open("x") as stream:
@@ -191,10 +227,9 @@ class Session:
             actual_needed[path.name] = sorted(re.findall(r"\(NEEDED\).*?\[([^]]+)\]", result["stdout"]))
         if actual_needed != expected_needed:
             raise CandidateError("ArtifactMismatch", "actual ELF DT_NEEDED differs from candidate dependency record")
-        system = {"libace_napi.z.so", "libc.so", "libdl.so", "libm.so", "libuv.so"}
-        if any(name not in system | set(actual_needed) for values in actual_needed.values() for name in values):
-            raise CandidateError("ArtifactMismatch", "native dependency has no explicit runtime owner")
-        write_json(self.args.output / "native-inspection.json", {"needed": actual_needed, "system_libraries": sorted(system)})
+        inspection = verify_system_dependencies(self.candidate["route"], actual_needed,
+            dependency_record.get("system_libraries"), self.sdk)
+        write_json(self.args.output / "native-inspection.json", inspection)
         module = self.candidate["module"]
         target = self.root / "entry/src/main/ets"
         for name in ("Assertions.ets.in", "OrdinaryCases.ets.in", "NegativeInputs.d.ts.in", "NegativeInputs.js"):

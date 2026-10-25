@@ -7,6 +7,7 @@ import time
 from candidate import CandidateError, file_digest, logical_path, read_json
 from c07_execution import ExecutionError, ref, write_json
 from c07_contract import ROUTES
+from c07_kotlin_generation import validate_kotlin_declarations, validate_kotlin_rejection
 
 FIXTURES = ("rename-record", "reject-async", "reject-callback-result", "reject-async-listener")
 REJECTIONS = {
@@ -62,7 +63,8 @@ def validate_rename(output, command, route="c"):
     require({p.relative_to(source).as_posix() for p in source.rglob("*") if p.is_file()} == seen | {"outputs.json"},
             "Source inventory is not closed")
     declarations = read_json(source / "declarations.json")
-    native_evidence = validate_native_declarations(declarations, route)
+    native_evidence = (validate_kotlin_declarations(declarations, output, source) if route == "kotlin"
+                       else validate_native_declarations(declarations, route))
     declaration = declarations["public"]
     require(declaration["authority"] == "exported-arkts-declarations", "missing actual public declaration reader")
     records = declaration["records"]
@@ -172,17 +174,20 @@ def validate_native_declarations(declarations, route):
 
 def generation_configuration(args):
     """Explicit route inputs are pinned bytes, never ambient compiler settings."""
-    path = getattr(args, "rust_configuration", None)
-    expected = getattr(args, "rust_configuration_sha256", None)
-    if args.route != "rust":
-        require(path is None and expected is None, "Rust configuration is only valid for the Rust route")
-        return [], []
-    require(path is not None and expected is not None, "Rust generation requires its pinned public configuration")
-    path = Path(path).resolve(strict=True)
-    data = path.read_bytes()
-    digest = file_digest(data)
-    require(digest == "sha256:" + expected.removeprefix("sha256:"), "Rust configuration differs from explicit pin")
-    return ["--rust-configuration", str(path), "--rust-configuration-sha256", digest], [path]
+    arguments, inputs = [], []
+    for route in ("rust", "kotlin"):
+        path = getattr(args, route + "_configuration", None)
+        expected = getattr(args, route + "_configuration_sha256", None)
+        if args.route != route:
+            require(path is None and expected is None, route.title() + " configuration is only valid for its route")
+            continue
+        require(path is not None and expected is not None, route.title() + " generation requires its pinned public configuration")
+        path = Path(path).resolve(strict=True)
+        digest = file_digest(path.read_bytes())
+        require(digest == "sha256:" + expected.removeprefix("sha256:"), route.title() + " configuration differs from explicit pin")
+        arguments.extend(["--" + route + "-configuration", str(path), "--" + route + "-configuration-sha256", digest])
+        inputs.append(path)
+    return arguments, inputs
 
 
 def generation_images(args, candidate):
@@ -216,9 +221,13 @@ def verify_generation_tools(output, candidate, images):
     require(identities(actual) == identities(expected), "generation tool closure differs from candidate")
 
 
-def public_inputs(cli, fixtures, inventory, images, configuration=()):
+def fixture_files(route):
+    return ("Boundary.ets.in", "runtime-policy.json") + (("BoundaryTypes.kt", "OwnedExports.kt") if route == "kotlin" else ())
+
+
+def public_inputs(cli, fixtures, inventory, images, configuration=(), route="c"):
     paths = [cli, inventory, Path(sys.executable).resolve(strict=True), *[Path(item["path"]) for item in images], *configuration]
-    paths.extend(fixtures / name / item for name in FIXTURES for item in ("Boundary.ets.in", "runtime-policy.json"))
+    paths.extend(fixtures / name / item for name in FIXTURES for item in fixture_files(route))
     return [{"path": str(path), "sha256": file_digest(path.read_bytes()), "size": path.stat().st_size} for path in paths]
 
 
@@ -226,8 +235,7 @@ def run_generation(session, *, deadline):
     timer = GenerationDeadline(deadline)
     timer.remaining()
     args = session.args
-    require(args.route in ("c", "cpp", "rust") and not args.companion,
-            "generation requires a supported ordinary route; Kotlin needs its actual KSP author fixture")
+    require(args.route in ROUTES and not args.companion, "generation requires a supported ordinary route")
     configuration_arguments, configuration_paths = generation_configuration(args)
     cli, fixtures = args.generator_cli.resolve(strict=True), args.generation_fixtures.resolve(strict=True)
     repository = cli.parent.parent
@@ -238,7 +246,7 @@ def run_generation(session, *, deadline):
     require(file_digest(inventory.read_bytes()) == "sha256:" + args.cli_inventory_sha256.removeprefix("sha256:"),
             "acquisition inventory hash differs from explicit pin")
     images = generation_images(args, session.candidate)
-    inputs_before = public_inputs(cli, fixtures, inventory, images, configuration_paths)
+    inputs_before = public_inputs(cli, fixtures, inventory, images, configuration_paths, args.route)
     write_json(args.output / "generation-inputs-before.json", inputs_before)
 
     def git_state(phase):
@@ -251,7 +259,7 @@ def run_generation(session, *, deadline):
     if not args.allow_dirty:
         require(before == {"head": expected_revision, "status": ""}, "generation requires candidate revision in a clean producer checkout")
     tracked = [cli.relative_to(repository).as_posix()] + [str((fixtures / name / item).relative_to(repository))
-        for name in FIXTURES for item in ("Boundary.ets.in", "runtime-policy.json")]
+        for name in FIXTURES for item in fixture_files(args.route)]
     tracked_result = timer.run(session, "generation-tracked-inputs", ["git", "-C", repository, "ls-files", "--error-unmatch", "--", *tracked],
                                  inherit_env=True, expected=None)
     observations = []
@@ -268,15 +276,21 @@ def run_generation(session, *, deadline):
             "--author-fixture", fixtures / name, "--output", output, *configuration_arguments]
         if args.allow_dirty:
             command.append("--allow-dirty")
-        actual = timer.run(session, "generation-" + name, command, 180, expected=None, inherit_env=True,
+        actual = timer.run(session, "generation-" + name, command, 600 if args.route == "kotlin" else 180, expected=None, inherit_env=True,
                              extra_env={"PYTHONDONTWRITEBYTECODE": "1"})
         verify_generation_tools(output, session.candidate, images)
         result = read_json(output / "result.json")
         require(result.get("route") == args.route and result.get("variant") == "ordinary",
                 "public generation reported another route/variant")
-        observations.append(validate_rename(output, actual, args.route) if name == "rename-record" else validate_rejection(output, actual, name))
+        if name == "rename-record":
+            observation = validate_rename(output, actual, args.route)
+        elif args.route == "kotlin":
+            observation = validate_kotlin_rejection(output, actual, name)
+        else:
+            observation = validate_rejection(output, actual, name)
+        observations.append(observation)
     after = git_state("after")
-    inputs_after = public_inputs(cli, fixtures, inventory, images, configuration_paths)
+    inputs_after = public_inputs(cli, fixtures, inventory, images, configuration_paths, args.route)
     write_json(args.output / "generation-inputs-after.json", inputs_after)
     require(inputs_before == inputs_after, "public CLI, fixtures or input tool bytes changed during generation")
     bound = before == after == {"head": expected_revision, "status": ""} and tracked_result["exit_code"] == 0 and not session.candidate["provenance"].get("provisional", False)

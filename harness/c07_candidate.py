@@ -5,6 +5,7 @@ import re
 import tarfile
 from candidate import CandidateError, file_digest, logical_path, read_json, verify_public_candidate
 from c07_contract import ORDINARY_EXPORTS, ROUTES, TARGET, requirement
+from c07_abi import verify_abi
 
 
 def har_members(path):
@@ -83,20 +84,30 @@ def identity_values(data, *, binary=False, allow_parser_prefix=False):
 def verify_embedded_identity(identity, route, module, facade, header, members):
     expected = identity["expected_identity"].encode("ascii")
     facade = re.sub(rb"//[^\n]*", b"", re.sub(rb"/\*.*?\*/", b"", facade, flags=re.S))
-    header = re.sub(rb"//[^\n]*", b"", re.sub(rb"/\*.*?\*/", b"", header, flags=re.S))
-    for label, data in (("generated facade", facade), ("generated header", header)):
-        if identity_values(data) != {expected}:
-            raise CandidateError("ArtifactMismatch", label + " identity differs from candidate")
+    if identity_values(facade) != {expected}:
+        raise CandidateError("ArtifactMismatch", "generated facade identity differs from candidate")
     facade_values = re.findall(rb'const\s+EXPECTED_IDENTITY\s*:\s*string\s*=\s*"([^"\r\n]+)"\s*;', facade)
     if facade_values != [expected]:
         raise CandidateError("ArtifactMismatch", "generated facade lacks its unique declared identity constant")
-    constants = dict(re.findall(rb'inline\s+constexpr\s+const\s+char\*\s+(Gateway[A-Za-z]+)\s*=\s*"([^"\r\n]*)"\s*;', header))
-    wanted = {b"GatewayIdentity": expected, b"GatewayRouteIdentity": route.encode() + b"/" + expected,
-              b"GatewayModuleName": module.encode(), b"GatewayAbi": identity["abi_digest"][7:].encode(),
-              b"GatewayProfile": identity["profile_digest"][7:].encode(), b"GatewayBuild": identity["build_id"][7:].encode()}
-    for name, value in wanted.items():
-        if constants.get(name) != value or len(re.findall(rb'\b' + name + rb'\s*=', header)) != 1:
-            raise CandidateError("ArtifactMismatch", "generated header constant differs: " + name.decode())
+    if route == "kotlin":
+        # Kotlin emits a public binding document, not the C++ gateway header.
+        try:
+            binding = json.loads(header)
+        except (UnicodeError, ValueError) as error:
+            raise CandidateError("ArtifactMismatch", "invalid Kotlin binding identity document") from error
+        if binding.get("authority") != "actual KSP facts and emitted declaration; bootstrap has separate authored ABI" or binding.get("identity") != identity:
+            raise CandidateError("ArtifactMismatch", "generated Kotlin binding identity differs from candidate")
+    else:
+        header = re.sub(rb"//[^\n]*", b"", re.sub(rb"/\*.*?\*/", b"", header, flags=re.S))
+        if identity_values(header) != {expected}:
+            raise CandidateError("ArtifactMismatch", "generated header identity differs from candidate")
+        constants = dict(re.findall(rb'inline\s+constexpr\s+const\s+char\*\s+(Gateway[A-Za-z]+)\s*=\s*"([^"\r\n]*)"\s*;', header))
+        wanted = {b"GatewayIdentity": expected, b"GatewayRouteIdentity": route.encode() + b"/" + expected,
+                  b"GatewayModuleName": module.encode(), b"GatewayAbi": identity["abi_digest"][7:].encode(),
+                  b"GatewayProfile": identity["profile_digest"][7:].encode(), b"GatewayBuild": identity["build_id"][7:].encode()}
+        for name, value in wanted.items():
+            if constants.get(name) != value or len(re.findall(rb'\b' + name + rb'\s*=', header)) != 1:
+                raise CandidateError("ArtifactMismatch", "generated header constant differs: " + name.decode())
     bytecode = {name: data for name, data in members.items() if name.endswith(".abc")}
     if set(bytecode) != {"package/ets/modules.abc"} or identity_values(bytecode["package/ets/modules.abc"], binary=True) != {expected}:
         raise CandidateError("ArtifactMismatch", "actual HAR bytecode identity is missing, ambiguous or differs")
@@ -106,10 +117,15 @@ def verify_embedded_identity(identity, route, module, facade, header, members):
     for name in dsos:
         if identity_values(members[name], binary=True, allow_parser_prefix=True) != {expected}:
             raise CandidateError("ArtifactMismatch", "actual SDK DSO identity differs: " + name)
-    routes = set(re.findall(rb"[A-Za-z0-9_-]+/madb-arkts/1:[0-9a-f]{64}:[0-9a-f]{64}:[0-9a-f]{64}(?=\x00)", members[dsos[0]]))
-    if routes != {route.encode() + b"/" + expected}:
-        raise CandidateError("ProfileMismatch", "actual bootstrap DSO route identity differs")
+    expected_routes = set() if route == "kotlin" else {route.encode() + b"/" + expected}
+    for name in dsos:
+        routes = set(re.findall(rb"[A-Za-z0-9_-]+/madb-arkts/1:[0-9a-f]{64}:[0-9a-f]{64}:[0-9a-f]{64}(?=\x00)", members[name]))
+        if routes != expected_routes:
+            raise CandidateError("ProfileMismatch", "actual SDK DSO route identity differs: " + name)
+    # Kn has no C-gateway route literal. Its independently checked profile digest,
+    # formal module and both DSO identities bind this route instead.
     return {"expected_identity": identity["expected_identity"], "bytecode": list(bytecode), "sdk_dsos": dsos,
+            "route_binding": "profile/module/two SDK DSOs" if route == "kotlin" else "profile/module/embedded route prefix",
             "scope": "three-way declared/embedded byte consistency; not arbitrary machine-code semantic proof"}
 
 
@@ -118,6 +134,7 @@ def verify_candidate(root: Path, route: str, *, companion=False):
         raise CandidateError("ProfileMismatch", "unknown C07 route")
     policy = ROUTES[route]
     candidate = verify_public_candidate(root, allowed_routes={policy["route"]}, identity_format="arkts")
+    abi_binding = verify_abi(candidate, route)
     profile, manifest = candidate["profile"], candidate["manifest"]
     profile_id = f"c07-{route}-arkts-aarch64-ohos23" + ("-test" if companion else "")
     scope = requirement(profile_id)
@@ -180,7 +197,8 @@ def verify_candidate(root: Path, route: str, *, companion=False):
         ordinary_public_entry(members, package)
     identity_binding = verify_embedded_identity(candidate["identity"], route, module,
         (candidate["root"] / "generated/facade/Boundary.ets").read_bytes(),
-        (candidate["root"] / "generated/native/identity.generated.hpp").read_bytes(), members)
+        (candidate["root"] / ("generated/contract/kotlin-binding.json" if route == "kotlin"
+                               else "generated/native/identity.generated.hpp")).read_bytes(), members)
     # Metadata claims never replace actual member hashing or target behavior.
     toolchain = read_json(candidate["root"] / "toolchain.json")
     sdk = profile.get("sdk", {})
@@ -191,5 +209,5 @@ def verify_candidate(root: Path, route: str, *, companion=False):
         raise CandidateError("FormatInvalid", "missing C07 toolchain identity")
     candidate.update(route=route, companion=companion, scope=scope, module=module,
                      har=archives[0], har_members=members, native_members=native, toolchain=toolchain,
-                     identity_binding=identity_binding)
+                     identity_binding=identity_binding, abi_binding=abi_binding)
     return candidate

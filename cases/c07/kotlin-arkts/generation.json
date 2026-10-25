@@ -1,0 +1,68 @@
+{
+  "schema": "madb.case/1",
+  "id": "c07.kotlin-arkts.generation",
+  "kind": "template",
+  "problem_ids": [
+    "CAP-002",
+    "CAP-003",
+    "CAP-004",
+    "GEN-001",
+    "TYPE-008"
+  ],
+  "source_ids": [],
+  "selector": null,
+  "requires": {
+    "features": [],
+    "environment": []
+  },
+  "fixture": {
+    "path": "harness/c07_generation.py",
+    "sha256": "sha256:9d0e9e5c25097ebd5f15a3814bd8a2c4ecf9427a5901d8f1d10d9cdb028dd1c9",
+    "size": 19820,
+    "schema": "madb.lab-source/1"
+  },
+  "setup": [
+    {
+      "id": "public-generator",
+      "action": "environment",
+      "entrypoint": "explicit-public-cli-and-author-fixtures",
+      "arguments": []
+    }
+  ],
+  "steps": [
+    {
+      "id": "execute",
+      "action": "call",
+      "entrypoint": "run_generation",
+      "arguments": []
+    }
+  ],
+  "assertions": [
+    {
+      "observation": "generation",
+      "operator": "equals",
+      "expected": [
+        {
+          "kind": "string",
+          "value": "Actual C/Clang, C++ bridge, napi-ohos and KSP declaration evidence as applicable. Rename a declared symbol and observe generated/public output change. Unsupported async listener and cross-thread synchronous return fail before output commit with source location; no arbitrary all-types requirement."
+        }
+      ]
+    }
+  ],
+  "expected_result": {
+    "kind": "success"
+  },
+  "cleanup": [
+    {
+      "id": "close",
+      "action": "cleanup",
+      "entrypoint": "preserve-fresh-source-and-rejection-output",
+      "arguments": []
+    }
+  ],
+  "timeout_policy": {
+    "timeout_ms": 1200000,
+    "on_timeout": "error",
+    "recovery": "isolate"
+  }
+}
