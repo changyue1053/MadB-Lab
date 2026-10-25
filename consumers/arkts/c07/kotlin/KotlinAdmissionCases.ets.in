@@ -1,0 +1,157 @@
+import worker, { MessageEvents } from '@ohos.worker';
+import { Runtime, Engine, Operation, Snapshot, SavedCalls, openRuntime,
+  testObserve, testExportKey, testSaveCalls, testRawFrame, testLastAdmissionAudit,
+  testPollAdmission, testArmPartialOpenFailure, testArmWork, testReleaseWork } from @MADB_PUBLIC_MODULE@;
+import { check, nextTurn, snapshot, throwsCode } from '../Assertions';
+
+type Emit = (label: string, values: number[]) => void;
+interface NativeError extends Error { code: string; }
+
+function frame(values: number[]): number[] {
+  check(values.length === 110 && values[0] === 70501, 'admission:frame-format');
+  for (let i: number = 0; i < values.length; i++) {
+    check(Number.isSafeInteger(values[i]), 'admission:frame-integer:' + String(i));
+  }
+  return values;
+}
+
+function noLive(values: number[], label: string): void {
+  const zero: number[] = [8,11,23,24,25,26,27,28,29,30,31,32,35,39,40,47,
+    50,58,63,64,65,66,68,71,73,77,80,83,87,96,99,105,107];
+  for (let i: number = 0; i < zero.length; i++) {
+    check(values[zero[i]] === 0, label + ':live-or-error:' + String(zero[i]));
+  }
+  const left: number[] = [9,12,14,20,33,45,48,53,54,56,60,78,81,84,97,100,102,108];
+  const right: number[] = [10,13,15,21,34,46,49,54,55,57,61,79,82,85,98,101,103,109];
+  for (let i: number = 0; i < left.length; i++) {
+    check(values[left[i]] === values[right[i]], label + ':pair:' + String(left[i]));
+  }
+}
+
+async function closed(runtime: Runtime, label: string, emit: Emit): Promise<void> {
+  // The surrounding consumer/controller watchdog bounds this actual Promise.
+  await runtime.close();
+  const values: number[] = frame(testObserve(runtime));
+  emit(label + '-closed', values);
+  check(values[1] === 4 && values[72] === 3 && values[2] === 1 && values[7] === 1,
+    label + ':physical-runtime-ack');
+  noLive(values, label);
+  const admission: number[] = testLastAdmissionAudit();
+  emit(label + '-admission', admission);
+  check(admission.length === 13 && admission[6] === 0, label + ':slot-vacant');
+}
+
+async function basics(runtime: Runtime, label: string, emit: Emit, deadline: number): Promise<void> {
+  const engine: Engine = runtime.connect();
+  snapshot(engine.roundtrip({ value: 41, text: '中文\u0000' }), 41, '中文\u0000', label + ':roundtrip');
+  const operation: Operation = engine.startOperation({ value: 41, text: 'native' });
+  snapshot(await operation.result(), 42, 'native', label + ':operation');
+  await operation.close();
+  const states: number[] = []; const events: number[] = [];
+  const state = engine.observeState((value: Snapshot): void => { states.push(value.value); });
+  const event = engine.observeEvents((value: Snapshot): void => { events.push(value.value); });
+  engine.publishState({ value: 7, text: 's' });
+  engine.publishEvent({ value: 8, text: 'e' });
+  while (states.length === 0 || events.length === 0) { await nextTurn(deadline, label + ':notices'); }
+  check(states.length === 1 && states[0] === 7 && events.length === 1 && events[0] === 8,
+    label + ':notice-values');
+  await state.close(); await event.close();
+  emit(label + '-values', [42, 7, 8]);
+}
+
+function oldError(call: () => void, expected: string, label: string): void {
+  let caught: boolean = false;
+  try { call(); }
+  catch (error) { caught = true; check((error as NativeError).code === expected, label + ':code'); }
+  check(caught, label + ':must-throw');
+}
+
+async function failedAdmission(stage: number, emit: Emit, deadline: number): Promise<void> {
+  const label: string = 'partial-' + String(stage);
+  const before: number[] = testLastAdmissionAudit();
+  check(before.length === 13 && before[6] === 0, label + ':arm-vacant');
+  emit(label + '-before', before);
+  testArmPartialOpenFailure(stage);
+  const expected: string = stage === 0 ? 'InjectedBeforeLoad' :
+    stage === 4 ? 'InjectedAfterLifecycle' : 'KotlinInitializationFailure';
+  throwsCode(() => { openRuntime(); }, expected, label);
+  emit(label + '-immediate', testLastAdmissionAudit());
+  emit(label + '-raw-immediate', frame(testRawFrame()));
+  while (true) {
+    const audit: number[] = testPollAdmission();
+    if (audit[6] === 0) {
+      check(audit[0] === before[0] + 1 && audit[1] === before[1] + 1 &&
+        audit[8] === before[8] + 1 && audit[9] === stage && audit[5] === 0 && audit[10] === 0,
+        label + ':actual-rollback-ack');
+      emit(label + '-ack', audit); break;
+    }
+    check(audit[6] === 2, label + ':rollback-pending-only');
+    await nextTurn(deadline, label + ':rollback');
+  }
+  const drained: number[] = frame(testRawFrame());
+  emit(label + '-drained', drained); noLive(drained, label);
+}
+
+export async function runKotlinAdmission(emit: Emit, timeoutMs: number): Promise<void> {
+  const deadline: number = Date.now() + timeoutMs;
+  const initial: number[] = testLastAdmissionAudit();
+  emit('initial-admission', initial);
+  check(initial.length === 13 && initial[0] === 0 && initial[4] === 0 && initial[6] === 0,
+    'fresh-no-kotlin-load');
+  const child = new worker.ThreadWorker('entry/ets/kotlin/workers/WorkerFirst.ets');
+  let childResult: string = ''; let exitCode: number = -1;
+  child.onmessage = (event: MessageEvents): void => { childResult = event.data as string; };
+  child.onexit = (value: number): void => { exitCode = value; };
+  child.postMessage('OPEN');
+  while (exitCode === -1) { await nextTurn(deadline, 'worker-first-exit'); }
+  check(exitCode === 0 && childResult === 'CapabilityUnsupported', 'worker-first-recoverable');
+  const rejected: number[] = testLastAdmissionAudit();
+  emit('workerfirst-admission', rejected);
+  check(rejected[0] === 0 && rejected[4] === 0 && rejected[6] === 0 &&
+    rejected[2] === initial[2] + 1, 'worker-first-no-provider-init');
+  emit('workerfirst', [1, 0]);
+
+  await failedAdmission(0, emit, deadline);
+  const first: Runtime = openRuntime();
+  const oldKey: string = testExportKey(first);
+  const saved: SavedCalls = testSaveCalls(first);
+  await basics(first, 'epoch1', emit, deadline);
+  await closed(first, 'epoch1', emit); await first.close();
+
+  const second: Runtime = openRuntime();
+  const newKey: string = testExportKey(second);
+  const currentCalls: SavedCalls = testSaveCalls(second);
+  check(newKey !== oldKey, 'new-epoch-key');
+  emit('epoch-key-changed', [1]);
+  const engine: Engine = second.connect();
+  testArmWork(engine, 1);
+  const operation: Operation = engine.startOperation({ value: 41, text: 'reuse' });
+  const result: Promise<Snapshot> = operation.result();
+  try {
+    while (testObserve(second)[41] !== 1) { await nextTurn(deadline, 'new-real-work-held'); }
+    const live: number[] = frame(testObserve(second)); emit('epoch2-live-waiter', live);
+    check(live[26] === 1 && live[24] === 1 && live[41] === 1, 'new-real-local-id1-waiter');
+    const idBefore: number = currentCalls.peek(newKey, '1');
+    check(idBefore === 7, 'current-local-id1-positive-control');
+    oldError(() => { saved.peek(oldKey, '1'); }, 'InvalidHandle', 'old-peek');
+    oldError(() => { saved.takeStatus(oldKey, '1'); }, 'InvalidHandle', 'old-take');
+    oldError(() => { saved.connect(oldKey); }, 'InvalidHandle', 'old-connect');
+    oldError(() => { saved.abort(oldKey); }, 'InvalidHandleRetired', 'old-abort');
+    const after: number[] = frame(testObserve(second)); emit('epoch2-after-old-calls', after);
+    check(after[26] === 1 && after[24] === 1 && after[41] === 1, 'new-waiter-not-stolen');
+    const idAfter: number = currentCalls.peek(newKey, '1');
+    check(idAfter === 7, 'current-local-id1-still-pending');
+    emit('epoch2-local-id1', [idBefore, idAfter]);
+    emit('old-key-rejections', [1, 1, 1, 1]);
+  } finally { testReleaseWork(engine); }
+  snapshot(await result, 42, 'reuse', 'unaffected-new-result'); emit('epoch2-result', [42]);
+  await operation.close(); await closed(second, 'epoch2', emit);
+
+  for (let stage: number = 1; stage <= 4; stage++) {
+    await failedAdmission(stage, emit, deadline);
+    const retry: Runtime = openRuntime();
+    await basics(retry, 'retry' + String(stage), emit, deadline);
+    await closed(retry, 'retry' + String(stage), emit);
+  }
+  emit('admission-complete', [1]);
+}

@@ -1,0 +1,10 @@
+import worker, { MessageEvents } from '@ohos.worker';
+import { openRuntime, BoundaryError } from @MADB_PUBLIC_MODULE@;
+
+worker.workerPort.onmessage = (_event: MessageEvents): void => {
+  let result: string = 'unexpected-success';
+  try { openRuntime(); }
+  catch (error) { result = (error as BoundaryError).code; }
+  worker.workerPort.postMessage(result);
+  worker.workerPort.close();
+};
