@@ -1,0 +1,85 @@
+{
+  "schema": "madb.case/1",
+  "id": "l02.native-values.aux-panic.unwind",
+  "kind": "template",
+  "problem_ids": [
+    "ERR-001",
+    "VERIFY-001",
+    "VERIFY-002"
+  ],
+  "source_ids": [],
+  "selector": null,
+  "requires": {
+    "features": [],
+    "environment": []
+  },
+  "fixture": {
+    "path": "consumers/c/l02_values_aux.c",
+    "sha256": "sha256:eca934cadf27cf379dc1e7a01a7d3b1fefac0f16570c0c6961f12741dca7842f",
+    "size": 2241,
+    "schema": "madb.lab-source/1"
+  },
+  "setup": [
+    {
+      "id": "install",
+      "action": "environment",
+      "entrypoint": "isolated-public-candidate",
+      "arguments": [
+        {
+          "kind": "string",
+          "value": "exact-clean-producer-lab-and-candidate-identities"
+        },
+        {
+          "kind": "string",
+          "value": "no-producer-private-source-or-cache"
+        }
+      ]
+    }
+  ],
+  "steps": [
+    {
+      "id": "unwind",
+      "action": "call",
+      "entrypoint": "unwind",
+      "arguments": [
+        {
+          "kind": "string",
+          "value": "author=aux-panic"
+        }
+      ]
+    }
+  ],
+  "assertions": [
+    {
+      "observation": "unwind.result",
+      "operator": "equals",
+      "expected": [
+        {
+          "kind": "string",
+          "value": "Auxiliary natural Rust explode uses a selected catchable unwind; actual generated SDK returns operation-failed/status8 with zero error/value and unchanged caller input. This does not claim abort/OOM-abort recovery."
+        }
+      ]
+    }
+  ],
+  "expected_result": {
+    "kind": "success"
+  },
+  "cleanup": [
+    {
+      "id": "ephemeral-values",
+      "action": "cleanup",
+      "entrypoint": "verify-process-completion",
+      "arguments": [
+        {
+          "kind": "string",
+          "value": "no-consumer-owned-resource-or-free; no-numeric-allocator-proof; helper-scope-separate"
+        }
+      ]
+    }
+  ],
+  "timeout_policy": {
+    "timeout_ms": 180000,
+    "on_timeout": "error",
+    "recovery": "isolate"
+  }
+}

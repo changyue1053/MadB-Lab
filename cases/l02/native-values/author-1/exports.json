@@ -1,0 +1,85 @@
+{
+  "schema": "madb.case/1",
+  "id": "l02.native-values.author-1.exports",
+  "kind": "template",
+  "problem_ids": [
+    "ERR-001",
+    "VERIFY-001",
+    "VERIFY-002"
+  ],
+  "source_ids": [],
+  "selector": null,
+  "requires": {
+    "features": [],
+    "environment": []
+  },
+  "fixture": {
+    "path": "consumers/c/l02_values.c",
+    "sha256": "sha256:e93da9b1d37b1153ca81a7088a06626124e7ac770b0348372e0463787b9db16c",
+    "size": 13060,
+    "schema": "madb.lab-source/1"
+  },
+  "setup": [
+    {
+      "id": "install",
+      "action": "environment",
+      "entrypoint": "isolated-public-candidate",
+      "arguments": [
+        {
+          "kind": "string",
+          "value": "exact-clean-producer-lab-and-candidate-identities"
+        },
+        {
+          "kind": "string",
+          "value": "no-producer-private-source-or-cache"
+        }
+      ]
+    }
+  ],
+  "steps": [
+    {
+      "id": "exports",
+      "action": "environment",
+      "entrypoint": "exports",
+      "arguments": [
+        {
+          "kind": "string",
+          "value": "author=author-1"
+        }
+      ]
+    }
+  ],
+  "assertions": [
+    {
+      "observation": "exports.result",
+      "operator": "equals",
+      "expected": [
+        {
+          "kind": "string",
+          "value": "Only bootstrap and source-declared raw methods are exported. Missing/renamed/deleted ordinary method references fail compilation at their exact undeclared identifier, rather than allowing stale public declarations."
+        }
+      ]
+    }
+  ],
+  "expected_result": {
+    "kind": "success"
+  },
+  "cleanup": [
+    {
+      "id": "ephemeral-values",
+      "action": "cleanup",
+      "entrypoint": "verify-process-completion",
+      "arguments": [
+        {
+          "kind": "string",
+          "value": "no-consumer-owned-resource-or-free; no-numeric-allocator-proof; helper-scope-separate"
+        }
+      ]
+    }
+  ],
+  "timeout_policy": {
+    "timeout_ms": 480000,
+    "on_timeout": "error",
+    "recovery": "isolate"
+  }
+}

@@ -359,7 +359,8 @@ class L02ReportChecks(unittest.TestCase):
         self.addCleanup(self.temporary.cleanup)
         self.root = Path(self.temporary.name) / "source"; self.root.mkdir()
         self.output = Path(self.temporary.name) / "output"; self.output.mkdir()
-        shutil.copytree(l02.ROOT / "cases/l02", self.root / "cases/l02")
+        for group in records.CASE_NAMES:
+            shutil.copytree(l02.ROOT / "cases/l02" / group, self.root / "cases/l02" / group)
         source = self.root / "consumers/c/l02_diagnostics.c"; source.parent.mkdir(parents=True)
         shutil.copyfile(l02.SOURCE, source)
         self.candidates = {}

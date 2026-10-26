@@ -1,0 +1,85 @@
+{
+  "schema": "madb.case/1",
+  "id": "l02.native-values.author-2.values",
+  "kind": "template",
+  "problem_ids": [
+    "ERR-001",
+    "VERIFY-001",
+    "VERIFY-002"
+  ],
+  "source_ids": [],
+  "selector": null,
+  "requires": {
+    "features": [],
+    "environment": []
+  },
+  "fixture": {
+    "path": "consumers/c/l02_values.c",
+    "sha256": "sha256:e93da9b1d37b1153ca81a7088a06626124e7ac770b0348372e0463787b9db16c",
+    "size": 13060,
+    "schema": "madb.lab-source/1"
+  },
+  "setup": [
+    {
+      "id": "install",
+      "action": "environment",
+      "entrypoint": "isolated-public-candidate",
+      "arguments": [
+        {
+          "kind": "string",
+          "value": "exact-clean-producer-lab-and-candidate-identities"
+        },
+        {
+          "kind": "string",
+          "value": "no-producer-private-source-or-cache"
+        }
+      ]
+    }
+  ],
+  "steps": [
+    {
+      "id": "values",
+      "action": "call",
+      "entrypoint": "values",
+      "arguments": [
+        {
+          "kind": "string",
+          "value": "author=author-2"
+        }
+      ]
+    }
+  ],
+  "assertions": [
+    {
+      "observation": "values.result",
+      "operator": "equals",
+      "expected": [
+        {
+          "kind": "string",
+          "value": "Ordinary generated calls preserve caller input; Unicode trim of the fixed padded 温度 bytes, empty, embedded NUL, supplementary scalar and exactly64-byte payloads have independent expected bytes and zero output tails. Offset, when present, uses checked i32 arithmetic, legal domain1/tag1 overflow, and preserves quality only in author2..4."
+        }
+      ]
+    }
+  ],
+  "expected_result": {
+    "kind": "success"
+  },
+  "cleanup": [
+    {
+      "id": "ephemeral-values",
+      "action": "cleanup",
+      "entrypoint": "verify-process-completion",
+      "arguments": [
+        {
+          "kind": "string",
+          "value": "no-consumer-owned-resource-or-free; no-numeric-allocator-proof; helper-scope-separate"
+        }
+      ]
+    }
+  ],
+  "timeout_policy": {
+    "timeout_ms": 180000,
+    "on_timeout": "error",
+    "recovery": "isolate"
+  }
+}
