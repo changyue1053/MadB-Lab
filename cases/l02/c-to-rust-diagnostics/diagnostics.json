@@ -1,0 +1,388 @@
+{
+  "schema": "madb.case/1",
+  "id": "l02.c-to-rust-diagnostics.diagnostics",
+  "kind": "template",
+  "problem_ids": [
+    "ERR-001",
+    "ERR-003",
+    "LIFE-001",
+    "LIFE-005",
+    "PERF-001",
+    "VERIFY-001",
+    "VERIFY-002"
+  ],
+  "source_ids": [],
+  "selector": null,
+  "requires": {
+    "features": [],
+    "environment": []
+  },
+  "fixture": {
+    "path": "consumers/c/l02_diagnostics.c",
+    "sha256": "sha256:372bc4ba62ef3858d1a57457694a5e5af13b5a58c127c8ed8420eea4fcd8d6d7",
+    "size": 28524,
+    "schema": "madb.lab-source/1"
+  },
+  "setup": [
+    {
+      "id": "install",
+      "action": "environment",
+      "entrypoint": "isolated-public-candidate",
+      "arguments": [
+        {
+          "kind": "string",
+          "value": "header=c-to-rust-diagnostics"
+        },
+        {
+          "kind": "string",
+          "value": "all-four-fixed-candidate-identities"
+        },
+        {
+          "kind": "string",
+          "value": "clean-lab-and-producer-revisions"
+        }
+      ]
+    },
+    {
+      "id": "symbols",
+      "action": "environment",
+      "entrypoint": "exact-public-exports",
+      "arguments": [
+        {
+          "kind": "string",
+          "value": "default=7"
+        },
+        {
+          "kind": "string",
+          "value": "test=14"
+        },
+        {
+          "kind": "string",
+          "value": "diagnostics=9"
+        },
+        {
+          "kind": "string",
+          "value": "diagnostics-test=16"
+        }
+      ]
+    },
+    {
+      "id": "compile",
+      "action": "environment",
+      "entrypoint": "public-consumer-compilation",
+      "arguments": [
+        {
+          "kind": "string",
+          "value": "compiler-image-and-options-match-receipt"
+        },
+        {
+          "kind": "string",
+          "value": "actual-header-dependencies-match-public-sdk-bytes"
+        },
+        {
+          "kind": "string",
+          "value": "no-producer-private-sources"
+        }
+      ]
+    }
+  ],
+  "steps": [
+    {
+      "id": "events",
+      "action": "call",
+      "entrypoint": "events",
+      "arguments": [
+        {
+          "kind": "string",
+          "value": "mode=events"
+        }
+      ]
+    },
+    {
+      "id": "toggle",
+      "action": "call",
+      "entrypoint": "toggle",
+      "arguments": [
+        {
+          "kind": "string",
+          "value": "mode=toggle"
+        }
+      ]
+    },
+    {
+      "id": "rejections",
+      "action": "call",
+      "entrypoint": "rejections",
+      "arguments": [
+        {
+          "kind": "string",
+          "value": "mode=rejections"
+        }
+      ]
+    },
+    {
+      "id": "concurrent",
+      "action": "call",
+      "entrypoint": "concurrent",
+      "arguments": [
+        {
+          "kind": "string",
+          "value": "mode=concurrent"
+        }
+      ]
+    },
+    {
+      "id": "exporter",
+      "action": "call",
+      "entrypoint": "exporter",
+      "arguments": [
+        {
+          "kind": "string",
+          "value": "mode=exporter"
+        }
+      ]
+    },
+    {
+      "id": "instance-1",
+      "action": "call",
+      "entrypoint": "instance",
+      "arguments": [
+        {
+          "kind": "string",
+          "value": "instance=1"
+        }
+      ]
+    },
+    {
+      "id": "instance-2",
+      "action": "call",
+      "entrypoint": "instance",
+      "arguments": [
+        {
+          "kind": "string",
+          "value": "instance=2"
+        }
+      ]
+    },
+    {
+      "id": "timing-off",
+      "action": "call",
+      "entrypoint": "timing-off",
+      "arguments": [
+        {
+          "kind": "string",
+          "value": "mode=timing-off"
+        }
+      ]
+    },
+    {
+      "id": "timing-on",
+      "action": "call",
+      "entrypoint": "timing-on",
+      "arguments": [
+        {
+          "kind": "string",
+          "value": "mode=timing-on"
+        }
+      ]
+    },
+    {
+      "id": "timing-full",
+      "action": "call",
+      "entrypoint": "timing-full",
+      "arguments": [
+        {
+          "kind": "string",
+          "value": "mode=timing-full"
+        }
+      ]
+    }
+  ],
+  "assertions": [
+    {
+      "observation": "candidate.binding",
+      "operator": "equals",
+      "expected": [
+        {
+          "kind": "string",
+          "value": "Every real SDK process loads the fixed installed candidate library, emits that image interface/profile identity and its actual process identity, and ends with its exact successful completion record; helper stubs remain explicitly stub-only."
+        }
+      ]
+    },
+    {
+      "observation": "ordinary.result",
+      "operator": "equals",
+      "expected": [
+        {
+          "kind": "string",
+          "value": "The generated no-argument checked constructor succeeds with one owned nonzero engine; bytes 0,1,127,128,255 sum to 511; an invalid handle clears the checksum output; the initial callback occurs once with live context and distinct nonzero subscription; engine close is confirmed before context retirement and subscription/engine release."
+        }
+      ]
+    },
+    {
+      "observation": "events.order",
+      "operator": "equals",
+      "expected": [
+        {
+          "kind": "string",
+          "value": "The fresh image begins off with an empty ring and zero counters. The enabled ordinary sequence yields exactly 11 FIFO records numbered 1..11: symbol IDs 1,2,3,3,8,7,4,5,5,6,6. Only symbol 8 is callback-returned phase 2 with status_present=0; other records are phase 1 with status_present=1. The invalid-handle checksum alone has INVALID_HANDLE status."
+        }
+      ]
+    },
+    {
+      "observation": "events.correlation",
+      "operator": "equals",
+      "expected": [
+        {
+          "kind": "string",
+          "value": "Create/checksum/close/wait/release records use the corresponding opaque engine or subscription tokens; the callback relates subscription to engine and observe relates engine to subscription. No payload, context pointer or address is recorded. Completed calls=10, failures=1, callbacks=1, dropped=0 and capture=1 after drain."
+        }
+      ]
+    },
+    {
+      "observation": "toggle.retention",
+      "operator": "equals",
+      "expected": [
+        {
+          "kind": "string",
+          "value": "Disable and repeated same-value configure preserve queued records, counters and record sequence. The disabled bootstrap adds no event; re-enable produces record 2 after record 1. Final completed calls=3, dropped=0 and capture=0; controls do not count as business calls."
+        }
+      ]
+    },
+    {
+      "observation": "rejections.outputs",
+      "operator": "equals",
+      "expected": [
+        {
+          "kind": "string",
+          "value": "Invalid configure value, null error and misaligned error return INVALID_ARGUMENT. For each null or misaligned drain output, every other valid output is fully zero, the invalid region and canaries remain untouched, and no record is consumed. The retained bootstrap record remains id=1,symbol=1,phase=1,resource=0,related=0,status=0,status_present=1; final stats are calls=1,failures=0,callbacks=0,dropped=0,capture=1."
+        }
+      ]
+    },
+    {
+      "observation": "concurrent.controls",
+      "operator": "equals",
+      "expected": [
+        {
+          "kind": "string",
+          "value": "Four workers complete 4000 correct checksums while one controller configures and drains. A control attempt returns only OK or BUSY; BUSY clears all valid outputs. Every captured event is an ordered, nonduplicated checksum return for this engine with phase=1,related=0,status=0,status_present=1. After joining and disabling, remaining records are bounded by 64 and final calls=4005,failures=0,callbacks=0,capture=0. No exact contention, busy or drop count is required."
+        }
+      ]
+    },
+    {
+      "observation": "exporter.isolation",
+      "operator": "equals",
+      "expected": [
+        {
+          "kind": "string",
+          "value": "A consumer-owned exporter blocks after receiving a copied record. The ordinary operation, callback and confirmed close/release complete before exporter release; the consumer then releases and joins its exporter, destroys its synchronization objects, and may discard the copied value. SDK work never waits for exporter success."
+        }
+      ]
+    },
+    {
+      "observation": "instance.isolation",
+      "operator": "equals",
+      "expected": [
+        {
+          "kind": "string",
+          "value": "Two fresh processes have distinct process IDs; each independently observes initial off/empty/zero state, the same enabled ordinary sequence beginning at record 1, and its own confirmed resource cleanup. Two filesystem copies alone do not satisfy this assertion."
+        }
+      ]
+    },
+    {
+      "observation": "timing.observation",
+      "operator": "equals",
+      "expected": [
+        {
+          "kind": "string",
+          "value": "Each off/on/full mode warms up, reports five real monotonic elapsed samples with 25 batches totalling 800 successful calls per sample, and closes/releases the engine. On mode uses bounded pull loops and full mode pre-fills 64 records. Positive samples are recorded as observations; no absolute latency, overhead ratio or scheduler threshold is claimed."
+        }
+      ]
+    }
+  ],
+  "expected_result": {
+    "kind": "success"
+  },
+  "cleanup": [
+    {
+      "id": "ordinary-release",
+      "action": "cleanup",
+      "entrypoint": "verify-resource-baseline",
+      "arguments": [
+        {
+          "kind": "string",
+          "value": "modes=events,instance,exporter"
+        },
+        {
+          "kind": "string",
+          "value": "confirmed-close-before-context-retirement-and-release"
+        }
+      ]
+    },
+    {
+      "id": "concurrent-join",
+      "action": "cleanup",
+      "entrypoint": "verify-thread-and-engine-cleanup",
+      "arguments": [
+        {
+          "kind": "string",
+          "value": "mode=concurrent"
+        },
+        {
+          "kind": "string",
+          "value": "join-four-workers-and-controller-before-engine-close-release"
+        }
+      ]
+    },
+    {
+      "id": "exporter-join",
+      "action": "cleanup",
+      "entrypoint": "verify-consumer-exporter-cleanup",
+      "arguments": [
+        {
+          "kind": "string",
+          "value": "mode=exporter"
+        },
+        {
+          "kind": "string",
+          "value": "ordinary-complete-before-exporter-release-join-and-synchronization-destroy"
+        }
+      ]
+    },
+    {
+      "id": "timing-release",
+      "action": "cleanup",
+      "entrypoint": "verify-resource-baseline",
+      "arguments": [
+        {
+          "kind": "string",
+          "value": "modes=timing-off,timing-on,timing-full"
+        },
+        {
+          "kind": "string",
+          "value": "confirmed-engine-close-and-release"
+        }
+      ]
+    },
+    {
+      "id": "control-values",
+      "action": "cleanup",
+      "entrypoint": "verify-value-only-cleanup",
+      "arguments": [
+        {
+          "kind": "string",
+          "value": "modes=toggle,rejections"
+        },
+        {
+          "kind": "string",
+          "value": "records-are-copied-values-with-no-owned-sdk-resource"
+        }
+      ]
+    }
+  ],
+  "timeout_policy": {
+    "timeout_ms": 600000,
+    "on_timeout": "error",
+    "recovery": "isolate"
+  }
+}

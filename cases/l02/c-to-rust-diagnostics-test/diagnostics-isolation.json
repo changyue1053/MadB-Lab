@@ -1,0 +1,368 @@
+{
+  "schema": "madb.case/1",
+  "id": "l02.c-to-rust-diagnostics-test.diagnostics-isolation",
+  "kind": "template",
+  "problem_ids": [
+    "ERR-003",
+    "LIFE-001",
+    "LIFE-004",
+    "LIFE-005",
+    "THR-004",
+    "VERIFY-001"
+  ],
+  "source_ids": [],
+  "selector": null,
+  "requires": {
+    "features": [],
+    "environment": []
+  },
+  "fixture": {
+    "path": "consumers/c/l02_diagnostics.c",
+    "sha256": "sha256:372bc4ba62ef3858d1a57457694a5e5af13b5a58c127c8ed8420eea4fcd8d6d7",
+    "size": 28524,
+    "schema": "madb.lab-source/1"
+  },
+  "setup": [
+    {
+      "id": "install",
+      "action": "environment",
+      "entrypoint": "isolated-public-candidate",
+      "arguments": [
+        {
+          "kind": "string",
+          "value": "header=c-to-rust-diagnostics-test"
+        },
+        {
+          "kind": "string",
+          "value": "all-four-fixed-candidate-identities"
+        },
+        {
+          "kind": "string",
+          "value": "clean-lab-and-producer-revisions"
+        }
+      ]
+    },
+    {
+      "id": "symbols",
+      "action": "environment",
+      "entrypoint": "exact-public-exports",
+      "arguments": [
+        {
+          "kind": "string",
+          "value": "default=7"
+        },
+        {
+          "kind": "string",
+          "value": "test=14"
+        },
+        {
+          "kind": "string",
+          "value": "diagnostics=9"
+        },
+        {
+          "kind": "string",
+          "value": "diagnostics-test=16"
+        }
+      ]
+    },
+    {
+      "id": "compile",
+      "action": "environment",
+      "entrypoint": "public-consumer-compilation",
+      "arguments": [
+        {
+          "kind": "string",
+          "value": "compiler-image-and-options-match-receipt"
+        },
+        {
+          "kind": "string",
+          "value": "actual-header-dependencies-match-public-sdk-bytes"
+        },
+        {
+          "kind": "string",
+          "value": "no-producer-private-sources"
+        }
+      ]
+    }
+  ],
+  "steps": [
+    {
+      "id": "operation-close-0",
+      "action": "call",
+      "entrypoint": "operation-close",
+      "arguments": [
+        {
+          "kind": "string",
+          "value": "capture=0"
+        }
+      ]
+    },
+    {
+      "id": "operation-close-1",
+      "action": "call",
+      "entrypoint": "operation-close",
+      "arguments": [
+        {
+          "kind": "string",
+          "value": "capture=1"
+        }
+      ]
+    },
+    {
+      "id": "operation-close-2",
+      "action": "call",
+      "entrypoint": "operation-close",
+      "arguments": [
+        {
+          "kind": "string",
+          "value": "capture=2"
+        }
+      ]
+    },
+    {
+      "id": "source-lease-0",
+      "action": "call",
+      "entrypoint": "source-lease",
+      "arguments": [
+        {
+          "kind": "string",
+          "value": "capture=0"
+        }
+      ]
+    },
+    {
+      "id": "source-lease-1",
+      "action": "call",
+      "entrypoint": "source-lease",
+      "arguments": [
+        {
+          "kind": "string",
+          "value": "capture=1"
+        }
+      ]
+    },
+    {
+      "id": "source-lease-2",
+      "action": "call",
+      "entrypoint": "source-lease",
+      "arguments": [
+        {
+          "kind": "string",
+          "value": "capture=2"
+        }
+      ]
+    },
+    {
+      "id": "self-wait-0",
+      "action": "call",
+      "entrypoint": "self-wait",
+      "arguments": [
+        {
+          "kind": "string",
+          "value": "capture=0"
+        }
+      ]
+    },
+    {
+      "id": "self-wait-1",
+      "action": "call",
+      "entrypoint": "self-wait",
+      "arguments": [
+        {
+          "kind": "string",
+          "value": "capture=1"
+        }
+      ]
+    },
+    {
+      "id": "self-wait-2",
+      "action": "call",
+      "entrypoint": "self-wait",
+      "arguments": [
+        {
+          "kind": "string",
+          "value": "capture=2"
+        }
+      ]
+    },
+    {
+      "id": "fault-isolation-0",
+      "action": "call",
+      "entrypoint": "fault-isolation",
+      "arguments": [
+        {
+          "kind": "string",
+          "value": "capture=0"
+        }
+      ]
+    },
+    {
+      "id": "fault-isolation-1",
+      "action": "call",
+      "entrypoint": "fault-isolation",
+      "arguments": [
+        {
+          "kind": "string",
+          "value": "capture=1"
+        }
+      ]
+    },
+    {
+      "id": "fault-isolation-2",
+      "action": "call",
+      "entrypoint": "fault-isolation",
+      "arguments": [
+        {
+          "kind": "string",
+          "value": "capture=2"
+        }
+      ]
+    }
+  ],
+  "assertions": [
+    {
+      "observation": "candidate.binding",
+      "operator": "equals",
+      "expected": [
+        {
+          "kind": "string",
+          "value": "Every real SDK process loads the fixed installed candidate library, emits that image interface/profile identity and its actual process identity, and ends with its exact successful completion record; helper stubs remain explicitly stub-only."
+        }
+      ]
+    },
+    {
+      "observation": "capture.equivalence",
+      "operator": "equals",
+      "expected": [
+        {
+          "kind": "string",
+          "value": "Each of operation-close, source-lease, self-wait and fault-isolation executes independently with capture off, on, and on after queue saturation. Diagnostic mode does not disable admission, ownership, SourceLease, callback reentrancy or close/drain protection."
+        }
+      ]
+    },
+    {
+      "observation": "operation-close.barrier",
+      "operator": "equals",
+      "expected": [
+        {
+          "kind": "string",
+          "value": "A public companion gate holds an admitted checksum. After request_close, zero-budget await_closed returns TIMEOUT and release returns BUSY while the operation remains held. Resume and join complete the original checksum with sum 6; then await_closed succeeds and release succeeds."
+        }
+      ]
+    },
+    {
+      "observation": "source-lease.barrier",
+      "operator": "equals",
+      "expected": [
+        {
+          "kind": "string",
+          "value": "A public companion gate holds a source lease. Close cannot finish and release is BUSY while held; context remains live. After resume and join, the second callback has completed, await_closed succeeds, and a later source emit returns CLOSED without another callback. Context retirement and handle release follow drain."
+        }
+      ]
+    },
+    {
+      "observation": "self-wait.reentrant",
+      "operator": "equals",
+      "expected": [
+        {
+          "kind": "string",
+          "value": "A callback requesting its engine close cannot await itself: WOULD_DEADLOCK is returned. Observe returns CLOSING with zero subscription and exactly one callback; outside await_closed confirms completion before context retirement and engine release."
+        }
+      ]
+    },
+    {
+      "observation": "fault-isolation.business",
+      "operator": "equals",
+      "expected": [
+        {
+          "kind": "string",
+          "value": "Existing test fault 3 is enabled around the ordinary sequence: diagnostic_failures increases, while checksum 511, invalid-handle output zeroing, one synchronous callback and confirmed close/release remain unchanged. Clear the test fault before final companion snapshot."
+        }
+      ]
+    },
+    {
+      "observation": "companion.resources",
+      "operator": "equals",
+      "expected": [
+        {
+          "kind": "string",
+          "value": "For operation-close, source-lease and fault-isolation, actual public companion snapshots establish paired engine/subscription creation and release, restored registry/active-operation/source-lease counts, and equal started/finished callbacks. Raw output exposes the independently checked boolean resource_balance and context_released_after_drain; reports must not invent numeric observations absent from raw output."
+        }
+      ]
+    }
+  ],
+  "expected_result": {
+    "kind": "success"
+  },
+  "cleanup": [
+    {
+      "id": "held-resume",
+      "action": "cleanup",
+      "entrypoint": "verify-held-work-cleanup",
+      "arguments": [
+        {
+          "kind": "string",
+          "value": "modes=operation-close,source-lease"
+        },
+        {
+          "kind": "string",
+          "value": "resume-gate-join-worker-confirm-close-then-release"
+        },
+        {
+          "kind": "string",
+          "value": "context-live-through-drain"
+        }
+      ]
+    },
+    {
+      "id": "self-wait-release",
+      "action": "cleanup",
+      "entrypoint": "verify-resource-baseline",
+      "arguments": [
+        {
+          "kind": "string",
+          "value": "mode=self-wait"
+        },
+        {
+          "kind": "string",
+          "value": "outside-callback-confirmed-close-before-context-retirement-and-release"
+        }
+      ]
+    },
+    {
+      "id": "fault-clear",
+      "action": "cleanup",
+      "entrypoint": "verify-fault-cleanup",
+      "arguments": [
+        {
+          "kind": "string",
+          "value": "mode=fault-isolation"
+        },
+        {
+          "kind": "string",
+          "value": "clear-fault-after-ordinary-close-and-before-balanced-snapshot"
+        }
+      ]
+    },
+    {
+      "id": "saturated-filler",
+      "action": "cleanup",
+      "entrypoint": "verify-resource-baseline",
+      "arguments": [
+        {
+          "kind": "string",
+          "value": "capture=2"
+        },
+        {
+          "kind": "string",
+          "value": "filler-engine-closed-and-released-in-each-process"
+        }
+      ]
+    }
+  ],
+  "timeout_policy": {
+    "timeout_ms": 720000,
+    "on_timeout": "error",
+    "recovery": "isolate"
+  }
+}

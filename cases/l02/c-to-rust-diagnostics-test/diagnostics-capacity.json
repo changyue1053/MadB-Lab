@@ -1,0 +1,197 @@
+{
+  "schema": "madb.case/1",
+  "id": "l02.c-to-rust-diagnostics-test.diagnostics-capacity",
+  "kind": "template",
+  "problem_ids": [
+    "ERR-003",
+    "LIFE-001",
+    "LIFE-005",
+    "PERF-001",
+    "VERIFY-001"
+  ],
+  "source_ids": [],
+  "selector": null,
+  "requires": {
+    "features": [],
+    "environment": []
+  },
+  "fixture": {
+    "path": "consumers/c/l02_diagnostics.c",
+    "sha256": "sha256:372bc4ba62ef3858d1a57457694a5e5af13b5a58c127c8ed8420eea4fcd8d6d7",
+    "size": 28524,
+    "schema": "madb.lab-source/1"
+  },
+  "setup": [
+    {
+      "id": "install",
+      "action": "environment",
+      "entrypoint": "isolated-public-candidate",
+      "arguments": [
+        {
+          "kind": "string",
+          "value": "header=c-to-rust-diagnostics-test"
+        },
+        {
+          "kind": "string",
+          "value": "all-four-fixed-candidate-identities"
+        },
+        {
+          "kind": "string",
+          "value": "clean-lab-and-producer-revisions"
+        }
+      ]
+    },
+    {
+      "id": "symbols",
+      "action": "environment",
+      "entrypoint": "exact-public-exports",
+      "arguments": [
+        {
+          "kind": "string",
+          "value": "default=7"
+        },
+        {
+          "kind": "string",
+          "value": "test=14"
+        },
+        {
+          "kind": "string",
+          "value": "diagnostics=9"
+        },
+        {
+          "kind": "string",
+          "value": "diagnostics-test=16"
+        }
+      ]
+    },
+    {
+      "id": "compile",
+      "action": "environment",
+      "entrypoint": "public-consumer-compilation",
+      "arguments": [
+        {
+          "kind": "string",
+          "value": "compiler-image-and-options-match-receipt"
+        },
+        {
+          "kind": "string",
+          "value": "actual-header-dependencies-match-public-sdk-bytes"
+        },
+        {
+          "kind": "string",
+          "value": "no-producer-private-sources"
+        }
+      ]
+    }
+  ],
+  "steps": [
+    {
+      "id": "full",
+      "action": "call",
+      "entrypoint": "full",
+      "arguments": [
+        {
+          "kind": "string",
+          "value": "mode=full"
+        }
+      ]
+    },
+    {
+      "id": "exhaustion",
+      "action": "call",
+      "entrypoint": "exhaustion",
+      "arguments": [
+        {
+          "kind": "string",
+          "value": "mode=exhaustion"
+        }
+      ]
+    }
+  ],
+  "assertions": [
+    {
+      "observation": "candidate.binding",
+      "operator": "equals",
+      "expected": [
+        {
+          "kind": "string",
+          "value": "Every real SDK process loads the fixed installed candidate library, emits that image interface/profile identity and its actual process identity, and ends with its exact successful completion record; helper stubs remain explicitly stub-only."
+        }
+      ]
+    },
+    {
+      "observation": "full.fifo",
+      "operator": "equals",
+      "expected": [
+        {
+          "kind": "string",
+          "value": "After enabling capture and making 80 checksums, ordinary observe/callback/close/release still succeed. Drain returns exactly the first 64 checksum-return records in order, IDs 1..64, each with the engine token, phase=1,related=0,status=0,status_present=1. Later records are dropped rather than replacing FIFO contents."
+        }
+      ]
+    },
+    {
+      "observation": "full.counters",
+      "operator": "equals",
+      "expected": [
+        {
+          "kind": "string",
+          "value": "The prescribed finite sequence finishes with calls=88,failures=0,callbacks=1,dropped_events=23 and capture=1. Fixed capacity and drop-new behavior do not prevent the callback, confirmed close, context retirement or release."
+        }
+      ]
+    },
+    {
+      "observation": "exhaustion.checked-failure",
+      "operator": "equals",
+      "expected": [
+        {
+          "kind": "string",
+          "value": "With the public companion token allocator set to UINT64_MAX, one checked create succeeds with the last token. The next returns CREATE_FAILED=4, native RESOURCE_EXHAUSTED, zero error and zero handle. The last valid engine closes and releases; public companion resource counters return to their observed baseline. This is token-allocation exhaustion, not private diagnostic record-ID or lock-poisoning evidence."
+        }
+      ]
+    }
+  ],
+  "expected_result": {
+    "kind": "success"
+  },
+  "cleanup": [
+    {
+      "id": "full-release",
+      "action": "cleanup",
+      "entrypoint": "verify-resource-baseline",
+      "arguments": [
+        {
+          "kind": "string",
+          "value": "mode=full"
+        },
+        {
+          "kind": "string",
+          "value": "confirmed-close-before-context-retirement-and-subscription-engine-release"
+        }
+      ]
+    },
+    {
+      "id": "last-token-release",
+      "action": "cleanup",
+      "entrypoint": "verify-resource-baseline",
+      "arguments": [
+        {
+          "kind": "string",
+          "value": "mode=exhaustion"
+        },
+        {
+          "kind": "string",
+          "value": "close-and-release-last-valid-token"
+        },
+        {
+          "kind": "string",
+          "value": "public-companion-balance-restored"
+        }
+      ]
+    }
+  ],
+  "timeout_policy": {
+    "timeout_ms": 120000,
+    "on_timeout": "error",
+    "recovery": "isolate"
+  }
+}

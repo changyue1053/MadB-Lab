@@ -1,0 +1,223 @@
+{
+  "schema": "madb.case/1",
+  "id": "l02.c-to-rust-diagnostics.disabled-protection",
+  "kind": "template",
+  "problem_ids": [
+    "ERR-003",
+    "LIFE-001",
+    "LIFE-005",
+    "THR-004",
+    "VERIFY-001"
+  ],
+  "source_ids": [],
+  "selector": null,
+  "requires": {
+    "features": [],
+    "environment": []
+  },
+  "fixture": {
+    "path": "consumers/c/l02_diagnostics.c",
+    "sha256": "sha256:372bc4ba62ef3858d1a57457694a5e5af13b5a58c127c8ed8420eea4fcd8d6d7",
+    "size": 28524,
+    "schema": "madb.lab-source/1"
+  },
+  "setup": [
+    {
+      "id": "install",
+      "action": "environment",
+      "entrypoint": "isolated-public-candidate",
+      "arguments": [
+        {
+          "kind": "string",
+          "value": "header=c-to-rust-diagnostics"
+        },
+        {
+          "kind": "string",
+          "value": "all-four-fixed-candidate-identities"
+        },
+        {
+          "kind": "string",
+          "value": "clean-lab-and-producer-revisions"
+        }
+      ]
+    },
+    {
+      "id": "symbols",
+      "action": "environment",
+      "entrypoint": "exact-public-exports",
+      "arguments": [
+        {
+          "kind": "string",
+          "value": "default=7"
+        },
+        {
+          "kind": "string",
+          "value": "test=14"
+        },
+        {
+          "kind": "string",
+          "value": "diagnostics=9"
+        },
+        {
+          "kind": "string",
+          "value": "diagnostics-test=16"
+        }
+      ]
+    },
+    {
+      "id": "compile",
+      "action": "environment",
+      "entrypoint": "public-consumer-compilation",
+      "arguments": [
+        {
+          "kind": "string",
+          "value": "compiler-image-and-options-match-receipt"
+        },
+        {
+          "kind": "string",
+          "value": "actual-header-dependencies-match-public-sdk-bytes"
+        },
+        {
+          "kind": "string",
+          "value": "no-producer-private-sources"
+        }
+      ]
+    }
+  ],
+  "steps": [
+    {
+      "id": "off",
+      "action": "call",
+      "entrypoint": "off",
+      "arguments": [
+        {
+          "kind": "string",
+          "value": "mode=off"
+        }
+      ]
+    },
+    {
+      "id": "self-wait-0",
+      "action": "call",
+      "entrypoint": "self-wait",
+      "arguments": [
+        {
+          "kind": "string",
+          "value": "capture=0"
+        }
+      ]
+    },
+    {
+      "id": "self-wait-1",
+      "action": "call",
+      "entrypoint": "self-wait",
+      "arguments": [
+        {
+          "kind": "string",
+          "value": "capture=1"
+        }
+      ]
+    },
+    {
+      "id": "self-wait-2",
+      "action": "call",
+      "entrypoint": "self-wait",
+      "arguments": [
+        {
+          "kind": "string",
+          "value": "capture=2"
+        }
+      ]
+    }
+  ],
+  "assertions": [
+    {
+      "observation": "candidate.binding",
+      "operator": "equals",
+      "expected": [
+        {
+          "kind": "string",
+          "value": "Every real SDK process loads the fixed installed candidate library, emits that image interface/profile identity and its actual process identity, and ends with its exact successful completion record; helper stubs remain explicitly stub-only."
+        }
+      ]
+    },
+    {
+      "observation": "ordinary.result",
+      "operator": "equals",
+      "expected": [
+        {
+          "kind": "string",
+          "value": "The generated no-argument checked constructor succeeds with one owned nonzero engine; bytes 0,1,127,128,255 sum to 511; an invalid handle clears the checksum output; the initial callback occurs once with live context and distinct nonzero subscription; engine close is confirmed before context retirement and subscription/engine release."
+        }
+      ]
+    },
+    {
+      "observation": "off.counters",
+      "operator": "equals",
+      "expected": [
+        {
+          "kind": "string",
+          "value": "With capture left off, the ordinary sequence produces no events while completed calls=10,failures=1,callbacks=1,dropped=0,capture=0. Correctness, output clearing, callback and close/release postconditions remain active."
+        }
+      ]
+    },
+    {
+      "observation": "self-wait.capture-modes",
+      "operator": "equals",
+      "expected": [
+        {
+          "kind": "string",
+          "value": "Run the same callback self-wait scenario with capture off, on, and on after queue saturation. The callback requests engine close; await_closed from that callback returns WOULD_DEADLOCK. Observe returns CLOSING and clears its subscription output; exactly one callback occurs. Outside the callback, confirmed await_closed precedes context retirement and engine release. Full diagnostic queues must not change those outcomes."
+        }
+      ]
+    }
+  ],
+  "expected_result": {
+    "kind": "success"
+  },
+  "cleanup": [
+    {
+      "id": "off-release",
+      "action": "cleanup",
+      "entrypoint": "verify-resource-baseline",
+      "arguments": [
+        {
+          "kind": "string",
+          "value": "mode=off"
+        },
+        {
+          "kind": "string",
+          "value": "confirmed-close-before-context-retirement-and-release"
+        }
+      ]
+    },
+    {
+      "id": "self-wait-release",
+      "action": "cleanup",
+      "entrypoint": "verify-resource-baseline",
+      "arguments": [
+        {
+          "kind": "string",
+          "value": "mode=self-wait"
+        },
+        {
+          "kind": "string",
+          "value": "capture=0,1,2"
+        },
+        {
+          "kind": "string",
+          "value": "outside-callback-confirmed-close-before-context-retirement-and-release"
+        },
+        {
+          "kind": "string",
+          "value": "capture=2-filler-engine-also-closed-and-released"
+        }
+      ]
+    }
+  ],
+  "timeout_policy": {
+    "timeout_ms": 240000,
+    "on_timeout": "error",
+    "recovery": "isolate"
+  }
+}

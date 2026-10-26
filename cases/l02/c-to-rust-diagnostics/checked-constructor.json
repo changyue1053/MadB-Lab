@@ -1,0 +1,331 @@
+{
+  "schema": "madb.case/1",
+  "id": "l02.c-to-rust-diagnostics.checked-constructor",
+  "kind": "template",
+  "problem_ids": [
+    "ERR-001",
+    "LIFE-001",
+    "LIFE-005",
+    "VERIFY-001",
+    "VERIFY-002"
+  ],
+  "source_ids": [],
+  "selector": null,
+  "requires": {
+    "features": [],
+    "environment": []
+  },
+  "fixture": {
+    "path": "consumers/c/l02_diagnostics.c",
+    "sha256": "sha256:372bc4ba62ef3858d1a57457694a5e5af13b5a58c127c8ed8420eea4fcd8d6d7",
+    "size": 28524,
+    "schema": "madb.lab-source/1"
+  },
+  "setup": [
+    {
+      "id": "install",
+      "action": "environment",
+      "entrypoint": "isolated-public-candidate",
+      "arguments": [
+        {
+          "kind": "string",
+          "value": "header=c-to-rust-diagnostics"
+        },
+        {
+          "kind": "string",
+          "value": "all-four-fixed-candidate-identities"
+        },
+        {
+          "kind": "string",
+          "value": "clean-lab-and-producer-revisions"
+        }
+      ]
+    },
+    {
+      "id": "symbols",
+      "action": "environment",
+      "entrypoint": "exact-public-exports",
+      "arguments": [
+        {
+          "kind": "string",
+          "value": "default=7"
+        },
+        {
+          "kind": "string",
+          "value": "test=14"
+        },
+        {
+          "kind": "string",
+          "value": "diagnostics=9"
+        },
+        {
+          "kind": "string",
+          "value": "diagnostics-test=16"
+        }
+      ]
+    },
+    {
+      "id": "compile",
+      "action": "environment",
+      "entrypoint": "public-consumer-compilation",
+      "arguments": [
+        {
+          "kind": "string",
+          "value": "compiler-image-and-options-match-receipt"
+        },
+        {
+          "kind": "string",
+          "value": "actual-header-dependencies-match-public-sdk-bytes"
+        },
+        {
+          "kind": "string",
+          "value": "no-producer-private-sources"
+        }
+      ]
+    }
+  ],
+  "steps": [
+    {
+      "id": "ordinary",
+      "action": "call",
+      "entrypoint": "ordinary",
+      "arguments": [
+        {
+          "kind": "string",
+          "value": "mode=ordinary"
+        }
+      ]
+    },
+    {
+      "id": "helper-stub-0",
+      "action": "call",
+      "entrypoint": "helper-stub",
+      "arguments": [
+        {
+          "kind": "string",
+          "value": "stub=0"
+        }
+      ]
+    },
+    {
+      "id": "helper-stub-1",
+      "action": "call",
+      "entrypoint": "helper-stub",
+      "arguments": [
+        {
+          "kind": "string",
+          "value": "stub=1"
+        }
+      ]
+    },
+    {
+      "id": "helper-stub-2",
+      "action": "call",
+      "entrypoint": "helper-stub",
+      "arguments": [
+        {
+          "kind": "string",
+          "value": "stub=2"
+        }
+      ]
+    },
+    {
+      "id": "helper-stub-3",
+      "action": "call",
+      "entrypoint": "helper-stub",
+      "arguments": [
+        {
+          "kind": "string",
+          "value": "stub=3"
+        }
+      ]
+    },
+    {
+      "id": "helper-stub-4",
+      "action": "call",
+      "entrypoint": "helper-stub",
+      "arguments": [
+        {
+          "kind": "string",
+          "value": "stub=4"
+        }
+      ]
+    },
+    {
+      "id": "helper-stub-5",
+      "action": "call",
+      "entrypoint": "helper-stub",
+      "arguments": [
+        {
+          "kind": "string",
+          "value": "stub=5"
+        }
+      ]
+    },
+    {
+      "id": "profile-mismatch",
+      "action": "call",
+      "entrypoint": "actual-mismatch",
+      "arguments": [
+        {
+          "kind": "string",
+          "value": "header=c-to-rust-diagnostics"
+        },
+        {
+          "kind": "string",
+          "value": "provider=c-to-rust-diagnostics-test"
+        },
+        {
+          "kind": "string",
+          "value": "expected-kind=3"
+        }
+      ]
+    },
+    {
+      "id": "interface-mismatch",
+      "action": "call",
+      "entrypoint": "actual-mismatch",
+      "arguments": [
+        {
+          "kind": "string",
+          "value": "header=c-to-rust-diagnostics"
+        },
+        {
+          "kind": "string",
+          "value": "provider=c-to-rust-test"
+        },
+        {
+          "kind": "string",
+          "value": "expected-kind=2"
+        }
+      ]
+    }
+  ],
+  "assertions": [
+    {
+      "observation": "ordinary.result",
+      "operator": "equals",
+      "expected": [
+        {
+          "kind": "string",
+          "value": "The generated no-argument checked constructor succeeds with one owned nonzero engine; bytes 0,1,127,128,255 sum to 511; an invalid handle clears the checksum output; the initial callback occurs once with live context and distinct nonzero subscription; engine close is confirmed before context retirement and subscription/engine release."
+        }
+      ]
+    },
+    {
+      "observation": "candidate.binding",
+      "operator": "equals",
+      "expected": [
+        {
+          "kind": "string",
+          "value": "Every real SDK process loads the fixed installed candidate library, emits that image interface/profile identity and its actual process identity, and ends with its exact successful completion record; helper stubs remain explicitly stub-only."
+        }
+      ]
+    },
+    {
+      "observation": "helper-stub.scope",
+      "operator": "equals",
+      "expected": [
+        {
+          "kind": "string",
+          "value": "Six limited stubs link the actual generated public helper to independent bootstrap/create definitions; they prove helper branching only and do not prove SDK allocation, failure injection, closing or release."
+        }
+      ]
+    },
+    {
+      "observation": "helper-stub.result-kinds",
+      "operator": "equals",
+      "expected": [
+        {
+          "kind": "string",
+          "value": "Modes 0,1,2,3,4,5 return kinds 0,1,2,3,4,2 respectively; each calls bootstrap once; only modes 0 and 4 call create, once each. A simultaneous interface/profile mismatch selects interface mismatch."
+        }
+      ]
+    },
+    {
+      "observation": "helper-stub.outputs",
+      "operator": "equals",
+      "expected": [
+        {
+          "kind": "string",
+          "value": "Successful mode 0 returns handle 101 and zero native error. All other modes return handle zero. Bootstrap failure preserves UNSUPPORTED; create failure preserves RESOURCE_EXHAUSTED and error domain 7/code -9; mismatch retains native OK with zero native error."
+        }
+      ]
+    },
+    {
+      "observation": "actual-mismatch.profile",
+      "operator": "equals",
+      "expected": [
+        {
+          "kind": "string",
+          "value": "The diagnostics header compiled against the diagnostics-test library returns kind PROFILE_MISMATCH=3, native status OK, zero error and zero handle; the public companion snapshot remains byte-for-byte unchanged."
+        }
+      ]
+    },
+    {
+      "observation": "actual-mismatch.interface",
+      "operator": "equals",
+      "expected": [
+        {
+          "kind": "string",
+          "value": "The diagnostics header compiled against the default test library returns kind INTERFACE_MISMATCH=2, native status OK, zero error and zero handle; the public companion snapshot remains byte-for-byte unchanged."
+        }
+      ]
+    }
+  ],
+  "expected_result": {
+    "kind": "success"
+  },
+  "cleanup": [
+    {
+      "id": "ordinary-release",
+      "action": "cleanup",
+      "entrypoint": "verify-resource-baseline",
+      "arguments": [
+        {
+          "kind": "string",
+          "value": "mode=ordinary"
+        },
+        {
+          "kind": "string",
+          "value": "confirmed-close-before-context-retirement-and-release"
+        }
+      ]
+    },
+    {
+      "id": "mismatch-no-create",
+      "action": "cleanup",
+      "entrypoint": "verify-no-created-resource",
+      "arguments": [
+        {
+          "kind": "string",
+          "value": "mode=actual-mismatch"
+        },
+        {
+          "kind": "string",
+          "value": "both-provider-snapshots-unchanged"
+        }
+      ]
+    },
+    {
+      "id": "stub-scope",
+      "action": "cleanup",
+      "entrypoint": "verify-no-sdk-resource-claim",
+      "arguments": [
+        {
+          "kind": "string",
+          "value": "mode=helper-stub"
+        },
+        {
+          "kind": "string",
+          "value": "stub-results-do-not-own-sdk-resources"
+        }
+      ]
+    }
+  ],
+  "timeout_policy": {
+    "timeout_ms": 540000,
+    "on_timeout": "error",
+    "recovery": "isolate"
+  }
+}
