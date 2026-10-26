@@ -14,8 +14,8 @@
   },
   "fixture": {
     "path": "harness/runners/first_route.py",
-    "sha256": "sha256:a1ea06805c8180588b46b3a924d350601b83b4bef6200551b7b9c0b87f959a92",
-    "size": 30655,
+    "sha256": "sha256:137ad33d1e8feaaae1acc1d7b6fec8931e82e074642ed6fbdb5873e3c519b8bc",
+    "size": 30846,
     "schema": "madb.lab-source/1"
   },
   "setup": [

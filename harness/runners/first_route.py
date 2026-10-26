@@ -248,7 +248,7 @@ def replace_rust_library(install, temporary, clang, env, report_root, mismatch):
     run(command, cwd=temporary, env=env, log=report_root / "c-to-rust" / (mismatch + "-provider.json"), stage="compile")
 
 
-def report_for(candidate, lab_revision, results, environment):
+def report_for(candidate, lab_revision, results, environment, *, started_at):
     manifest, provenance = candidate["manifest"], candidate["provenance"]
     catalog = b"".join(path.relative_to(ROOT).as_posix().encode() + b"\0" + path.read_bytes()
                        for path in sorted((ROOT / "cases").rglob("*.json")))
@@ -257,7 +257,7 @@ def report_for(candidate, lab_revision, results, environment):
                          "profile_digest": manifest["selector"]["profile_digest"],
                          "candidate_digest": manifest["candidate_digest"], "lab_revision": lab_revision,
                          "case_catalog_digest": file_digest(catalog)},
-            "selector": manifest["selector"], "started_at": datetime.now(timezone.utc).isoformat().replace("+00:00", "Z"),
+            "selector": manifest["selector"], "started_at": started_at,
             "environment": environment, "results": results}
     if candidate.get("provisional"):
         report["run_id"] = "provisional." + report["run_id"]
@@ -290,6 +290,7 @@ def lab_source_identity(root, requested_revision, allow_dirty):
 
 
 def run_group(group, candidate, args, environment):
+    started_at = datetime.now(timezone.utc).isoformat().replace("+00:00", "Z")
     records = []
     cases = [(name, *instantiated_case(group, name, candidate)) for name in GROUPS[group]]
     case_paths = {}
@@ -318,7 +319,7 @@ def run_group(group, candidate, args, environment):
                     record["blocked_by"] = [cases[0][1]["id"]]
                 record["attachments"].append(attachment(case_paths[name], args.output))
                 records.append(record)
-            return report_for(candidate, args.lab_revision, records, environment)
+            return report_for(candidate, args.lab_revision, records, environment, started_at=started_at)
         for name, case, digest in cases:
             log = args.output / group / (name + ".json")
             try:
@@ -364,11 +365,12 @@ def run_group(group, candidate, args, environment):
             records.append(record)
         # Original published bytes must remain immutable despite deliberately altered installed copies.
         verify_candidate(candidate["root"])
-    return report_for(candidate, args.lab_revision, records, environment)
+    return report_for(candidate, args.lab_revision, records, environment, started_at=started_at)
 
 
 def integrity_case(candidate, output, lab_revision, environment):
     """Corrupt an actual candidate copy; reject it before executing any downloaded code."""
+    started_at = datetime.now(timezone.utc).isoformat().replace("+00:00", "Z")
     with tempfile.TemporaryDirectory(prefix="madb-lab-integrity-") as directory:
         install = Path(directory) / "candidate"; shutil.copytree(candidate["root"], install)
         path = install / candidate["manifest"]["files"][0]["path"]
@@ -391,7 +393,7 @@ def integrity_case(candidate, output, lab_revision, environment):
     record = result_record(case, digest, output='{"result":"passed"}', observed_rejection=observed,
                            log=log, report_root=output)
     record["attachments"].append(attachment(case_path, output))
-    report = report_for(candidate, lab_revision, [record], environment)
+    report = report_for(candidate, lab_revision, [record], environment, started_at=started_at)
     report["run_id"] += ".packaging"
     (output / "packaging.report.json").write_text(json.dumps(report, indent=2) + "\n")
 
