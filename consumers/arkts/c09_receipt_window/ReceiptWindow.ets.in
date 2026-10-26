@@ -1,0 +1,123 @@
+import { Runtime, Engine, BoundaryError, openRuntime, testBeforeRuntimeReceipt } from @MADB_PUBLIC_MODULE@;
+import { check, snapshot, nextTurn } from './Assertions';
+import { IS_KOTLIN, REOPEN_CODE, observe, javascript, admission } from './ReceiptObservations';
+import { invalidProbe, nonvoidProbe, thenReads, throwCodeGetterError,
+  isCodeGetterError, throwNonError, propertyReads } from './NegativeProbes';
+export type Emit = (label: string, values: number[]) => void;
+export type EmitText = (label: string, value: string) => void;
+
+class ForeignRuntime implements Runtime {
+  connect(): Engine { throw new Error('foreign runtime must not be entered'); }
+  close(): Promise<void> { throw new Error('foreign runtime must not be entered'); }
+}
+function rejected(call: () => void, expected: string, label: string, emitText: EmitText): void {
+  let caught: boolean = false;
+  try { call(); } catch (error) {
+    check(error instanceof BoundaryError, label + ':typed-error');
+    const value: string = (error as BoundaryError).code;
+    emitText(label, value); check(value === expected, label + ':exact-code'); caught = true;
+  }
+  check(caught, label + ':must-reject');
+}
+function dump(runtime: Runtime, prefix: string, emit: Emit): void {
+  emit(prefix + '-native', observe(runtime)); emit(prefix + '-js', javascript(runtime));
+  if (IS_KOTLIN) { emit(prefix + '-admission', admission()); }
+}
+
+export async function runReceiptWindow(mode: string, emit: Emit, emitText: EmitText): Promise<void> {
+  const runtime: Runtime = openRuntime(); const engine: Engine = runtime.connect();
+  emit('first-runtime-open', observe(runtime));
+  const work = engine.startOperation({ value: 41, text: 'before-receipt' });
+  snapshot(await work.result(), 42, 'before-receipt', 'actual-original-work'); await work.close();
+  let resolves: number = 0; let rejects: number = 0; let hits: number = 0;
+  let close: Promise<void> | undefined = undefined;
+  let probeError: Error | undefined = undefined;
+  const sentinel: Error = new Error('InjectedReceiptProbe');
+  const noop = (): void => {};
+  if (mode === 'normal') {
+    rejected((): void => { testBeforeRuntimeReceipt(new ForeignRuntime(), noop); },
+      'InvalidArgument', 'registration-invalid-runtime', emitText);
+    rejected((): void => { testBeforeRuntimeReceipt(runtime, invalidProbe()); },
+      'InvalidArgument', 'registration-invalid-callback', emitText);
+  }
+  const probe = (): void => {
+    hits++;
+    try {
+      dump(runtime, 'receipt-window', emit);
+      rejected((): void => { openRuntime(); }, REOPEN_CODE, 'receipt-window-reopen-rejected', emitText);
+      if (IS_KOTLIN) { emit('receipt-window-after-reopen-admission', admission()); }
+      check(close !== undefined && close === runtime.close(), 'same-reentrant-close-promise');
+      emit('receipt-window-reentry', [resolves, rejects, close === runtime.close() ? 1 : 0]);
+      if (mode === 'normal') {
+        rejected((): void => { testBeforeRuntimeReceipt(runtime, noop); },
+          'Closing', 'receipt-window-reregister-rejected', emitText);
+      }
+    } catch (error) {
+      // Our own assertions must return through the genuine receipt path first.
+      probeError = error as Error;
+    }
+    if (mode === 'normal' || probeError !== undefined) {
+      emit('receipt-window-probe-returned', [hits]); return;
+    }
+    emit('callback-fault-entered', [hits]);
+    if (mode === 'callback-throws') { throw sentinel; }
+    if (mode === 'callback-code-getter') { throwCodeGetterError(); }
+    if (mode === 'callback-throw-undefined' || mode === 'callback-throw-proxy') { throwNonError(mode); }
+  };
+  testBeforeRuntimeReceipt(runtime, mode === 'callback-promise' || mode === 'callback-thenable'
+    ? nonvoidProbe(mode, probe) : probe);
+  if (mode === 'normal') {
+    rejected((): void => { testBeforeRuntimeReceipt(runtime, noop); },
+      'InvalidArgument', 'registration-duplicate', emitText);
+  }
+  close = runtime.close();
+  close.then((): void => { resolves++; }, (_error: Error): void => { rejects++; });
+  if (mode === 'normal') {
+    rejected((): void => { testBeforeRuntimeReceipt(runtime, noop); },
+      'Closing', 'registration-late', emitText);
+    await close;
+    dump(runtime, 'receipt-consumed', emit);
+    emit('original-close-outcome', [resolves, rejects, hits]);
+    if (probeError !== undefined) { throw probeError as Error; }
+    check(resolves === 1 && rejects === 0 && hits === 1, 'normal-close-one-probe');
+    rejected((): void => { testBeforeRuntimeReceipt(runtime, noop); },
+      'Closed', 'registration-closed', emitText);
+    const next: Runtime = openRuntime(); const nextEngine: Engine = next.connect();
+    emit('second-runtime-open', observe(next));
+    const nextWork = nextEngine.startOperation({ value: 41, text: 'after-receipt' });
+    snapshot(await nextWork.result(), 42, 'after-receipt', 'new-runtime-real-work');
+    emit('new-runtime-result', [42]); await next.close();
+    emit('new-runtime-closed', observe(next)); emit('new-runtime-js', javascript(next));
+    if (IS_KOTLIN) { emit('new-runtime-admission', admission()); }
+    check(hits === 1, 'retired-probe-did-not-fire-for-new-runtime');
+    return;
+  }
+  let originalFailure: Error | undefined = undefined;
+  try { await close; } catch (error) {
+    originalFailure = error as Error;
+    if (mode === 'callback-throws' || mode === 'callback-code-getter') {
+      check(mode === 'callback-throws' ? originalFailure === sentinel : isCodeGetterError(originalFailure),
+        'callback-thrown-error-identity');
+      emitText('close-rejected', originalFailure.message);
+    } else {
+      const expected: string = mode === 'callback-throw-undefined' || mode === 'callback-throw-proxy'
+        ? 'CallbackFailure' : 'InvalidArgument';
+      check(originalFailure instanceof BoundaryError && (originalFailure as BoundaryError).code === expected,
+        'malformed-callback-typed-rejection'); emitText('close-rejected', (originalFailure as BoundaryError).code);
+    }
+  }
+  if (probeError !== undefined) { throw probeError as Error; }
+  check(originalFailure !== undefined && resolves === 0 && rejects === 1 && hits === 1, 'exception-close-is-real-failure');
+  dump(runtime, 'receipt-unconsumed', emit); emit('original-close-outcome', [resolves, rejects, hits]);
+  rejected((): void => { openRuntime(); }, REOPEN_CODE, 'failure-reopen-rejected', emitText);
+  let sameFailure: boolean = false;
+  try { await runtime.close(); } catch (error) { sameFailure = error === originalFailure; }
+  emit('failure-repeat-close', [close === runtime.close() ? 1 : 0, sameFailure ? 1 : 0, thenReads()]);
+  check(sameFailure && close === runtime.close() && thenReads() === 0, 'failure-remains-and-thenable-not-read');
+  const deadline: number = Date.now() + 35000;
+  await nextTurn(deadline, 'failed-close-owner-loop-turn-1');
+  await nextTurn(deadline, 'failed-close-owner-loop-turn-2');
+  dump(runtime, 'failure-late', emit);
+  emit('failure-late-outcome', [resolves, rejects, hits]);
+  emit('callback-property-reads', propertyReads());
+}

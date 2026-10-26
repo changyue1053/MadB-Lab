@@ -1,0 +1,72 @@
+import { openRuntime, Runtime, Engine } from @MADB_PUBLIC_MODULE@;
+import { ArkUIStateModel } from './ArkUIStateModel';
+import { check, snapshot, until } from './Assertions';
+import { Emit } from './NativeCases';
+
+// Test application owner. Construction is inert; pages own only their observation.
+export class ObservationOwner {
+  readonly model: ArkUIStateModel = new ArkUIStateModel();
+  runtime: Runtime | undefined = undefined;
+  engine: Engine | undefined = undefined;
+  closeAttempt: Promise<void> | undefined = undefined;
+  failure: Error | undefined = undefined;
+  ready: boolean = false;
+  appearances: number = 0;
+  disappearances: number = 0;
+  publishCount: number = 0;
+  finished: boolean = false;
+  private emit: Emit = (_label: string, _values: number[]): void => {};
+
+  start(emit: Emit): void {
+    this.emit = emit; this.runtime = openRuntime(); this.engine = this.runtime.connect();
+    this.ready = true; this.appear();
+  }
+  appear(): void {
+    if (!this.ready || this.finished) { return; }
+    check(this.engine !== undefined, 'ui-owner-engine');
+    if (this.engine !== undefined) {
+      this.model.attach(this.engine); this.appearances++;
+      check(this.model.snapshot === undefined, 'ui-appear-no-replay');
+      this.emit('ui-page-appeared-' + String(this.appearances), [this.appearances]);
+    }
+  }
+  disappear(): void {
+    if (!this.ready || this.finished) { return; }
+    this.disappearances++; this.model.requestStop();
+    this.closeAttempt = this.model.close();
+    this.closeAttempt.catch((error: Error): void => { this.failure = error; });
+    this.emit('ui-page-hidden', [this.disappearances]);
+  }
+  async hidden(): Promise<void> {
+    await until(() => this.closeAttempt !== undefined, 'page-hide-close-created');
+    if (this.closeAttempt !== undefined) { await this.closeAttempt; }
+    check(this.failure === undefined && this.model.phase === 'idle', 'page-hide-drained');
+  }
+  publish(): void {
+    check(this.engine !== undefined && !this.finished, 'ui-publish-owner');
+    this.publishCount++;
+    if (this.engine !== undefined) { this.engine.publishState({ value: this.publishCount, text: 'UI-' + String(this.publishCount) }); }
+  }
+  async publishHidden(): Promise<void> {
+    await this.hidden();
+    snapshot(this.model.snapshot, 1, 'UI-1', 'hidden-retains-snapshot');
+    this.publish();
+    // An independent ordinary operation completes after this publish while the page is hidden.
+    if (this.engine !== undefined) {
+      const operation = this.engine.startOperation({ value: 8, text: 'hidden-owner' });
+      snapshot(await operation.result(), 9, 'hidden-owner', 'hidden-owner-works');
+      await operation.close();
+    }
+    snapshot(this.model.snapshot, 1, 'UI-1', 'hidden-no-late-state');
+    this.emit('ui-hidden-publish', [1, 2, 9]);
+  }
+  async finish(): Promise<void> {
+    check(this.appearances === 2 && this.disappearances === 1, 'real-page-lifecycle-counts');
+    snapshot(this.model.snapshot, 3, 'UI-3', 'reentered-ui-snapshot');
+    await this.model.close();
+    if (this.engine !== undefined) { snapshot(this.engine.roundtrip({ value: 7, text: 'before-final-close' }), 7, 'before-final-close', 'page-close-keeps-owner'); await this.engine.close(); }
+    if (this.runtime !== undefined) { await this.runtime.close(); }
+    this.finished = true; this.emit('ui-final-close', [2, 1, 3, 7]);
+  }
+}
+export const owner: ObservationOwner = new ObservationOwner();

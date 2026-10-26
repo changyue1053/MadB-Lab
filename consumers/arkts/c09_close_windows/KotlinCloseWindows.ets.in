@@ -1,0 +1,55 @@
+// C09 supplement: hold the existing worker exit while the real cleanup joins.
+import { Runtime, Engine, Operation, Snapshot, openRuntime, testObserve,
+  testThreadWitness, testSettleInspect } from @MADB_PUBLIC_MODULE@;
+import { check, nextTurn, snapshot, throwsCode } from './Assertions';
+type Emit = (label: string, values: number[]) => void;
+type EmitText = (label: string, value: string) => void;
+
+export async function runCloseWindows(emit: Emit, timeoutMs: number, emitText: EmitText): Promise<void> {
+  const deadline: number = Date.now() + timeoutMs;
+  const runtime: Runtime = openRuntime(); const engine: Engine = runtime.connect();
+  emit('first-runtime-open', testObserve(runtime));
+  const work: Operation = engine.startOperation({ value: 41, text: 'c09-before-close' });
+  const result: Snapshot = await work.result(); snapshot(result, 42, 'c09-before-close', 'existing-worker-positive');
+  await work.close();
+  emitText('thread-armed', testThreadWitness(runtime, 1));
+  let resolved: boolean = false; let rejected: boolean = false;
+  const close: Promise<void> = runtime.close();
+  check(close === runtime.close(), 'same-normal-parent-close');
+  close.then((): void => { resolved = true; }, (_error: Error): void => { rejected = true; });
+  try {
+    for (let sample: number = 0; sample < 2; sample++) {
+      let raw: string = ''; let thread: string[] = [];
+      while (true) {
+        await nextTurn(deadline, 'actual-exit-hold-owner-heartbeat');
+        check(!resolved && !rejected, 'normal-close-pending-while-held');
+        raw = testThreadWitness(runtime, 0); thread = raw.split(',');
+        check(thread.length === 21 && thread[0] === '70604' && thread[20] === '0', 'thread-layout');
+        if (thread[3] === '1' && thread[4] === '1' && thread[5] === '1' && thread[6] === '1') { break; }
+      }
+      check(thread[7] === '1' && thread[8] === '1' && thread[9] === '1' && thread[17] === '0',
+        'actual-business-and-cleanup-live-before-join');
+      emitText('thread-held-' + String(sample), raw);
+      const before: number[] = testObserve(runtime);
+      check(before.length === 110 && before[0] === 70501 && before[2] === 0 && before[12] === 1 && before[13] === 0,
+        'normal-close-before-physical-ack-and-receipt');
+      emit('pending-native-' + String(sample), before);
+      // Frozen Kotlin bootstrap has its own exact occupied-slot diagnostic.
+      throwsCode((): void => { openRuntime(); }, 'AlreadyInitialized', 'normal-close-reopen-rejected');
+      emit('reopen-rejected-' + String(sample), [1, resolved ? 1 : 0, rejected ? 1 : 0]);
+      emitText('thread-after-attempt-' + String(sample), testThreadWitness(runtime, 0));
+    }
+  } finally { emitText('thread-released', testThreadWitness(runtime, 2)); }
+  await close;
+  check(resolved && !rejected, 'original-close-completes-after-release');
+  emitText('thread-final', testThreadWitness(runtime, 0));
+  emit('first-runtime-closed', testObserve(runtime)); emit('first-js-final', testSettleInspect(runtime));
+  emit('first-close-outcome', [1, 0]);
+  const next: Runtime = openRuntime(); const nextEngine: Engine = next.connect();
+  emit('second-runtime-open', testObserve(next));
+  const nextWork: Operation = nextEngine.startOperation({ value: 41, text: 'c09-reopened' });
+  const nextResult: Snapshot = await nextWork.result(); snapshot(nextResult, 42, 'c09-reopened', 'reopened-positive');
+  await next.close();
+  emit('second-runtime-closed', testObserve(next)); emit('second-js-final', testSettleInspect(next));
+  emit('reopened-result', [42]);
+}

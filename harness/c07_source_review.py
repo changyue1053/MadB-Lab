@@ -9,6 +9,7 @@ import json
 import re
 
 from candidate import CandidateError, file_digest, read_json
+from source_review_selection import select_source_review
 
 REVIEW = Path(__file__).resolve().parents[1] / "expected/c07/route-ownership-review.json"
 
@@ -141,12 +142,13 @@ def _rust(record, candidate, locked, rows, links, objects, document, tool, upstr
             "scope": "Frozen Rust author refs plus actual cfg/macro/import/archive receipts; no Rust source depfile is published. Frontend evidence is separate from gateway dynamic counters."}
 
 
-def verify_source_review(candidate, lock, rows, links, objects, inventory, data, document, tool):
+def verify_source_review(candidate, lock, rows, links, objects, inventory, data, document, tool, *, review_id="c07"):
     """Return blocked unless both approved review and complete actual chain agree."""
     result = {"status": "blocked", "scope": "reviewed source hash alignment, not candidate-only source replay or target execution"}
     try:
-        review_bytes = REVIEW.read_bytes()
-        review = read_json(REVIEW)
+        review_path = select_source_review(review_id, "native", REVIEW)
+        review_bytes = review_path.read_bytes()
+        review = read_json(review_path)
         result["inventory_sha256"] = file_digest(review_bytes)
         result["producer_revision"] = candidate["provenance"]["producer_revision"]
         _require(review["status"] == "reviewed" and review["producer_revision"] == result["producer_revision"], "independent review/final producer revision is not approved")

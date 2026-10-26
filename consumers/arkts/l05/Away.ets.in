@@ -1,0 +1,26 @@
+import { router } from '@kit.ArkUI';
+import { hilog } from '@kit.PerformanceAnalysisKit';
+import { owner } from '../ObservationOwner';
+import { PROBE_NONCE } from '../ProbeConfig';
+@Entry
+@ComponentV2
+struct Away {
+  @Local phase: string = 'AWAY_DRAINING';
+  aboutToAppear(): void {
+    owner.hidden().then(() => { this.phase = 'AWAY_DRAINED'; }).catch((error: Error) => {
+      hilog.error(0x0000, 'MadBL05Probe', 'L05_FAILED %{public}s %{public}s', PROBE_NONCE, error.message);
+    });
+  }
+  build() {
+    Column({ space: 16 }) {
+      Text('L05 away page').id('l05-away-title')
+      Text(this.phase).id('l05-away-phase')
+      Button('Publish while hidden').id('l05-hidden-publish').onClick(() => {
+        owner.publishHidden().then(() => { this.phase = 'HIDDEN_PUBLISH_DONE'; }).catch((error: Error) => {
+          hilog.error(0x0000, 'MadBL05Probe', 'L05_FAILED %{public}s %{public}s', PROBE_NONCE, error.message);
+        });
+      })
+      Button('Return').id('l05-return').onClick(() => { router.back(); })
+    }.width('100%').height('100%').justifyContent(FlexAlign.Center)
+  }
+}

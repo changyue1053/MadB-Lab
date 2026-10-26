@@ -1,0 +1,44 @@
+import { router } from '@kit.ArkUI';
+import { hilog } from '@kit.PerformanceAnalysisKit';
+import { ArkUIStateModel } from '../ArkUIStateModel';
+import { nativeCases } from '../NativeCases';
+import { owner } from '../ObservationOwner';
+import { PROBE_NONCE } from '../ProbeConfig';
+let started: boolean = false;
+function emit(label: string, values: number[]): void {
+  hilog.info(0x0000, 'MadBL05Probe', 'L05_CASE %{public}s %{public}s %{public}s', PROBE_NONCE, label, JSON.stringify(values));
+}
+function failed(error: Error): void {
+  hilog.error(0x0000, 'MadBL05Probe', 'L05_FAILED %{public}s %{public}s', PROBE_NONCE, error.message);
+}
+@Entry
+@ComponentV2
+struct Index {
+  @Local model: ArkUIStateModel = owner.model;
+  @Local phase: string = 'STARTING';
+  aboutToAppear(): void {
+    if (started) { return; }
+    started = true;
+    nativeCases(emit).then(() => {
+      owner.start(emit); this.phase = 'UI_READY';
+      hilog.info(0x0000, 'MadBL05Probe', 'L05_NATIVE_COMPLETE %{public}s', PROBE_NONCE);
+    }).catch(failed);
+  }
+  onPageHide(): void { try { owner.disappear(); } catch (error) { failed(error as Error); } }
+  onPageShow(): void {
+    if (!owner.ready || owner.finished) { return; }
+    owner.hidden().then(() => { owner.appear(); this.phase = 'UI_REENTERED'; }).catch(failed);
+  }
+  build() {
+    Column({ space: 16 }) {
+      Text('L05 actual ArkUI page').id('l05-title')
+      Text(this.phase).id('l05-phase')
+      Text(this.model.snapshot === undefined ? 'EMPTY' : this.model.snapshot.text).id('l05-value')
+      Button('Publish').id('l05-publish').onClick(() => { try { owner.publish(); } catch (error) { failed(error as Error); } })
+      Button('Leave page').id('l05-leave').onClick(() => { router.pushUrl({ url: 'pages/Away' }).catch(failed); })
+      Button('Finish').id('l05-finish').onClick(() => { owner.finish().then(() => {
+        this.phase = 'UI_FINISHED'; hilog.info(0x0000, 'MadBL05Probe', 'L05_COMPLETE %{public}s', PROBE_NONCE);
+      }).catch(failed); })
+    }.width('100%').height('100%').justifyContent(FlexAlign.Center)
+  }
+}

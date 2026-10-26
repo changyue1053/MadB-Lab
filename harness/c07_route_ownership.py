@@ -33,7 +33,7 @@ def _ref(value):
     return {key: value[key] for key in ("path", "sha256", "size")}
 
 
-def verify_route_ownership(candidate):
+def verify_route_ownership(candidate, *, review_id="c07"):
     route, manifest = candidate["route"], candidate["manifest"]
     _require(route in PROVIDERS, "route requires a separate ownership implementation")
     root = candidate["root"]
@@ -158,7 +158,7 @@ def verify_route_ownership(candidate):
         details = {"gateway_archive": archive, "macro_exports": len(exports),
                    "frontend_evidence": inventory["rust-symbols.json"],
                    "frontend_scope": "separate published macro/import evidence; gateway dynamic counters do not cover it"}
-    source_review = verify_source_review(candidate, lock, compile_rows, link_rows, objects, inventory, data, document, tool)
+    source_review = verify_source_review(candidate, lock, compile_rows, link_rows, objects, inventory, data, document, tool, review_id=review_id)
     return {"status": "bound", "candidate_digest": manifest["candidate_digest"], "route": route,
             "producer_revision": candidate["provenance"]["producer_revision"], "expected_identity": candidate["identity"]["expected_identity"],
             "provider_source": source_ref, "original_provider_source": original_source_ref,

@@ -1,0 +1,21 @@
+import { hilog } from '@kit.PerformanceAnalysisKit';
+import { BoundaryError } from @MADB_PUBLIC_MODULE@;
+import { PROBE_NONCE } from '../ProbeConfig';
+import { runCloseWindows } from '../CloseWindows';
+let started: boolean = false;
+@Entry
+@Component
+struct Index {
+  aboutToAppear(): void {
+    if (started) { return; } started = true;
+    hilog.info(0x0000, 'MadBC07Probe', 'PROBE_PAGE_READY %{public}s', PROBE_NONCE);
+    runCloseWindows((label: string, values: number[]): void => {
+      hilog.info(0x0000, 'MadBC07Probe', 'C09_CLOSE_FRAME %{public}s %{public}s %{public}s', PROBE_NONCE, label, JSON.stringify(values));
+    }, 35000@TEXT_CALLBACK@).then(() => {
+      hilog.info(0x0000, 'MadBC07Probe', 'C09_CLOSE_COMPLETE %{public}s', PROBE_NONCE);
+    }).catch((error: Error) => {
+      hilog.error(0x0000, 'MadBC07Probe', 'PROBE_FAILED %{public}s %{public}s %{public}s', PROBE_NONCE, error.message, String((error as BoundaryError).code));
+    });
+  }
+  build() { Column() { Text('C09 normal close admission supplement') } }
+}

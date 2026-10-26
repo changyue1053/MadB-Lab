@@ -5,15 +5,15 @@ from c07_route_ownership import verify_route_ownership
 def _require(ok,why):
  if not ok:raise CandidateError('ArtifactMismatch','related ordinary profile: '+why)
 
-def verify_profile_pair(ordinary,companion):
+def verify_profile_pair(ordinary,companion,*,review_id="c07"):
  route=ordinary['route'];_require(route==companion['route'],'different routes')
  if route=='kotlin':
   from c07_kotlin_source_review import verify_kotlin_profile_pair
-  return verify_kotlin_profile_pair(ordinary,companion)
+  return verify_kotlin_profile_pair(ordinary,companion,review_id=review_id)
  _require(route in ('c','cpp','rust'),'unsupported profile pair')
  _require(ordinary.get('companion',False) is False and companion.get('companion') is True,'wrong ordinary/test variant')
  _require(ordinary['profile']['id']+'-test'==companion['profile']['id'],'not corresponding profile IDs')
- a,b=verify_route_ownership(ordinary),verify_route_ownership(companion)
+ a,b=(verify_route_ownership(ordinary),verify_route_ownership(companion)) if review_id=="c07" else (verify_route_ownership(ordinary,review_id=review_id),verify_route_ownership(companion,review_id=review_id))
  for evidence,candidate,variant in ((a,ordinary,'ordinary'),(b,companion,'test')):
   review=evidence.get('source_review',{})
   _require(evidence.get('status')=='bound' and review.get('status')=='bound','finite independent source review/actual build chain incomplete')

@@ -1,0 +1,52 @@
+import { openRuntime, Runtime, Engine, Snapshot } from @MADB_PUBLIC_MODULE@;
+import { StateObservation, StateObservationError } from './StateObservation';
+import { check, snapshot, until } from './Assertions';
+export type Emit = (label: string, values: number[]) => void;
+
+export async function nativeCases(emit: Emit): Promise<void> {
+  const runtime: Runtime = openRuntime();
+  const engine: Engine = runtime.connect();
+  const first: StateObservation = new StateObservation();
+  const second: StateObservation = new StateObservation();
+  const firstValues: Snapshot[] = [];
+  const secondValues: Snapshot[] = [];
+  try {
+    check(first.phase === 'idle' && second.phase === 'idle', 'inert-construction');
+    engine.publishState({ value: 0, text: 'before-attach' });
+    first.attach(engine, (value: Snapshot): void => { firstValues.push(value); });
+    second.attach(engine, (value: Snapshot): void => { secondValues.push(value); });
+    check(firstValues.length === 0 && secondValues.length === 0, 'no-invented-replay');
+    let rejected: boolean = false;
+    try { first.attach(engine, (_value: Snapshot): void => {}); }
+    catch (error) { rejected = error instanceof StateObservationError && (error as StateObservationError).code === 'Busy'; }
+    check(rejected, 'duplicate-attach-rejected');
+    engine.publishState({ value: 11, text: 'both' });
+    await until(() => firstValues.length === 1 && secondValues.length === 1, 'two-native-observers');
+    snapshot(firstValues[0], 11, 'both', 'first'); snapshot(secondValues[0], 11, 'both', 'second');
+    emit('native-two-observers', [1, 1, 11]);
+
+    first.requestStop();
+    const closeOne: Promise<void> = first.close();
+    const closeTwo: Promise<void> = first.close();
+    check(closeOne === closeTwo, 'concurrent-close-shares-promise');
+    await closeOne; await closeTwo;
+    check(first.phase === 'idle', 'first-drained');
+    engine.publishState({ value: 22, text: 'second-only' });
+    await until(() => secondValues.length === 2, 'remaining-native-observer');
+    check(firstValues.length === 1, 'stopped-observer-no-late-delivery');
+    snapshot(secondValues[1], 22, 'second-only', 'second-survives');
+    snapshot(engine.roundtrip({ value: 33, text: 'owner-alive' }), 33, 'owner-alive', 'owner-not-closed');
+    emit('native-stop-isolation', [1, 2, 33]);
+
+    first.attach(engine, (value: Snapshot): void => { firstValues.push(value); });
+    check(firstValues.length === 1, 'restart-no-replay');
+    engine.publishState({ value: 44, text: 'reentered' });
+    await until(() => firstValues.length === 2 && secondValues.length === 3, 'reentered-observer');
+    snapshot(firstValues[1], 44, 'reentered', 'first-reentered');
+    snapshot(secondValues[2], 44, 'reentered', 'second-uninterrupted');
+    emit('native-reentry', [2, 3, 44]);
+  } finally {
+    await first.close(); await second.close(); await engine.close(); await runtime.close();
+  }
+  emit('native-close-completed', [1]);
+}

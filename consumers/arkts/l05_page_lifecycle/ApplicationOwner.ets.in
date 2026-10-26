@@ -1,0 +1,121 @@
+import { openRuntime, Runtime, Engine, Subscription, Snapshot } from @MADB_PUBLIC_MODULE@;
+import { ArkUIStateModel } from './ArkUIStateModel';
+import { check, snapshot, until } from './Assertions';
+import { emit, failed } from './Trace';
+
+// Consumer-owned test application: no registration occurs in field initializers.
+// The page owns a model/subscription. The application retains asynchronous drain
+// responsibility after the framework destroys the component, not the component.
+export class PageLease {
+  readonly id: number;
+  readonly model: ArkUIStateModel;
+  destroyed: boolean = false;
+  drained: boolean = false;
+  closeAttempt: Promise<void> | undefined = undefined;
+  constructor(id: number, model: ArkUIStateModel) { this.id = id; this.model = model; }
+}
+export class ApplicationOwner {
+  private runtime: Runtime | undefined = undefined;
+  private engine: Engine | undefined = undefined;
+  private ordinary: Subscription | undefined = undefined;
+  private received: Snapshot[] = [];
+  private pages: PageLease[] = [];
+  private failure: Error | undefined = undefined;
+  private finished: boolean = false;
+  private destroyedCount: number = 0;
+  get pageCount(): number { return this.pages.length; }
+  get ordinaryCount(): number { return this.received.length; }
+
+  create(model: ArkUIStateModel): PageLease {
+    check(!this.finished && this.pages.length < 3, 'bounded-page-creation');
+    for (const old of this.pages) {
+      check(old.destroyed && old.drained && old.model.phase === 'idle', 'previous-destroy-and-drain-before-new-instance');
+      check(old.model !== model, 'fresh-model-reference');
+    }
+    check(model.snapshot === undefined && model.phase === 'idle', 'new-model-is-inert');
+    const page = new PageLease(this.pages.length + 1, model);
+    this.pages.push(page); emit('page-created-' + String(page.id), [page.id]);
+    return page;
+  }
+  attach(page: PageLease): void {
+    check(this.failure === undefined && !page.destroyed, 'attach-active-owner');
+    if (this.runtime === undefined) {
+      this.runtime = openRuntime(); this.engine = this.runtime.connect();
+      this.ordinary = this.engine.observeState((value: Snapshot): void => { this.received.push(value); });
+    }
+    check(this.engine !== undefined, 'shared-engine-present');
+    if (this.engine !== undefined) { page.model.attach(this.engine); }
+    check(page.model.snapshot === undefined, 'new-page-no-replay');
+    emit('page-attached-' + String(page.id), [page.id, 0]);
+  }
+  async publishPage(page: PageLease): Promise<void> {
+    check(this.engine !== undefined && !page.destroyed && !this.finished, 'publish-active-page');
+    const value = page.id * 10 + 1;
+    if (this.engine !== undefined) { this.engine.publishState({ value: value, text: 'PAGE-' + String(page.id) }); }
+    await until(() => this.received.length === page.id * 2 - 1 && page.model.snapshot !== undefined,
+      'active-page-and-ordinary-delivery');
+    snapshot(page.model.snapshot, value, 'PAGE-' + String(page.id), 'active-page-state');
+    snapshot(this.received[this.received.length - 1], value, 'PAGE-' + String(page.id), 'ordinary-active-state');
+    emit('page-published-' + String(page.id), [page.id, value, this.received.length]);
+  }
+  destroy(page: PageLease): void {
+    // Called only by Index.aboutToDisappear, never by the navigation button.
+    check(!page.destroyed && !this.finished, 'one-framework-destroy-per-page');
+    page.destroyed = true; this.destroyedCount++;
+    emit('page-destroyed-' + String(page.id), [page.id]);
+    let stopFailure: Error | undefined = undefined;
+    try { page.model.requestStop(); } catch (error) { stopFailure = error as Error; }
+    // Retain the drain even if requestStop failed; failure never becomes success.
+    page.closeAttempt = page.model.close();
+    const priorFailure = stopFailure;
+    page.closeAttempt.then(() => {
+      if (priorFailure !== undefined) { throw priorFailure; }
+      check(page.model.phase === 'idle', 'page-drain-idle');
+      page.drained = true; emit('page-drained-' + String(page.id), [page.id]);
+    }).catch((error: Error): void => { this.failure = error; failed(error); });
+  }
+  private throwFailure(): void {
+    const error = this.failure;
+    if (error !== undefined) { throw error; }
+  }
+  async destroyedPage(): Promise<PageLease> {
+    const page = this.pages[this.pages.length - 1];
+    check(page !== undefined, 'away-has-page-lease');
+    await until(() => page.destroyed && page.closeAttempt !== undefined || this.failure !== undefined,
+      'framework-destruction-called');
+    this.throwFailure();
+    if (page.closeAttempt !== undefined) { await page.closeAttempt; }
+    await until(() => page.drained || this.failure !== undefined, 'retained-close-completion');
+    this.throwFailure();
+    check(page.drained && page.model.phase === 'idle', 'destroyed-page-confirmed-drained');
+    return page;
+  }
+  async publishAfterDestroy(): Promise<void> {
+    const page = await this.destroyedPage();
+    check(this.engine !== undefined && !this.finished, 'shared-engine-survived');
+    const value = page.id * 10 + 2;
+    if (this.engine !== undefined) { this.engine.publishState({ value: value, text: 'AWAY-' + String(page.id) }); }
+    await until(() => this.received.length === page.id * 2, 'ordinary-survives-page-close');
+    snapshot(this.received[this.received.length - 1], value, 'AWAY-' + String(page.id), 'ordinary-after-destroy-state');
+    for (const old of this.pages) {
+      check(old.drained && old.model.phase === 'idle', 'all-old-observations-drained');
+      snapshot(old.model.snapshot, old.id * 10 + 1, 'PAGE-' + String(old.id), 'old-model-unchanged-after-drain');
+    }
+    const roundtrip = 100 + page.id;
+    if (this.engine !== undefined) {
+      snapshot(this.engine.roundtrip({ value: roundtrip, text: 'owner' }), roundtrip, 'owner', 'shared-engine-still-usable');
+    }
+    emit('after-destroy-published-' + String(page.id), [page.id, value, this.received.length, roundtrip]);
+  }
+  async finish(): Promise<void> {
+    await this.destroyedPage();
+    check(this.pages.length === 3 && this.destroyedCount === 3 && this.received.length === 6, 'all-three-lifecycles');
+    const expected: number[] = [11, 12, 21, 22, 31, 32];
+    for (let index: number = 0; index < expected.length; index++) { check(this.received[index].value === expected[index], 'ordinary-exact-order'); }
+    if (this.ordinary !== undefined) { this.ordinary.requestStop(); await this.ordinary.close(); }
+    if (this.engine !== undefined) { await this.engine.close(); }
+    if (this.runtime !== undefined) { await this.runtime.close(); }
+    this.finished = true; emit('owner-closed', [this.pages.length, this.destroyedCount, this.received.length, 1]);
+  }
+}
+export const owner: ApplicationOwner = new ApplicationOwner();

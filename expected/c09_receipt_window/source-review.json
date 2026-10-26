@@ -1,0 +1,152 @@
+{
+  "scope": "Independent repaired test-only hook source review and host-model replay; no target certification",
+  "frozen_producer_revision": "a31ac4bb9bbb7f7270e69d3848011eaeb986e981",
+  "producer": "/private/tmp/madb-chief-round2/c09-producer-final",
+  "manifest": "/private/tmp/madb-chief-round2/c09-producer-change-manifest-r2.json",
+  "manifest_sha256": "e4f14acde94131509a591650fad65b9046a8add22519580ee0b9e6b80b5d6d27",
+  "reviewed_files": [
+    {
+      "path": "adapters/generators/arkts/profiles/snapshot-test-v1.json",
+      "sha256": "f77b75f545291547abbcd6619f5fa5b86713d8d4c9357659c301d624d9cce8de",
+      "size": 65222,
+      "review": "Test-only public helper signature and source-lease owner unchanged; documented Error/non-Error failure classification matches implementation and existing CallbackFailure, without ordinary API/native method addition.",
+      "conclusion": "no blocking source finding"
+    },
+    {
+      "path": "adapters/generators/arkts/profiles/snapshot-kotlin-test-v1.json",
+      "sha256": "67e29555177de178d50e728abd3ad00bfb8d2a9bc44869b61c6c5c90b57fd2c3",
+      "size": 57682,
+      "review": "Test-only public helper signature and source-lease owner unchanged; documented Error/non-Error failure classification matches implementation and existing CallbackFailure, without ordinary API/native method addition.",
+      "conclusion": "no blocking source finding"
+    },
+    {
+      "path": "adapters/toolchains/arkts/kotlin_test_binding.py",
+      "sha256": "a3874859b067d1bdaba45e9330b5657aad069690ca9f4360cde64c317fe71384",
+      "size": 17767,
+      "review": "Slot cleared before caller code; synchronous return check has its own catch; Error identity tested without property access and classification trap caught; fail/rejectClose then false skips receipt but retains tick finally; original close Promise and parent control retained.",
+      "conclusion": "no blocking source finding"
+    },
+    {
+      "path": "sdk/arkts/test-support/README.md",
+      "sha256": "a9d1bc0aea877f7ba3163859c3c517d07fea60e60025f7aa37a4874629221048",
+      "size": 5920,
+      "review": "Bytes match prior reviewed file; existing test-only declaration count/diagnostic assertions retained; no expectation weakening.",
+      "conclusion": "no blocking source finding"
+    },
+    {
+      "path": "sdk/arkts/test-support/contracts/PORTS.md",
+      "sha256": "62e80d933420550317fe99362f083d2cc874234538aae7fb1d939381a20bfbcb",
+      "size": 12613,
+      "review": "Test-only public helper signature and source-lease owner unchanged; documented Error/non-Error failure classification matches implementation and existing CallbackFailure, without ordinary API/native method addition.",
+      "conclusion": "no blocking source finding"
+    },
+    {
+      "path": "sdk/arkts/test-support/facade/baseline.json",
+      "sha256": "c2cb51887cf042baf3fa49a2b94b1e01bce5ee4a80c71905563811a038de42b0",
+      "size": 234,
+      "review": "Ordinary input sha unchanged; strict derived hash recomputed by independent actual _derive execution and matches repaired companion.",
+      "conclusion": "no blocking source finding"
+    },
+    {
+      "path": "sdk/arkts/test-support/facade/companion.patch",
+      "sha256": "642c7e13cfdc1555ce1c47c4d7d0d1722b21a1e8695a00aaed187d2881b0c179",
+      "size": 13127,
+      "review": "Slot cleared before caller code; synchronous return check has its own catch; Error identity tested without property access and classification trap caught; fail/rejectClose then false skips receipt but retains tick finally; original close Promise and parent control retained.",
+      "conclusion": "no blocking source finding"
+    },
+    {
+      "path": "sdk/kotlin/arkts-owned/contracts/public-helpers.json",
+      "sha256": "f006d44924648b6f015d0099a23fbab4e5406938810dcc9c864ff5aa6b1d9fbb",
+      "size": 5468,
+      "review": "Test-only public helper signature and source-lease owner unchanged; documented Error/non-Error failure classification matches implementation and existing CallbackFailure, without ordinary API/native method addition.",
+      "conclusion": "no blocking source finding"
+    },
+    {
+      "path": "tests/integration/c09_receipt_hook/check.py",
+      "sha256": "d1a330ffb885b1440126edf30c98125e73ed3b9f6690524fdb74951cf8392b59",
+      "size": 2000,
+      "review": "Actual derived native and Kotlin facades tested; host model limits explicit; Error realm constructor correct; getter/undefined/Proxy and timer/receipt/slot assertions read and all18 replayed at frozen commit.",
+      "conclusion": "no blocking source finding"
+    },
+    {
+      "path": "tests/integration/c09_receipt_hook/check.cjs",
+      "sha256": "a935f788d6db87b3dc6fdb9f5d00969288debdfddcaaa491ef96391636e17b2b",
+      "size": 11310,
+      "review": "Actual derived native and Kotlin facades tested; host model limits explicit; Error realm constructor correct; getter/undefined/Proxy and timer/receipt/slot assertions read and all18 replayed at frozen commit.",
+      "conclusion": "no blocking source finding"
+    },
+    {
+      "path": "tests/integration/c09_receipt_hook/README.md",
+      "sha256": "0fc6c3f4a7327e7d64fc4697711f8b85492620d5ae64ce42f25fc716e4adafdb",
+      "size": 1663,
+      "review": "Actual derived native and Kotlin facades tested; host model limits explicit; Error realm constructor correct; getter/undefined/Proxy and timer/receipt/slot assertions read and all18 replayed at frozen commit.",
+      "conclusion": "no blocking source finding"
+    },
+    {
+      "path": "tests/integration/c07_arkts_adapter/test_public_entry.py",
+      "sha256": "6f903bd5130e947b9f2caf258e5abca63d70368170e5929e241b5a742b001054",
+      "size": 13943,
+      "review": "Bytes match prior reviewed file; existing test-only declaration count/diagnostic assertions retained; no expectation weakening.",
+      "conclusion": "no blocking source finding"
+    },
+    {
+      "path": "tests/integration/c07_arkts_adapter/test_diagnostic_protocols.py",
+      "sha256": "15a655c6ced45e0c406388af2c1a4df9b5265d04613fcc5f509aea7b9687e2a8",
+      "size": 12044,
+      "review": "Bytes match prior reviewed file; existing test-only declaration count/diagnostic assertions retained; no expectation weakening.",
+      "conclusion": "no blocking source finding"
+    }
+  ],
+  "frozen_source_check": "all13 filesystem bytes independently match manifest and git show at exact revision; producer clean",
+  "ordinary_native_isolation": {
+    "compared_revision": "4edc8c7863659b825ba8168092494966ee9aa34f",
+    "unchanged_source_paths": [
+      "sdk/arkts/facade/Boundary.ets.in",
+      "sdk/arkts/facade/README.md",
+      "sdk/arkts/facade/RuntimeFrame.ets",
+      "sdk/arkts/facade/frame-layout.json",
+      "sdk/kotlin/arkts-owned/src/common/AkInteropModule.kt",
+      "sdk/kotlin/arkts-owned/src/common/BoundaryTypes.kt",
+      "sdk/kotlin/arkts-owned/src/common/OwnedCore.kt",
+      "sdk/kotlin/arkts-owned/src/common/OwnedExports.kt",
+      "sdk/kotlin/arkts-owned/src/common/OwnedModel.kt",
+      "sdk/kotlin/arkts-owned/src/ordinary/ExecutionProbe.kt",
+      "sdk/kotlin/arkts-owned/src/test/ExecutionProbe.kt"
+    ],
+    "changed_source_paths": [],
+    "limit": "Source equality in listed SDK facade/native/Kotlin implementation paths, not binary identity or inherited runtime certification; new candidate pair and ordinary baseline still required."
+  },
+  "checks": [
+    "Existing physical ACK plus empty waiter branch still guards invocation; false returns before consumeRuntimeReceipt.",
+    "Callback slot clears before call and on preceding failure, no added native owner/waiter/timer.",
+    "requireOpen and brand/error precedence unchanged; repeat/reentrant close retains original Promise.",
+    "User Error identity preserved without code/message/then reads; Error-classification throw and non-Error values normalize existing CallbackFailure rather than collide with undefined failed sentinel.",
+    "fail/rejectClose clears close control; tick finally resets ticking and existing arm refuses failed/no-control state, no timer restart.",
+    "No asynchronous continuation or thenable assimilation introduced."
+  ],
+  "replayed_checks": [
+    {
+      "command": "python -B tests/integration/c09_receipt_hook/check.py --typescript <locked SDK TS>",
+      "cases": 18,
+      "exit_code": 0,
+      "log": "/private/tmp/madb-chief-round2/c09-final-independent-host18.log",
+      "sha256": "3497516bfc7f78fdd3b682ad8724a222b33c7fc691512e87230d6a0b1b825e36"
+    },
+    {
+      "kind": "original getter regression independently replayed against actual final native and Kotlin derived facade",
+      "result": "/private/tmp/madb-chief-round2/c09-final-independent-replay/result.json",
+      "sha256": "5a50b708898601b8891752f7526baf23d301beb93d8d66aff5194bb1c37c1c44",
+      "observed": "both rejected original same-realm Error; receipt0; timers0; no escaped secondary getter error",
+      "adjustment": "The replay exposes generated VM Error constructor and creates original Error in same owner realm, matching actual ArkTS owner environment. Old reproduction and results are unchanged."
+    }
+  ],
+  "conclusion": "Repair passes independent source review and host replay; producer build may begin. Actual ArkTS/HAR compile, frozen pair checks, target7 new cases and selected regressions plus four new ordinary baselines remain required.",
+  "not_covered": [
+    "Actual ArkTS compiler acceptance",
+    "Physical native ACK/receipt target behavior",
+    "Full C07/C09 certification",
+    "Cross-realm Error transport, not claimed by same-owner synchronous callback contract",
+    "Other-platform verification or publication"
+  ],
+  "prior_findings_preserved": "/private/tmp/madb-chief-round2/c09-review-callback-error-getter/result.json"
+}

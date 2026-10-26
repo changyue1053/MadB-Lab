@@ -1,0 +1,61 @@
+// C09 supplement: normal close admission while the actual worker is held.
+import { Runtime, Engine, Operation, Snapshot, openRuntime, testExportKey,
+  testArmWork, testReleaseWork } from @MADB_PUBLIC_MODULE@;
+import { check, nextTurn, snapshot, throwsCode } from './Assertions';
+import { Emit, gate, observed, facade, finalClosed } from './SupportChecks';
+
+export async function runCloseWindows(emit: Emit, timeoutMs: number): Promise<void> {
+  const deadline: number = Date.now() + timeoutMs;
+  const runtime: Runtime = openRuntime();
+  const key: string = testExportKey(runtime);
+  const engine: Engine = runtime.connect();
+  testArmWork(engine, 2);
+  const operation: Operation = engine.startOperation({ value: 41, text: 'c09-close-held' });
+  let resolved: boolean = false; let rejected: boolean = false;
+  let close: Promise<void> | undefined = undefined;
+  try {
+    await gate(runtime, operation, 2, deadline, emit);
+    close = runtime.close();
+    check(close === runtime.close(), 'same-normal-parent-close');
+    close.then((): void => { resolved = true; }, (_error: Error): void => { rejected = true; });
+    for (let sample: number = 0; sample < 2; sample++) {
+      await nextTurn(deadline, 'held-close-owner-heartbeat');
+      const before: number[] = observed(runtime, 'close-before-attempt');
+      const js: number[] = facade(runtime, 'close-pending');
+      check(!resolved && !rejected, 'original-close-pending');
+      check(before[30] === 1 && before[32] === 0 && before[17] === 0 && before[55] !== 2,
+        'normal-close-before-physical-ack-and-receipt');
+      check(before[56] === 2 && before[58] === 1 && before[59] === 0 && before[60] === 0,
+        'same-actual-worker-still-held');
+      check(js[5] === 1 && js[8] === 1 && js[9] === 0 && js[10] === 0, 'normal-facade-closing');
+      emit('pending-native-' + String(sample), before);
+      emit('pending-facade-' + String(sample), js);
+      throwsCode((): void => { openRuntime(); }, 'RuntimeAlreadyOpen', 'normal-close-reopen-rejected');
+      emit('reopen-rejected-' + String(sample), [1, resolved ? 1 : 0, rejected ? 1 : 0]);
+      const after: number[] = observed(runtime, 'close-after-attempt');
+      check(after[56] === 2 && after[58] === 1 && after[59] === 0 && after[60] === 0 && after[17] === 0,
+        'rejected-admission-did-not-release-old-worker');
+      emit('after-attempt-native-' + String(sample), after);
+    }
+  } finally {
+    // Release only the public fixture we acquired; force-stop is not cleanup evidence.
+    testReleaseWork(engine);
+  }
+  check(close !== undefined, 'normal-parent-close-created');
+  await runtime.close();
+  check(resolved && !rejected, 'original-close-completes-after-release');
+  await finalClosed(runtime, key, deadline, (label: string, values: number[]): void => {
+    emit('first-' + label, values);
+  });
+  emit('first-close-outcome', [1, 0]);
+  const next: Runtime = openRuntime(); const nextKey: string = testExportKey(next);
+  const nextEngine: Engine = next.connect();
+  const nextOperation: Operation = nextEngine.startOperation({ value: 41, text: 'c09-reopened' });
+  const result: Snapshot = await nextOperation.result();
+  snapshot(result, 42, 'c09-reopened', 'new-runtime-after-original-close');
+  await next.close();
+  await finalClosed(next, nextKey, deadline, (label: string, values: number[]): void => {
+    emit('second-' + label, values);
+  });
+  emit('reopened-result', [42]);
+}

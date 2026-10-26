@@ -1,0 +1,29 @@
+import { ArkUIStateModel } from '../ArkUIStateModel';
+import { owner, PageLease } from '../ApplicationOwner';
+import { failed } from '../Trace';
+@Entry
+@ComponentV2
+struct Index {
+  @Local model: ArkUIStateModel = new ArkUIStateModel();
+  private page: PageLease = owner.create(this.model);
+  @Local phase: string = 'STARTING';
+  aboutToAppear(): void {
+    try { owner.attach(this.page); this.phase = 'PAGE_READY_' + String(this.page.id); }
+    catch (error) { failed(error as Error); }
+  }
+  aboutToDisappear(): void { try { owner.destroy(this.page); } catch (error) { failed(error as Error); } }
+  build() {
+    Column({ space: 16 }) {
+      Text('L05 actual page destruction').id('l05-life-title')
+      Text(this.phase).id('l05-life-phase')
+      Text(String(this.page.id)).id('l05-life-page-id')
+      Text(this.model.snapshot === undefined ? 'EMPTY' : this.model.snapshot.text).id('l05-life-value')
+      Button('Publish').id('l05-life-publish').onClick(() => {
+        owner.publishPage(this.page).then(() => { this.phase = 'PAGE_PUBLISHED_' + String(this.page.id); }).catch(failed);
+      })
+      Button('Destroy page').id('l05-life-destroy').onClick(() => {
+        this.getUIContext().getRouter().replaceUrl({ url: 'pages/Away' }).catch(failed);
+      })
+    }.width('100%').height('100%').justifyContent(FlexAlign.Center)
+  }
+}

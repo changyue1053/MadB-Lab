@@ -1,0 +1,6 @@
+import { Runtime, testInspect, testExportKey, testObserveFacade } from @MADB_PUBLIC_MODULE@;
+export const IS_KOTLIN: boolean = false;
+export const REOPEN_CODE: string = 'RuntimeAlreadyOpen';
+export function observe(runtime: Runtime): number[] { return testInspect(testExportKey(runtime)); }
+export function javascript(runtime: Runtime): number[] { return testObserveFacade(runtime); }
+export function admission(): number[] { return []; }

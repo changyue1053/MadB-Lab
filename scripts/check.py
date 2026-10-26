@@ -66,6 +66,10 @@ def main():
         [sys.executable, "harness/check_repository.py"],
         [sys.executable, "harness/check_cases.py"],
         [sys.executable, "-m", "unittest", "discover", "-s", "harness/tests"],
+        [sys.executable, "scripts/test_l05.py"],
+        [sys.executable, "scripts/test_l05_page_lifecycle.py"],
+        [sys.executable, "harness/c09_close_windows_tests.py"],
+        [sys.executable, "harness/c09_receipt_window_tests.py"],
     ]:
         print("+ " + " ".join(command), flush=True)
         subprocess.run(command, cwd=ROOT, check=True)

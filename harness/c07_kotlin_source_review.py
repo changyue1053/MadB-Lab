@@ -8,6 +8,7 @@ import json
 import re
 
 from candidate import CandidateError, file_digest, logical_path, read_json
+from source_review_selection import select_source_review
 
 REVIEW = Path(__file__).resolve().parents[1] / "expected/c07/kotlin-source-review.json"
 HELPERS = "array arraybuffer cb_info clazz exception function knapi module object property reference type".split()
@@ -207,14 +208,15 @@ def _linked(candidate, stages, objects, links, linked, symbols, project, data, i
     return {"status": "bound", "native_artifacts": list(dsos.values()), "compile_outputs": list(objects.values())}
 
 
-def verify_kotlin_source_review(candidate):
+def verify_kotlin_source_review(candidate, *, review_id="c07"):
     """Additional static necessary condition; it never supplies live-thread evidence."""
     result = {"status": "blocked", "scope": "reviewed Kotlin source and public C04 build receipts; not runtime execution",
               "thread_witness": {"status": "not-assessed", "scope": "static-only", "reason": "The controller must verify same-candidate live/final thread21 and owner-loop heartbeat. Source binding does not establish runtime thread liveness; public110/controls31 alone remain insufficient."}}
     try:
         _require(candidate["route"] == "kotlin", "not the Kotlin route")
-        review = read_json(REVIEW)
-        result.update(inventory_sha256=file_digest(REVIEW.read_bytes()), candidate_digest=candidate["manifest"]["candidate_digest"],
+        review_path = select_source_review(review_id, "kotlin", REVIEW)
+        review = read_json(review_path)
+        result.update(inventory_sha256=file_digest(review_path.read_bytes()), candidate_digest=candidate["manifest"]["candidate_digest"],
                       producer_revision=candidate["provenance"]["producer_revision"], limits=review["limits"])
         manifest, root = candidate["manifest"], candidate["root"]
         inventory = {}
@@ -291,7 +293,7 @@ def verify_kotlin_source_review(candidate):
     return result
 
 
-def verify_kotlin_profile_pair(ordinary, companion):
+def verify_kotlin_profile_pair(ordinary, companion, *, review_id="c07"):
     """Bind the existing ordinary/test profile pair; runtime reports are caller-owned."""
     result = {"status": "blocked", "scope": "same reviewed Kotlin source/profile pair, not ordinary runtime success"}
     try:
@@ -301,10 +303,11 @@ def verify_kotlin_profile_pair(ordinary, companion):
         _require(ordinary["profile"]["id"] + "-test" == companion["profile"]["id"] and
                  ordinary["provenance"]["producer_revision"] == companion["provenance"]["producer_revision"],
                  "ordinary/test profile pair or producer revision differs")
-        bindings = [verify_kotlin_source_review(c) for c in (ordinary, companion)]
+        bindings = [verify_kotlin_source_review(c, review_id=review_id) for c in (ordinary, companion)]
         _require(all(b["status"] == "bound" for b in bindings), "ordinary/test reviewed source/build binding is incomplete")
-        review = read_json(REVIEW)
-        _require(bindings[0]["inventory_sha256"] == bindings[1]["inventory_sha256"] == file_digest(REVIEW.read_bytes()), "source review changed during profile pairing")
+        review_path = select_source_review(review_id, "kotlin", REVIEW)
+        review = read_json(review_path)
+        _require(bindings[0]["inventory_sha256"] == bindings[1]["inventory_sha256"] == file_digest(review_path.read_bytes()), "source review changed during profile pairing")
         common = set(review["variants"]["ordinary"]["source_inputs"]) & set(review["variants"]["test"]["source_inputs"])
         sources = [_refs(b["source_review"]["original_inputs"], "bound source") for b in bindings]
         _require(common and all(sources[0][n] == sources[1][n] for n in common), "ordinary/test common source closure differs")
