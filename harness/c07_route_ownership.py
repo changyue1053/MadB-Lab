@@ -6,7 +6,7 @@ All inputs are candidate members; no neighboring producer checkout is imported.
 """
 import re
 
-from candidate import CandidateError, file_digest, read_json
+from candidate import CandidateError, file_digest, parse_json
 from c07_source_review import verify_source_review
 
 PROVIDERS = {
@@ -40,15 +40,22 @@ def verify_route_ownership(candidate):
     inventory = {item["path"]: _ref(item) for collection in ("files", "dependencies", "build_evidence")
                  for item in manifest[collection]}
     used = set()
-    def data(name):
+    def data(name, limit=None):
         _require(name in inventory, "unlisted candidate evidence: " + name)
-        value = (root / name).read_bytes()
+        if limit is None:
+            value = (root / name).read_bytes()
+        else:
+            with (root / name).open("rb") as stream:
+                value = stream.read(limit + 1)
+            if len(value) > limit:
+                raise CandidateError("FormatInvalid", f"JSON exceeds {limit // (1024 * 1024)} MiB")
         _require(len(value) == inventory[name]["size"] and file_digest(value) == inventory[name]["sha256"], "changed candidate evidence: " + name)
         used.add(name)
         return value
     def document(name):
-        data(name)
-        return read_json(root / name)
+        # Only these candidate-bound build logs carry verbose compiler output.
+        limit = (32 if name in ("logs/compile-commands.json", "logs/link-commands.json") else 1) * 1024 * 1024
+        return parse_json(data(name, limit), limit=limit)
     def tool(command, name):
         expected = _one([item for item in candidate["toolchain"]["tools"] if item["id"] == ("ohrs" if name == "ohrs" else "c07-" + name)], "tool " + name)
         _require(command.get("tool") == name and type(command.get("exit_code")) is int and command["exit_code"] == 0 and

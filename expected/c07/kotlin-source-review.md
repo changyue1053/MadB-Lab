@@ -1,8 +1,10 @@
 # C07 Kotlin source review preparation
 
-Task: existing C07 worker-and-domain / route-ownership, Kotlin-only static binding. Baseline producer `557fa6f1ac805fe2bf398b67a6acf65bcf3cf17e`, with the authorized thread-witness source delta frozen at `54cb3ef9bbffbfbb4fb4a4cd1876bd87b09390fbe3b12802657461c67f214d87` on base `74d8e0586bab20f31220fa413b28f14d2a1adb24`; managed owner review baseline `3edf865160375474c4bde30c44d208d134d898ef`. The JSON inventory remains `pending-independent-review`, with `producer_revision: null`. Root must review final source changes and set the final producer revision before this helper can return `bound`.
+Task: existing C07 worker-and-domain / route-ownership, Kotlin-only static binding. The JSON inventory is independently reviewed for clean producer `18256fcc4b26cf3cd1e2e79c39b86c2512e012d9`; both actual candidates and their profile pairing bind to that revision. The review covers 171 source references in union, 145 ordinary and 170 companion references, plus each variant's nine actual KSP outputs. Static binding remains a prerequisite and does not certify target execution or the complete C07 package.
 
-Scope: only the new Lab helper, its host counterexamples and finite review inventory. No controller changes, no producer imports, no producer reexecution, no device work, no repository writes. C3 review inventory is neither read nor reused. The existing public candidate verifier remains mandatory before this helper. Its ELF/ABI/identity/HAR admission is reused.
+Historical preparation: producer `557fa6f1ac805fe2bf398b67a6acf65bcf3cf17e`, authorized thread-witness source delta `54cb3ef9bbffbfbb4fb4a4cd1876bd87b09390fbe3b12802657461c67f214d87` on base `74d8e0586bab20f31220fa413b28f14d2a1adb24`, and managed owner review baseline `3edf865160375474c4bde30c44d208d134d898ef` remain review provenance; they are not the final admitted producer revision.
+
+Original preparation scope: the Lab helper, its host counterexamples and finite review inventory. That preparation did not change the controller, import or reexecute the producer, or perform device work or repository writes. C3 review inventory is neither read nor reused. The existing public candidate verifier remains mandatory before this helper. Its ELF/ABI/identity/HAR admission is reused.
 
 ## What the helper binds
 
@@ -16,7 +18,7 @@ The actual KSP generated text is rehashed and compared with the finite generated
 
 ## Static ownership review locations
 
-All paths below are in the producer at the prepared revision, and their exact bytes are in the JSON inventory:
+The following line locations describe the historical preparation revision. The JSON inventory binds the exact current source bytes; these historical locations are review navigation, not a substitute for the current inventory:
 
 - `sdk/kotlin/arkts-owned/src/common/OwnedModel.kt:18–24`: native UTF8 allocation/copy and rollback free. `31–41`: Kotlin integer increment with overflow rejection, real `nativeHeap.free` before diagnostic retirement. This counts explicit native UTF8 storage, not total managed GC heap.
 - `sdk/kotlin/arkts-owned/src/common/OwnedCore.kt:142–143`: model release before owner ledger retirement; `382`: selected Kotlin model's increment. `644–678`: generation/result validation, actual starts==joins, zero executor errors, owner destruction, then held/subscription release. Never-started rollback produces no fake physical join.

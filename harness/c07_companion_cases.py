@@ -36,7 +36,7 @@ GROUPS = {
         "gaps": (),
     },
     "result-transfer-failures": {
-        "scenarios": ('fault-before-guard', 'after-guard', 'fault-after-accepted', 'nonnull-owned-error', 'getters-observed'),
+        "scenarios": ('fault-before-guard', 'after-guard', 'fault-after-accepted', 'failed-close-before-guard', 'failed-close-after-accepted', 'nonnull-owned-error', 'getters-observed'),
         "gaps": (),
     },
     "dropped-promise": {"scenarios": ("dropped-promise",), "gaps": ()},
@@ -85,7 +85,7 @@ GROUPS = {
         "scenarios": ("delivery-and-handle-admission", "engine-generation"),
         "gaps": (),
     },
-    "runtime-close-full": {"scenarios": ("full-waiters", "mixed-waiters-engine-close"), "gaps": ()},
+    "runtime-close-full": {"scenarios": ("full-waiters", "mixed-waiters-engine-close", "failed-close-before-guard", "failed-close-after-accepted"), "gaps": ()},
     "env-exit-full": {"scenarios": ("worker-env-exit",), "gaps": ()},
     "route-ownership": {
         "scenarios": ("terminal-success", "terminal-domain", "operations-capacity", "subscriptions-capacity",

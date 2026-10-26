@@ -212,6 +212,10 @@ export async function runControlledCase(name: string, emit: Emit, timeoutMs: num
   else if (name === 'listener-lifetime') { await runListenerLifetime(runtime, engine, deadline, emit); }
   else if (name === 'live-cleanup-threads' || name === 'child-ownership-baseline') { await runDiagnostic(name, runtime, engine, deadline, emit); }
   else { check(await runCapacityAndStreamCase(name, runtime, engine, deadline, emit) || await runCompletionCase(name, runtime, engine, deadline, emit) || await runSharedWaiters(name, runtime, engine, deadline, emit) || await runAdditional(name, runtime, engine, deadline, emit) || await runFailure(name, runtime, engine, deadline, emit), 'known-additional-case'); }
-  await runtime.close(); await finalClosed(runtime, key, deadline, emit);
+  const failedClose: boolean = name === 'failed-close-before-guard' || name === 'failed-close-after-accepted';
+  // runFailure has already awaited and checked the original rejection. Do not
+  // re-await that memoized failed Promise as if this were successful close.
+  if (!failedClose) { await runtime.close(); }
+  await finalClosed(runtime, key, deadline, emit, 1, failedClose);
   emit('case-complete', [1]);
 }

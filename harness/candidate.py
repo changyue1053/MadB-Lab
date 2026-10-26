@@ -43,9 +43,14 @@ def _object(pairs):
 
 
 def read_json(path: Path):
-    data = path.read_bytes()
-    if len(data) > 1024 * 1024:
-        raise CandidateError("FormatInvalid", "JSON exceeds 1 MiB")
+    with path.open("rb") as stream:
+        return parse_json(stream.read(1024 * 1024 + 1))
+
+
+def parse_json(data: bytes, *, limit=1024 * 1024):
+    """Apply the same strict public JSON subset to already-bound bytes."""
+    if len(data) > limit:
+        raise CandidateError("FormatInvalid", f"JSON exceeds {limit // (1024 * 1024)} MiB")
     try:
         value = json.loads(data.decode("utf-8"), object_pairs_hook=_object,
                            parse_int=_integer, parse_float=_reject_number,

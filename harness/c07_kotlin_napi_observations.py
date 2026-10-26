@@ -13,6 +13,8 @@ NA = str(MAX)
 NEUTRAL = frozenset(('napi_acquire_threadsafe_function', 'napi_call_threadsafe_function',
                     'napi_call_threadsafe_function_with_priority', 'napi_release_threadsafe_function'))
 ROLES = {'bootstrap': (0, 12, 1), 'provider': (1, 83, 6)}
+OPTIONAL_CALLSITE = frozenset(('napi_create_callsite_info', 'napi_delete_callsite_info',
+    'napi_get_property_with_callsite_info', 'napi_set_property_with_callsite_info'))
 
 
 class NapiObservationFailure(ValueError):
@@ -76,7 +78,15 @@ def inventory(binding, identity):
         names = [a['name'] for a in apis]
         require(len(apis) == count and names == sorted(set(names)) == entry['actual_napi_imports'], role + ': actual imports/order differ')
         require(set(entry['callsites']) == set(names), role + ': per-API callsite binding incomplete')
-        require({r['api'] for r in entry['napi_relocations']} == set(names) and all(r['type'] == 'R_AARCH64_JUMP_SLOT' for r in entry['napi_relocations']), role + ': native API relocation coverage differs')
+        relocations = entry['napi_relocations']
+        plt = {r['api'] for r in relocations if r['type'] == 'R_AARCH64_JUMP_SLOT'}
+        got = {r['api'] for r in relocations if r['type'] == 'R_AARCH64_GLOB_DAT'}
+        weak = entry.get('weak_got_imports', [])
+        require(plt == set(names) and all(r['type'] in ('R_AARCH64_JUMP_SLOT', 'R_AARCH64_GLOB_DAT')
+                and r['api'] in set(names) for r in relocations), role + ': native API relocation coverage differs')
+        require(type(weak) is list and weak == sorted(got) and
+                (not got or (role == 'provider' and got == OPTIONAL_CALLSITE)),
+                role + ': unreviewed optional GOT address or missing actual WEAK binding')
         for index, api in enumerate(apis, 18):
             require(api['index'] == index and api['category'] == category(api['name']), role + ': independently classified field mismatch')
             sites = entry['callsites'][api['name']]

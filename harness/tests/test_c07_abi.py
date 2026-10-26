@@ -22,7 +22,9 @@ def inputs():
                     'record_schema': {'qualifiedName': 'x.Snapshot', 'fields': [{'name': 'value', 'kotlinType': 'kotlin.Int', 'location': 'ignored'}]},
                     'frontend_policy': {'notification_interfaces': {'return_type': 'kotlin.Unit'}, 'parameters': {'owned_interface_maximum': 1}},
                     'tools': {'version': 'old'}, 'generated': ['code'], 'source_inputs': ['input'], 'closure': ['lock']}}
-    return contract, descriptor, {'values': {'int32': True}, 'execution_domain': 'main', 'authority': 'ignored'}
+    return contract, descriptor, {'values': {'int32': True}, 'execution_domain': 'main', 'authority': 'ignored',
+        'failed_completion_handoff': {'allowed_integers': [0, 1], 'deliver_pending': 0,
+            'abandon_failed_pending': 1, 'abandon_is_monotonic': True}}
 
 
 class AbiTests(unittest.TestCase):
@@ -59,6 +61,56 @@ class AbiTests(unittest.TestCase):
             c['symbols'][0]['shape']['result'] = 'i64'
             with self.assertRaises(CandidateError): verify_abi(candidate, 'kotlin')
             with self.assertRaises(CandidateError): verify_abi(candidate, 'rust')
+
+    def test_fixed_failed_handoff_role_is_in_the_abi(self):
+        c, d, p = inputs()
+        projected = abi_document(c, d, p)
+        self.assertEqual(projected['runtime_roles']['failed_completion_handoff'],
+            {'allowed_integers': [0, 1], 'deliver_pending': 0,
+             'abandon_failed_pending': 1, 'abandon_is_monotonic': True})
+        old_projection = deepcopy(projected)
+        del old_projection['runtime_roles']['failed_completion_handoff']
+        self.assertNotEqual(semantic_digest('madb.c07-abi/1', projected),
+                            semantic_digest('madb.c07-abi/1', old_projection))
+
+    def test_missing_or_invalid_failed_handoff_role_rejects_even_with_matching_hash(self):
+        c, d, p = inputs()
+        changes = [
+            ('missing', None), ('null', None), ('empty', {}),
+            ('swapped', {'deliver_pending': 1, 'abandon_failed_pending': 0}),
+            ('non-monotonic', {'abandon_is_monotonic': False}),
+            ('numeric-monotonic', {'abandon_is_monotonic': 1}),
+            ('boolean-deliver', {'deliver_pending': False}),
+            ('boolean-abandon', {'abandon_failed_pending': True}),
+            ('boolean-domain', {'allowed_integers': [False, True]}),
+            ('float-domain', {'allowed_integers': [0.0, 1.0]}),
+            ('reversed-domain', {'allowed_integers': [1, 0]}),
+            ('widened-domain', {'allowed_integers': [0, 1, 2]}),
+            ('extra-field', {'default_mode': 0}),
+        ]
+        with tempfile.TemporaryDirectory() as tmp:
+            root = Path(tmp); (root/'generated/contract').mkdir(parents=True)
+            (root/'declarations.json').write_text(json.dumps(d))
+            for name, mutation in changes:
+                with self.subTest(case=name):
+                    policy = deepcopy(p)
+                    if name == 'missing': del policy['failed_completion_handoff']
+                    elif name in ('null', 'empty'): policy['failed_completion_handoff'] = mutation
+                    else: policy['failed_completion_handoff'].update(mutation)
+                    with self.assertRaisesRegex(CandidateError, 'failed_completion_handoff'):
+                        abi_document(c, d, policy)
+                    # Forge only this small negative vector's claimed hash to
+                    # match its invalid semantics. Shape validation must still
+                    # reject it; no actual candidate or public file is changed.
+                    claimed = abi_document(c, d, p)
+                    if name == 'missing': del claimed['runtime_roles']['failed_completion_handoff']
+                    else: claimed['runtime_roles']['failed_completion_handoff'] = policy['failed_completion_handoff']
+                    (root/'generated/contract/runtime-policy.json').write_text(json.dumps(policy))
+                    candidate = {'root': root, 'contract': c, 'identity': {
+                        'abi_digest': semantic_digest('madb.c07-abi/1', claimed)}}
+                    reason = 'non-integer JSON number' if name == 'float-domain' else 'failed_completion_handoff'
+                    with self.assertRaisesRegex(CandidateError, reason):
+                        verify_abi(candidate, 'kotlin')
 
     def test_kotlin_binding_and_both_dsos_must_match(self):
         identity = {'schema': 'madb.arkts-runtime-identity/1', 'bootstrap_version': 1,

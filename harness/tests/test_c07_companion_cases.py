@@ -36,13 +36,13 @@ class CompanionCoverageTests(unittest.TestCase):
         arguments.update(changes)
         return assess_group(group, **arguments)
 
-    def test_exact_existing_25_groups_and_44_unique_scenarios(self):
+    def test_exact_existing_25_groups_and_46_unique_scenarios(self):
         requirements = json.loads((ROOT / "consumers/arkts/c07/requirements.json").read_text())
         for route in ("c", "cpp", "rust"):
             profile = next(item for item in requirements["profiles"] if item["profile_id"] == "c07-" + route + "-arkts-aarch64-ohos23-test")
             self.assertEqual(set(GROUPS), {name.rsplit(".", 1)[1] for name in profile["required_cases"]})
             plan = scenario_plan(route)
-            self.assertEqual(len(plan), 44)
+            self.assertEqual(len(plan), 46)
             self.assertEqual(set(plan), set(SCENARIOS))
         self.assertEqual(scenario_plan("kotlin"), ())
 

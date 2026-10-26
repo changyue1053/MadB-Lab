@@ -27,7 +27,7 @@ export async function runKotlinHandleCase(runtime: Runtime, first: Engine, deadl
   await first.close(); await oldOperation.close(); await oldSubscription.close();
   throwsCode(() => { first.roundtrip({ value: 1, text: '' }); }, 'Closed', 'old-engine-rejected');
   await rejectsSnapshot(() => oldOperation.result(), 'Closed', 'old-operation-rejected');
-  oldOperation.requestCancel(); oldSubscription.requestStop(); first.requestClose();
+  throwsCode(() => { oldOperation.requestCancel(); }, 'Closed', 'closed-old-operation-cancel-rejected'); oldSubscription.requestStop(); first.requestClose();
   testArmWork(second, 1);
   const current: Operation = second.startOperation({ value: 51, text: 'new-generation\u0000中' });
   while (true) {
@@ -54,7 +54,7 @@ export async function runKotlinHandleCase(runtime: Runtime, first: Engine, deadl
   snapshot(await result, 52, 'new-generation\u0000中', 'new-owner-unaffected');
   await current.close(); await subscription.close();
   // Keep all old wrappers alive through the new result and one final old close.
-  await first.close(); oldOperation.requestCancel(); oldSubscription.requestStop();
+  await first.close(); throwsCode(() => { oldOperation.requestCancel(); }, 'Closed', 'closed-old-operation-cancel-rejected'); oldSubscription.requestStop();
   snapshot(second.roundtrip({ value: 71, text: 'still-open' }), 71, 'still-open', 'old-wrapper-cannot-close-new');
   emit('kn-handles-recovered', [42, 52, 71, 15]);
 }

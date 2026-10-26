@@ -48,7 +48,8 @@ export async function gate(runtime: Runtime, operation: Operation, phase: number
   }
 }
 export async function finalClosed(runtime: Runtime, key: string, deadline: number,
-                                  emit: Emit, generationCount: number = 1): Promise<void> {
+                                  emit: Emit, generationCount: number = 1,
+                                  failedOutcome: boolean = false): Promise<void> {
   observationKey(key);
   while (true) {
     const f: number[] = frame(testInspect(key), 'closed-static');
@@ -68,7 +69,7 @@ export async function finalClosed(runtime: Runtime, key: string, deadline: numbe
       const j: number[] = facade(runtime, 'closed');
       const jzero: number[] = [1,2,3,4,5,6,7,13,14];
       for (let i: number = 0; i < jzero.length; i++) { check(j[jzero[i]] === 0, 'closed-facade-zero:' + String(jzero[i])); }
-      check(j[9] === 1 && j[10] === 0, 'facade-closed-success');
+      check(j[9] === 1 && j[10] === (failedOutcome ? 1 : 0), 'facade-closed-exact-outcome');
       emit('physical-closed', f); emit('facade-closed', j); return;
     }
     await nextTurn(deadline, 'physical-closed');

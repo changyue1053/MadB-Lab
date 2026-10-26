@@ -8,16 +8,34 @@ export async function runKotlinFaultCase(name: string, runtime: Runtime, engine:
   deadline: number, emit: EmitNumbers, control: EmitControl): Promise<boolean> {
   if (name !== 'kotlin-fault-before-guard' && name !== 'kotlin-fault-after-accepted') { return false; }
   const before: boolean = name === 'kotlin-fault-before-guard';
+  // First result becomes legally available before an independent second Work is held.
   testArmWork(engine, 2);
   const operation: Operation = engine.startOperation({ value: 41, text: '故障\u0000' });
+  let firstControl: string = testControlFrame(runtime);
+  while (firstControl.split(',')[3] !== '2') {
+    await nextTurn(deadline, 'first-result-work-reaches-terminal');
+    firstControl = testControlFrame(runtime);
+  }
+  const firstFields: string[] = firstControl.split(',');
+  check(firstFields.length === 31 && firstFields[6] === '0' && firstFields[4] !== '0' && firstFields[5] !== '0', 'first-success-terminal-identity');
+  control('kn-fault-first-control', firstControl);
+  testReleaseWork(engine);
+  let first: number[] = testObserve(runtime);
+  while (first[15] !== 1) { await nextTurn(deadline, 'first-work-actually-completed'); first = testObserve(runtime); }
+  check(first[9] === 1 && first[10] === 0 && first[11] === 1 && first[14] === 1 && first[15] === 1 && first[24] === 1 && first[26] === 0, 'first-completed-result-still-unclaimed');
+  emit('kn-fault-first-completed', first);
+  testArmWork(engine, 2);
+  const heldOperation: Operation = engine.startOperation({ value: 51, text: 'held-second' });
   while (true) {
     const raw: string = testControlFrame(runtime); const f: string[] = raw.split(',');
     check(f.length === 31, 'fault-control31');
-    if (f[3] === '2') {
-      check(f[6] === '0', 'actual-success-terminal-before-exit');
-      control('kn-fault-held-control', raw); emit('kn-fault-held-native', testObserve(runtime)); break;
+    if (f[3] === '2' && f[5] !== firstFields[5]) {
+      check(f[4] === firstFields[4] && f[6] === '0', 'second-distinct-work-same-engine-terminal');
+      const held: number[] = testObserve(runtime);
+      check(held[9] === 2 && held[10] === 0 && held[11] === 2 && held[14] === 2 && held[15] === 1 && held[24] === 2 && held[26] === 0, 'first-available-second-work-actually-held');
+      control('kn-fault-held-control', raw); emit('kn-fault-held-native', held); break;
     }
-    await nextTurn(deadline, 'actual-terminal-work-hold');
+    await nextTurn(deadline, 'second-terminal-work-hold');
   }
   let probeHits: number = 0;
   if (before) { testArmTransferFailure(runtime, 2); }
@@ -28,10 +46,11 @@ export async function runKotlinFaultCase(name: string, runtime: Runtime, engine:
     }, true);
   }
   let resolved: number = 0; let rejected: number = 0;
+  let originalFailure: Error | undefined = undefined;
   const result: Promise<void> = operation.result().then((v: Snapshot): void => {
     resolved++; check(!before, 'before-guard-cannot-resolve'); snapshot(v, 42, '故障\u0000', 'accepted-result-exact');
   }, (error: Error): void => {
-    rejected++; check(before && error instanceof BoundaryError && (error as BoundaryError).code === 'BridgeFailure', 'before-guard-exact-failure');
+    originalFailure = error; rejected++; check(before && error instanceof BoundaryError && (error as BoundaryError).code === 'BridgeFailure', 'before-guard-exact-failure');
   });
   await result;
   emit('kn-fault-settlements', [resolved, rejected, probeHits]);
@@ -39,20 +58,38 @@ export async function runKotlinFaultCase(name: string, runtime: Runtime, engine:
   control('kn-fault-residual-control', testControlFrame(runtime));
   emit('kn-fault-settler', testSettleInspect(runtime));
   let closeResolved: number = 0; let closeRejected: number = 0;
+  let expectedError: boolean = false; let sameFailure: boolean = false;
+  let sampleErrors: number = 0; let handlerNative: number[] = []; let handlerJs: number[] = [];
   const close: Promise<void> = runtime.close();
   check(close === runtime.close(), 'failed-runtime-parent-control-still-memoized');
   const completed: Promise<void> = close.then((): void => { closeResolved++; }, (error: Error): void => {
     closeRejected++;
-    check(error instanceof BoundaryError && (error as BoundaryError).code === 'BridgeFailure', 'original-failure-after-cleanup');
+    expectedError = error instanceof BoundaryError && (error as BoundaryError).code === 'BridgeFailure';
+    sameFailure = !before || error === originalFailure;
+    // These are the actual synchronous settlement-time observations. A later
+    // event-loop cleanup cannot repair an early rejection for this oracle.
+    try { handlerNative = testObserve(runtime); } catch (_) { sampleErrors++; }
+    try { handlerJs = testSettleInspect(runtime); } catch (_) { sampleErrors++; }
   });
   await nextTurn(deadline, 'failed-runtime-awaits-actual-owner-exit');
   check(closeResolved === 0 && closeRejected === 0, 'failed-close-cannot-report-before-work-exit');
-  emit('kn-fault-close-pending', testObserve(runtime));
+  const pending: number[] = testObserve(runtime);
+  check(pending[12] === 1 && pending[13] === 0 && pending[14] === 2 && pending[15] === 1 && pending[2] === 0, 'second-work-still-prevents-physical-close');
+  emit('kn-fault-close-pending', pending);
+  const pendingControl: string = testControlFrame(runtime);
+  const pendingFields: string[] = pendingControl.split(',');
+  check(pendingFields.length === 31 && pendingFields[3] === '2' && pendingFields[4] === firstFields[4] && pendingFields[5] !== firstFields[5], 'second-work-held-at-close-request');
+  control('kn-fault-close-pending-control', pendingControl);
   testReleaseWork(engine);
   await completed;
+  check(closeResolved === 0 && closeRejected === 1 && expectedError && sameFailure && sampleErrors === 0, 'original-failure-and-synchronous-close-evidence');
+  check(handlerNative.length === 110 && handlerNative[1] === 4 && handlerNative[2] === 1 && handlerNative[14] === 2 && handlerNative[15] === 2, 'rejection-follows-two-work-physical-ack');
   emit('kn-fault-close-outcome', [closeResolved, closeRejected]);
-  emit('kn-fault-closed-native', testObserve(runtime));
-  emit('kn-fault-final-settler', testSettleInspect(runtime));
+  emit('kn-fault-close-proof', [sampleErrors, expectedError ? 1 : 0, sameFailure ? 1 : 0]);
+  emit('kn-fault-closed-native', handlerNative);
+  emit('kn-fault-final-settler', handlerJs);
+  // Both distinct public wrappers remain strongly held through the same parent completion.
+  check(operation !== heldOperation, 'fault-operations-are-distinct-public-owners');
   await nextTurn(deadline, 'no-late-second-settlement');
   check(resolved === (before ? 0 : 1) && rejected === (before ? 1 : 0) && closeResolved === 0 && closeRejected === 1, 'exactly-once-fault-settlement');
   emit('kn-fault-late-settlements', [resolved, rejected, closeResolved, closeRejected]);

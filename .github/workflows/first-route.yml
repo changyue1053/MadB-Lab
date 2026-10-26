@@ -11,7 +11,7 @@ concurrency:
   cancel-in-progress: true
 env:
   # Fixed public producer revision; candidate provenance is checked by the consumer.
-  MADB_PRODUCER_REVISION: c8e7e01c31a7bc23abf6716abcc85cb47d47f418
+  MADB_PRODUCER_REVISION: 18256fcc4b26cf3cd1e2e79c39b86c2512e012d9
 jobs:
   producer:
     name: C05 frozen Linux candidate producer

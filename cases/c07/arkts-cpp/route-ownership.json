@@ -18,8 +18,8 @@
   },
   "fixture": {
     "path": "harness/c07_companion_cases.py",
-    "sha256": "sha256:f56253b4ba90be93e1d568c65640bd941db77a0f9e6847fac1602bb40c7442c2",
-    "size": 12843,
+    "sha256": "sha256:fce7710db98b97f4ad4497c93bfed22f4b958ef38a1d0583141215a7d2ea7de7",
+    "size": 12963,
     "schema": "madb.lab-source/1"
   },
   "setup": [

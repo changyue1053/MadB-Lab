@@ -1,5 +1,5 @@
 import { Runtime, Engine, Operation, Snapshot, BoundaryError, openRuntime, testArmWork, testReleaseWork,
-  testFailCompletion, testArmPartialOpenFailure, testLastAdmissionAudit, testExportKey } from @MADB_PUBLIC_MODULE@;
+  testFailCompletion, testFailAfterSettlement, testArmPartialOpenFailure, testLastAdmissionAudit, testExportKey } from @MADB_PUBLIC_MODULE@;
 import { check, code, snapshot, throwsCode, rejectsSnapshot, nextTurn } from './Assertions';
 import { Emit, observed, facade, gate, frame, finalClosed } from './SupportChecks';
 export async function runPartialOpen(emit: Emit, timeoutMs: number): Promise<void> {
@@ -27,6 +27,69 @@ export async function runPartialOpen(emit: Emit, timeoutMs: number): Promise<voi
 }
 export async function runFailure(name: string, runtime: Runtime, engine: Engine,
                                  deadline: number, emit: Emit): Promise<boolean> {
+  if (name === 'failed-close-before-guard' || name === 'failed-close-after-accepted') {
+    const before: boolean = name === 'failed-close-before-guard';
+    testArmWork(engine, 2);
+    const op: Operation = engine.startOperation({ value: 41, text: 'fault-owned' });
+    await gate(runtime, op, 2, deadline, emit);
+    if (before) { testFailCompletion(engine, 2); } else { testFailAfterSettlement(runtime); }
+    let resolved: number = 0; let rejected: number = 0;
+    let originalFailure: Error | undefined = undefined;
+    await op.result().then((value: Snapshot): void => {
+      check(!before, 'before-guard-must-not-resolve');
+      snapshot(value, 42, 'fault-owned', 'accepted-result-preserved'); resolved++;
+    }, (error: Error): void => {
+      check(before && error instanceof BoundaryError && code(error) === 'BridgeFailure', 'before-guard-public-bridge-failure');
+      originalFailure = error; rejected++;
+    });
+    const residual: number[] = observed(runtime, 'failed-close-residual');
+    const js: number[] = facade(runtime, 'failed-close-residual');
+    check(residual[13] === 1 && residual[14] === 1 && residual[17] === 0 &&
+      residual[58] === 1 && residual[59] === 0 && residual[60] === 0, 'failed-close-held-work');
+    check(residual[11] === (before ? 1 : 0) && residual[19] === (before ? 1 : 0) &&
+      residual[85] === (before ? 1 : 0) && residual[87] === (before ? 1 : 0) && residual[88] === 0,
+      'failed-close-exact-consumption-boundary');
+    check(js[1] === 0 && js[2] === 0 && js[6] === 0 && js[7] === 0 && js[9] === 0 &&
+      js[10] === 1 && js[11] === (before ? 0 : 1) && js[12] === 0, 'failed-close-original-failure');
+    emit('fault-residual', residual); emit('fault-facade', js);
+    emit('fault-settlement-counts', [resolved, rejected]);
+    let closeResolved: number = 0; let closeRejected: number = 0;
+    let expectedError: boolean = false; let sameFailure: boolean = !before;
+    let rejectionFrame: number[] = [];
+    const rejectionObservationErrors: Error[] = [];
+    const close: Promise<void> = runtime.close();
+    check(close === runtime.close(), 'failed-close-same-parent-promise');
+    const completed: Promise<void> = close.then((): void => { closeResolved++; }, (error: Error): void => {
+      closeRejected++;
+      expectedError = error instanceof BoundaryError && code(error) === 'BridgeFailure';
+      sameFailure = !before || error === originalFailure;
+      try { rejectionFrame = observed(runtime, 'failed-close-settled'); }
+      catch (observationError) { rejectionObservationErrors.push(observationError as Error); }
+    });
+    await nextTurn(deadline, 'failed-close-pending-turn');
+    check(closeResolved === 0 && closeRejected === 0, 'failed-close-no-premature-settlement');
+    const pending: number[] = observed(runtime, 'failed-close-pending');
+    check(pending[1] !== 3 && pending[13] === 1 && pending[14] === 1 && pending[17] === 0 &&
+      pending[30] === 1 && pending[59] === 0 && pending[60] === 0, 'failed-close-owns-unfinished-work');
+    emit('fault-close-pending-native', pending);
+    emit('fault-close-pending-facade', facade(runtime, 'failed-close-pending'));
+    emit('fault-close-pending', [1, closeResolved, closeRejected, 1]);
+    testReleaseWork(engine);
+    await completed;
+    check(closeResolved === 0 && closeRejected === 1 && expectedError && sameFailure,
+      'failed-close-original-error-after-cleanup');
+    if (rejectionObservationErrors.length > 0) { throw rejectionObservationErrors[0]; }
+    const closed: number[] = rejectionFrame;
+    check(closed[1] === 3 && closed[16] === 1 && closed[17] === 1 && closed[27] === 0 &&
+      closed[32] === 1 && closed[55] === 2, 'failed-close-reject-after-physical-receipt');
+    emit('fault-close-settled-native', closed);
+    emit('fault-close-outcome', [closeResolved, closeRejected, expectedError ? 1 : 0, sameFailure ? 1 : 0]);
+    await nextTurn(deadline, 'failed-close-no-second-settlement');
+    check(resolved === (before ? 0 : 1) && rejected === (before ? 1 : 0) &&
+      closeResolved === 0 && closeRejected === 1, 'failed-close-exactly-once');
+    emit('fault-late-settlements', [resolved, rejected, closeResolved, closeRejected]);
+    return true;
+  }
   if (name === 'after-guard') {
     testArmWork(engine,2); const op: Operation = engine.startOperation({value:41,text:'consumed'});
     await gate(runtime,op,2,deadline,emit); testFailCompletion(engine,3);

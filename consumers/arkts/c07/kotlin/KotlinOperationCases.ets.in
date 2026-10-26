@@ -149,6 +149,8 @@ async function cancelRace(runtime: Runtime, engine: Engine, deadline: number,
     emit(prefix + 'settlement-late', lateSettlement);
     emit(prefix + 'outcome', [winner, delivered, hooks, 1]);
     if (winner === 0) { successes++; } else { cancellations++; }
+    // Pace completed evidence emission only; the start/result/cancel interval is unchanged.
+    await new Promise<void>((resolve: () => void): void => { setTimeout(resolve, 100); });
   }
   noGate(runtime, 'kn-op-race-control-after', control);
   emit('kn-op-race-summary', [RACE_ATTEMPTS, active, successes, cancellations, workCalls]);

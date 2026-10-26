@@ -37,12 +37,13 @@ def native(**values):
 
 def retained():
     full = memory(4096,4096,4096,0, 4096,4096,4096,0,4,0, 0,0,0,0,0, 0,2050,8200,8200,4,4)
-    scratch = memory(4096,4096,4096,0, 4096,5120,5120,1024,5,1, 0,0,0,0,0, 0,2050,12300,12300,6,6)
-    denied = memory(4096,4096,4096,0, 4096,5120,5120,1024,5,1, 0,0,0,0,0, 0,2050,12304,12304,7,7)
-    drained = memory(0,4096,4096,4096, 0,5120,5120,5120,5,5, 0,0,0,0,0, 0,2050,12304,12304,7,7)
+    empty_control = memory(4096,4096,4096,0, 4096,4097,4097,1,5,1, 0,0,0,0,0, 0,2050,8234,8234,7,7)
+    scratch = memory(4096,4096,4096,0, 4096,5120,5121,1025,6,2, 0,0,0,0,0, 0,2050,12364,12364,10,10)
+    denied = memory(4096,4096,4096,0, 4096,5120,5121,1025,6,2, 0,0,0,0,0, 0,2050,12368,12368,11,11)
+    drained = memory(0,4096,4096,4096, 0,5120,5121,5121,6,6, 0,0,0,0,0, 0,2050,12368,12368,11,11)
     return {'memory-baseline':empty(), 'memory-work-held-control':control(**{'1':1,'3':1}),
             'memory-retained-native':native(**{'12':1,'13':0,'24':4,'27':4096,'39':1}),
-            'memory-retained-full':full,'memory-scratch-returned':scratch,
+            'memory-retained-full':full,'memory-scratch-empty':empty_control,'memory-scratch-returned':scratch,
             'memory-retained-denied':denied,'memory-drained':drained,'memory-final':drained}
 
 
@@ -74,6 +75,23 @@ class MemoryOracleTests(unittest.TestCase):
     def test_two_independent_positive_observations(self):
         self.assertEqual(predicates(NAMES[0], retained()), [])
         self.assertEqual(predicates(NAMES[1], state()), [])
+
+    def test_paired_text_bytes_reject_missing_or_extra_utf16_copy(self):
+        for difference in (0, 2048, 6144):
+            f=retained(); full=parse_memory_csv(f['memory-retained-full']); empty=parse_memory_csv(f['memory-scratch-empty'])
+            value=empty[18]+(empty[18]-full[18])+difference
+            for i in (18,19):set_memory(f,'memory-scratch-returned',i,value)
+            self.assertTrue(predicates(NAMES[0],f))
+
+    def test_same_handle_overhead_may_differ_without_weakening_text_delta(self):
+        f=retained()
+        for label,delta in [('memory-scratch-empty',20),('memory-scratch-returned',40),('memory-retained-denied',40),('memory-drained',40),('memory-final',40)]:
+            for i in (18,19):set_memory(f,label,i,parse_memory_csv(f[label])[i]+delta)
+        self.assertEqual(predicates(NAMES[0],f),[])
+
+    def test_missing_control_or_one_array_release_rejected(self):
+        f=retained();del f['memory-scratch-empty'];self.assertTrue(predicates(NAMES[0],f))
+        f=retained();set_memory(f,'memory-scratch-returned',21,9);self.assertTrue(predicates(NAMES[0],f))
 
     def test_counts_cannot_replace_bytes(self):
         f = retained(); set_memory(f,'memory-retained-full',1,4)

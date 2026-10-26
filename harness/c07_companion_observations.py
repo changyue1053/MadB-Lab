@@ -79,12 +79,20 @@ SCENARIOS = {
     "partial-open": {"partial-open-failed": "native", "partial-open-physical": "native"},
     "worker-env-exit": {"worker-gate-held": "native", "worker-exit-request": "native"},
     "fault-before-guard": {"fault-residual": "native", "fault-facade": "facade",
-        "fault-settlement-counts": "vector", "fault-close-rejected": "one",
+        "fault-settlement-counts": "vector", "fault-close-pending": "vector",
+        "fault-close-pending-native": "native", "fault-close-pending-facade": "facade", "fault-close-at-exit": "vector",
         "parent-fault-residual": "native", "worker-exit-request": "native"},
     "fault-after-accepted": {"fault-residual": "native", "fault-facade": "facade",
-        "fault-settlement-counts": "vector", "fault-close-rejected": "one",
+        "fault-settlement-counts": "vector", "fault-close-pending": "vector",
+        "fault-close-pending-native": "native", "fault-close-pending-facade": "facade", "fault-close-at-exit": "vector",
         "parent-fault-residual": "native", "worker-exit-request": "native"},
 }
+FAILED_CLOSE_CASES = {"failed-close-before-guard", "failed-close-after-accepted"}
+for _case in sorted(FAILED_CLOSE_CASES):
+    SCENARIOS[_case] = {"fault-residual": "native", "fault-facade": "facade",
+        "fault-settlement-counts": "vector", "fault-close-pending": "vector",
+        "fault-close-pending-native": "native", "fault-close-pending-facade": "facade",
+        "fault-close-settled-native": "native", "fault-close-outcome": "vector", "fault-late-settlements": "vector"}
 SCENARIOS.update(COMPLETION_SCENARIOS)
 SCENARIOS.update(ADMISSION_SCENARIOS)
 SCENARIOS.update(DIAGNOSTIC_SCENARIOS)
@@ -101,6 +109,7 @@ GATED_CASES.update(COMPLETION_GATED)
 GATED_CASES.update(ADMISSION_GATED)
 GATED_CASES.update(DIAGNOSTIC_GATED)
 GATED_CASES.update(MEMORY_GATED)
+GATED_CASES.update(FAILED_CLOSE_CASES)
 ZERO_OWNERS = (2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 18, 19, 20, 21, 22,
                23, 24, 25, 26, 28, 29, 35, 37, 77)
 PAIRS = (33, 38, 40, 42, 44, 46, 48, 50, 52)
@@ -189,7 +198,7 @@ def _predicates(case, frames):
         need(frames["observer-local"] == final[156:168], "observer local segment differs from stable physical receipt")
     # Process counters are live observations, not stable history or per-runtime totals.
     if case not in WORKER_CASES:
-        equal("facade-closed", {9: 1, 10: 0, **{i: 0 for i in (1, 2, 3, 4, 5, 6, 7, 13, 14)}})
+        equal("facade-closed", {9: 1, 10: int(case in FAILED_CLOSE_CASES), **{i: 0 for i in (1, 2, 3, 4, 5, 6, 7, 13, 14)}})
     else:
         equal("physical-closed", {27: 1, 58: 1, 59: 1, 60: 1, 91: 1, 92: 1, 93: 1, 166: 1, 167: 1})
         need(final[165] > 0, "actual async cleanup deleted no reference")
@@ -200,7 +209,7 @@ def _predicates(case, frames):
     if gate_label:
         gate = frames[gate_label]
         phase = 2 if case in ("terminal-success", "terminal-domain", "after-guard",
-                              "fault-before-guard", "fault-after-accepted") else 1
+                              "fault-before-guard", "fault-after-accepted", *FAILED_CLOSE_CASES) else 1
         equal(gate_label, {14: 1, 17: 0, 55: 1, 56: phase, 57: 1, 58: 1, 59: 0, 60: 0, 65: 1, 69: 0})
         need(gate[13] >= 1 and gate[62] > 0 and gate[63] > 0 and gate[62] != gate[63], "held work lacks distinct live owner/business threads")
         if case in GATED_CASES:
@@ -266,14 +275,38 @@ def _predicates(case, frames):
     elif case == "worker-env-exit":
         equal("worker-exit-request", {4: 8, 5: 3, 6: 8, 7: 1, 10: 4096, 11: 32, 19: 32, 77: 1})
         need(frames["worker-exit-request"][8] > 0, "exit request lacks real source")
-    elif case in ("fault-before-guard", "fault-after-accepted"):
-        before = case == "fault-before-guard"
+    elif case in ("fault-before-guard", "fault-after-accepted", *FAILED_CLOSE_CASES):
+        before = case in ("fault-before-guard", "failed-close-before-guard")
+        stages = ["fault-residual", "fault-facade", "fault-settlement-counts",
+                  "fault-close-pending-native", "fault-close-pending-facade", "fault-close-pending"]
+        stages += (["parent-fault-residual", "fault-close-at-exit", "worker-exit-request", "physical-closed"]
+                   if case in WORKER_CASES else
+                   ["fault-close-settled-native", "fault-close-outcome", "fault-late-settlements", "physical-closed"])
+        order = list(frames)
+        positions = [order.index(label) for label in stages]
+        need(positions == sorted(positions), "fault pending/settlement/cleanup stages are out of order")
         equal("fault-residual", {11: int(before), 13: 1, 14: 1, 17: 0, 19: int(before),
             58: 1, 59: 0, 60: 0, 85: int(before), 87: int(before), 88: 0})
         equal("fault-facade", {1: 0, 2: 0, 6: 0, 7: 0, 9: 0, 10: 1, 11: int(not before), 12: 0, 13: 0, 14: 0})
-        equal("parent-fault-residual", {13: 1, 14: 1, 55: 0})
-        need(frames["parent-fault-residual"][1] != 3, "fault residual misreported as closed")
         need(frames["fault-settlement-counts"] == ([0, 1] if before else [1, 0]), "fault settled incorrectly or more than once")
+        need(frames["fault-close-pending"] == [1, 0, 0, 1], "close settled early or lost its memoized parent")
+        equal("fault-close-pending-native", {13: 1, 14: 1, 17: 0, 27: 0, 30: 1, 59: 0, 60: 0})
+        need(frames["fault-close-pending-native"][1] != 3, "held close falsely reported physical ACK")
+        equal("fault-close-pending-facade", {1: 0, 2: 0, 5: 1, 6: 1, 7: 0, 8: 1, 9: 0, 10: 1})
+        if case in WORKER_CASES:
+            equal("parent-fault-residual", {13: 1, 14: 1, 30: 1, 55: 0})
+            need(frames["parent-fault-residual"][1] != 3, "fault residual misreported as closed")
+            need(frames["fault-close-at-exit"] == [1, 0, 0, 0], "close settled before genuine env exit")
+        else:
+            need(frames["fault-close-outcome"] == [0, 1, 1, 1], "normal failed close did not retain its typed original failure")
+            need(frames["fault-late-settlements"] == ([0, 1, 0, 1] if before else [1, 0, 0, 1]), "late or duplicate fault settlement")
+            equal("fault-close-settled-native", {1: 3, 16: 1, 17: 1, 27: 0, 32: 1, 40: 1, 41: 1,
+                44: 1, 45: 1, 55: 2, **{i: 0 for i in ZERO_OWNERS}, **{i: 1 for i in range(65, 71)}})
+            settled = frames["fault-close-settled-native"]
+            need(all(settled[i] == settled[i + 1] for i in PAIRS), "rejection preceded paired native cleanup")
+            need(0 < settled[71] < settled[72] < settled[73] < settled[75] < settled[76] and
+                 0 < settled[74] < settled[75], "rejection preceded actual join/TLS ACK")
+            equal("physical-closed", {27: 0, 32: 1, 91: 0, 92: 0, 59: 1, 60: 1})
     if case in COMPLETION_SCENARIOS:
         problems.extend(completion_predicates(case, frames))
     problems.extend(admission_predicates(case, frames))

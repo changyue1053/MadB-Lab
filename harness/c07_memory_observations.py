@@ -162,7 +162,9 @@ def predicates(case, frames, need, equal, delta):
         equal("memory-state-gate", {1: 0, 2: 1, 3: 0, 5: 1, 6: 0})
         equal("memory-state-pending", {1: 1024, 2: 1024, 3: 0, 5: size})
         equal("memory-state-staged", {1: 2048, 2: 2048, 3: 1024, 4: 1024, 5: 2 * size})
-        equal("memory-state-staged-native", {7: 1, 9: 0, 10: 2048, 77: 1})
+        # Tickets cover source -> pending -> entered until paired release:
+        # one old pending ticket plus one held incoming Publication ticket.
+        equal("memory-state-staged-native", {7: 2, 9: 0, 10: 2048, 77: 1})
         equal("memory-state-replaced", {1: 1024, 2: 2048, 3: 0, 4: 1024, 5: size})
         equal("memory-state-replaced-native", {7: 1, 9: 0, 10: 1024, 77: 0})
         equal("memory-state-entered", {1: 1024, 3: 0, 5: size})
@@ -191,7 +193,9 @@ def predicates(case, frames, need, equal, delta):
             "memory-full-after-copy-native",
             "memory-full-rejected-native",
         ):
-            equal(name, {3: 0, 4: 4, 10: 4096, 13: 1})
+            # Work counts admitted unfinished responsibilities, not threads:
+            # phase1 holds one Running operation; three more remain Queued.
+            equal(name, {3: 0, 4: 4, 10: 4096, 13: 4})
         copied = frames["memory-full-after-copy"]
         before = frames["memory-full-before-copy"]
         need(

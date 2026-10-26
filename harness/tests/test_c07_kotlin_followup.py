@@ -23,12 +23,16 @@ def complete():
     return f
 
 def fault_fixture(before):
-    final=complete();residual=n(**{'12':1,'39':1,'26':int(before),'11':int(before)})
-    frames={'kn-fault-held-control':c(**{'3':2}), 'kn-fault-held-native':n(**{'12':1,'39':1}),
+    final=complete();final[9]=final[10]=final[14]=final[15]=2
+    residual=n(**{'9':2,'10':int(not before),'11':1+int(before),'12':1,'14':2,'15':1,'39':1,'26':int(before)})
+    frames={'kn-fault-first-control':c(**{'3':2,'5':1}),
+      'kn-fault-first-completed':n(**{'9':1,'11':1,'14':1,'15':1,'24':1}),
+      'kn-fault-held-control':c(**{'3':2,'5':2}), 'kn-fault-held-native':n(**{'9':2,'11':2,'12':1,'14':2,'15':1,'24':2,'39':1}),
+      'kn-fault-close-pending-control':c(**{'3':2,'5':2}), 'kn-fault-close-proof':[0,1,1],
       'kn-fault-settlements':[0,1,0] if before else [1,0,1], 'kn-fault-residual-native':residual,
       'kn-fault-residual-control':c(**{'26':int(before),'28':int(not before),'29':int(not before)}),
       'kn-fault-settler':[int(not before),int(not before),int(not before),int(before),int(not before),0,1,0,0],
-      'kn-fault-close-pending':n(**{'1':2,'12':1,'39':1}), 'kn-fault-close-outcome':[0,1],
+      'kn-fault-close-pending':n(**{'1':2,'12':1,'14':2,'15':1,'39':1}), 'kn-fault-close-outcome':[0,1],
       'kn-fault-closed-native':final,'kn-fault-final-settler':[0]*9,
       'kn-fault-late-settlements':[0,1,0,1] if before else [1,0,0,1]}
     if not before:frames['kn-fault-after-resolver']=[1,1,1,0,0,1,1,0,1]
@@ -58,6 +62,16 @@ class FollowupOracles(unittest.TestCase):
             for label,index,value in [('kn-fault-residual-native',26,int(not before)),('kn-fault-residual-native',13,1),('kn-fault-close-pending',2,1),('kn-fault-close-outcome',0,1),('kn-fault-closed-native',109,0),('kn-fault-final-settler',7,1),('kn-fault-late-settlements',3,2)]:
                 frames=fault_fixture(before);frames[label][index]=value
                 with self.subTest(before=before,label=label):self.assertTrue(fault(case,frames))
+    def test_double_operation_and_handler_time_evidence_is_required(self):
+        for before in (True,False):
+            case='kotlin-fault-before-guard' if before else 'kotlin-fault-after-accepted'
+            for label,index,value in [('kn-fault-first-completed',15,0),('kn-fault-first-completed',26,1),('kn-fault-held-native',14,1),('kn-fault-held-native',15,2),('kn-fault-residual-native',11,int(before)),('kn-fault-close-pending',15,2),('kn-fault-closed-native',14,1),('kn-fault-closed-native',15,1),('kn-fault-close-proof',0,1),('kn-fault-close-proof',1,0),('kn-fault-close-proof',2,0)]:
+                f=fault_fixture(before);f[label][index]=value
+                with self.subTest(case=case,label=label,index=index):self.assertTrue(fault(case,f))
+            for label in ('kn-fault-held-control','kn-fault-close-pending-control'):
+                f=fault_fixture(before);parts=f[label].split(',');parts[5]='1';f[label]=','.join(parts)
+                self.assertTrue(fault(case,f))
+
     def test_fault_zero_owner_pair_not_activity(self):
         f=fault_fixture(True);f['kn-fault-closed-native']=n(**{'1':4,'2':1,'7':1,'72':3})
         self.assertTrue(fault('kotlin-fault-before-guard',f))

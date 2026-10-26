@@ -12,7 +12,7 @@ SCENARIOS = {
     NAMES[0]: {
         'memory-baseline': 'memory', 'memory-work-held-control': 'control',
         'memory-retained-native': 'native', 'memory-retained-full': 'memory',
-        'memory-scratch-returned': 'memory', 'memory-retained-denied': 'memory',
+        'memory-scratch-empty': 'memory', 'memory-scratch-returned': 'memory', 'memory-retained-denied': 'memory',
         'memory-drained': 'memory', 'memory-final': 'memory',
     },
     NAMES[1]: {
@@ -104,14 +104,18 @@ def predicates(case, frames):
             held = native(frames['memory-retained-native'])
             need(gate[3] == '1' and int(gate[1]) > 0 and gate[4] != '0' and gate[5] != '0', 'no real positive work hold')
             need(held[24] == 4 and held[27] == 4096 and held[12] > held[13] and held[39] == 1, 'four models not retained behind actual worker hold')
-            full = m('memory-retained-full'); scratch = m('memory-scratch-returned'); denied = m('memory-retained-denied')
+            full = m('memory-retained-full'); empty = m('memory-scratch-empty'); scratch = m('memory-scratch-returned'); denied = m('memory-retained-denied')
             need((full[1],full[5],full[11],full[16]) == (4096,4096,0,0), 'retained4096 confused with allocation count')
             need(full[3]-baseline[3] == 4096 and full[7]-baseline[7] == 4096 and full[9]-baseline[9] == 4, 'four actual retained allocations absent')
             need((scratch[1],scratch[5]) == (4096,4096) and scratch[3:5] == full[3:5], 'scratch consumed retained budget')
+            need((empty[1],empty[5],empty[16]) == (4096,4096,0) and empty[3:5] == full[3:5], 'empty control changed retained ledger')
+            need(empty[7]-full[7] == empty[8]-full[8] == 1 and empty[9]-full[9] == empty[10]-full[10] == 1, 'empty control omitted real minimum allocation')
+            empty_bytes = empty[18]-full[18]; empty_arrays = empty[20]-full[20]
+            need(empty_bytes >= 4 and empty[19]-full[19] == empty_bytes and empty_arrays >= 2 and empty[21]-full[21] == empty_arrays, 'empty control UTF16 scopes not actually paired')
             need(scratch[6] >= 5120, 'requested-byte peak omitted independent1024 scratch')
-            need(scratch[7]-full[7] == scratch[8]-full[8] == 1024 and scratch[9]-full[9] == scratch[10]-full[10] == 1, 'scratch allocation/free delta differs')
+            need(scratch[7]-empty[7] == scratch[8]-empty[8] == 1024 and scratch[9]-empty[9] == scratch[10]-empty[10] == 1, 'scratch allocation/free delta differs')
             need(scratch[16] == 0 and scratch[17] >= 2050, 'UTF16 temporary storage unobserved')
-            need(scratch[18]-full[18] == scratch[19]-full[19] == 4100 and scratch[20]-full[20] == scratch[21]-full[21] == 2, 'input/output UTF16 arrays not independently paired')
+            need(scratch[18]-empty[18] == scratch[19]-empty[19] == empty_bytes+4096 and scratch[20]-empty[20] == scratch[21]-empty[21] == empty_arrays, 'input/output UTF16 arrays not independently paired')
             need((denied[1],denied[5]) == (4096,4096) and denied[7:11] == scratch[7:11], 'rejected extra retained model allocated or freed storage')
         else:
             gate = parse_control(frames['memory-delivery-held-control'])

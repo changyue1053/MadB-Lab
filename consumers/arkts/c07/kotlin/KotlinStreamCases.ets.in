@@ -87,14 +87,14 @@ async function latest(runtime: Runtime, engine: Engine, deadline: number,
 async function enteredState(runtime: Runtime, engine: Engine, deadline: number,
                             emit: EmitNumbers): Promise<void> {
   const first: number[] = []; const newcomer: number[] = [];
-  let fresh: Subscription | undefined = undefined;
+  const fresh: Subscription[] = [];
   const original: Subscription = engine.observeState((value: Snapshot): void => {
     first.push(value.value);
     if (value.value === 2) {
       snapshot(value, 2, 'entered', 'entered-state-original');
       engine.publishState({ value: 3, text: 'three' });
       engine.publishState({ value: 4, text: 'four' });
-      fresh = engine.observeState((next: Snapshot): void => { newcomer.push(next.value); });
+      fresh.push(engine.observeState((next: Snapshot): void => { newcomer.push(next.value); }));
       snapshot(value, 2, 'entered', 'entered-copy-survives-reentrant-replacement');
       const raw: number[] = observed(runtime, 'kn-stream-state-entry-replaced-native', emit);
       check(raw[29] === 2 && raw[31] === 1 && raw[27] === 11, 'entered-plus-one-latest-state-owner');
@@ -113,8 +113,8 @@ async function enteredState(runtime: Runtime, engine: Engine, deadline: number,
   vector(newcomer, [5], 'new-state-subscription-only-future');
   emit('kn-stream-state-entry-original-trace', first);
   emit('kn-stream-state-entry-new-trace', newcomer);
-  check(fresh !== undefined, 'new-state-subscription-created');
-  await original.close(); await (fresh as Subscription).close();
+  check(fresh.length === 1, 'new-state-subscription-created');
+  await original.close(); await fresh[0].close();
 }
 
 async function staging(runtime: Runtime, engine: Engine, deadline: number,

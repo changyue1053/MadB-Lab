@@ -1,7 +1,7 @@
 {
   "schema": "madb-lab.c07-kotlin-source-review/1",
   "status": "reviewed",
-  "producer_revision": "c8e7e01c31a7bc23abf6716abcc85cb47d47f418",
+  "producer_revision": "18256fcc4b26cf3cd1e2e79c39b86c2512e012d9",
   "prepared_revision": "74d8e0586bab20f31220fa413b28f14d2a1adb24",
   "owner_review_baseline": "3edf865160375474c4bde30c44d208d134d898ef",
   "scope": "Finite independently reviewed Kotlin owner/source and managed C04 KSP/Compile/Link recipe alignment. Not an independent rebuild, Konan transitive-input proof, runtime pass or total managed-heap accounting.",
@@ -93,8 +93,8 @@
     },
     {
       "path": "adapters/toolchains/arkts/kotlin_project.py",
-      "sha256": "sha256:f09b1ff3fdde0c91680d3104aaa9f12bfd5c97d854b5ab77e5767f3fa8e1f1bc",
-      "size": 16879
+      "sha256": "sha256:b874ed50d7a25d27236d50ad7e50464dbbeb03a6f99b5e31cb010d101da7c4d3",
+      "size": 17727
     },
     {
       "path": "adapters/toolchains/arkts/kotlin_test_binding.py",
@@ -108,8 +108,8 @@
     },
     {
       "path": "docs/adr/0013-arkts-runtime-and-completion.md",
-      "sha256": "sha256:3f85a6b1e103454379487422db9c836d030e24d890dd366c8041e1adaf59e340",
-      "size": 11506
+      "sha256": "sha256:8ef892436312636f7f2e368426c7f30c6949a170bf7a30e8e8b3ea59a1011a5a",
+      "size": 14159
     },
     {
       "path": "kotlin-formal-headers/hilog/log.h",
@@ -153,8 +153,8 @@
     },
     {
       "path": "sdk/arkts/facade/Boundary.ets.in",
-      "sha256": "sha256:4579b9115511dddcdc1e0fd12a8d4f510997858ecc203e49f82b0403dd2a573e",
-      "size": 24699
+      "sha256": "sha256:dd3775ec075333a79efaeb236b6dc8da46622fea22b43a6e021cf4cfe19faa15",
+      "size": 25310
     },
     {
       "path": "sdk/kotlin/arkts-owned/README.md",
@@ -203,8 +203,8 @@
     },
     {
       "path": "sdk/kotlin/arkts-owned/facade/KotlinPort.ets.in",
-      "sha256": "sha256:07c35c495fc4b93521a2d21844de7ec84ccff6410773627d66767ac3be97717a",
-      "size": 4544
+      "sha256": "sha256:22619a0c625ae23fc0a8fe53945d3ffceff7a7540f62b31603abc88c9d4acea2",
+      "size": 4584
     },
     {
       "path": "sdk/kotlin/arkts-owned/frontend-policy.json",
@@ -283,13 +283,13 @@
     },
     {
       "path": "sdk/kotlin/arkts-owned/src/common/OwnedCore.kt",
-      "sha256": "sha256:dea127c5785fa664423ec28774bb6a934ed531a1d18d56c7d22cb67bce459df7",
-      "size": 43780
+      "sha256": "sha256:9173f7220fe844e8ea44245703316a139a58e08b5fcf04c992d0a2b6fdc00c32",
+      "size": 44925
     },
     {
       "path": "sdk/kotlin/arkts-owned/src/common/OwnedExports.kt",
-      "sha256": "sha256:51f08f484ad13d18f06df221842051126781037dbc1b123e44443772ec386c77",
-      "size": 2629
+      "sha256": "sha256:33a355ad0746011848f3b414a0153b8d91eed2a7bb10077a750e29447e9af2aa",
+      "size": 2666
     },
     {
       "path": "sdk/kotlin/arkts-owned/src/common/OwnedModel.kt",
@@ -318,23 +318,23 @@
     },
     {
       "path": "sdk/kotlin/arkts-owned/test-observer/check_coverage.py",
-      "sha256": "sha256:4f99f12fb440a3e89328ff45999f9b71df3fe3299f64bce17e31c095257b018e",
-      "size": 4591
+      "sha256": "sha256:379a12c105c704941a9f7e718c7526cac167c2f1129ef1b2c076799bc10241d7",
+      "size": 5652
     },
     {
       "path": "sdk/kotlin/arkts-owned/test-observer/generate.py",
-      "sha256": "sha256:aeb7b1a805cff1f0b559300e7b95dc944073e8e3da3ab5aa66010365bc60714d",
-      "size": 8312
+      "sha256": "sha256:1f2d71a7297b848977ee834663d13d8a480ad7c47bc32c0f66cc8935b83d4976",
+      "size": 9557
     },
     {
       "path": "sdk/kotlin/arkts-owned/test-observer/imports.json",
-      "sha256": "sha256:cc17b40467e20d6cb391ac0a2420305144526abed7028deecf460f0488ebb845",
-      "size": 3579
+      "sha256": "sha256:b35e8e94bab36d9ca7846818964fd8e2c32b35b61befffbd3b3b874c81ba5080",
+      "size": 8543
     },
     {
       "path": "sdk/kotlin/arkts-owned/test-observer/observer-schema.json",
-      "sha256": "sha256:135c182f75efa45964f274fc3464107b241458bd583042db7188774285a846a9",
-      "size": 37487
+      "sha256": "sha256:20e7c102cab884247c7bb3e09999953bdfc8b2382188d1b97c160c8c85274bfa",
+      "size": 44287
     },
     {
       "path": "sdk/kotlin/arkts-owned/test-observer/observer.h",
@@ -357,19 +357,24 @@
       "size": 280
     },
     {
+      "path": "sdk/kotlin/arkts-owned/test-observer/provider-call-shim.h",
+      "sha256": "sha256:0fc3d4e962d5765dbf0247eabc386dbc52634e29dac5751ac2a0bad4100ec8a1",
+      "size": 996
+    },
+    {
       "path": "sdk/kotlin/arkts-owned/test-observer/provider-wrap.rsp",
-      "sha256": "sha256:dc142989dd1addff6a3d3d5d94aa4873a57345f35b847d424773085c9fc74d5b",
-      "size": 2461
+      "sha256": "sha256:daf1b12b672e0da9e918dcba42051b85d6568073d77893e9af4d75c26e9a72f0",
+      "size": 2307
     },
     {
       "path": "sdk/kotlin/arkts-owned/test-observer/provider_observer.cpp",
-      "sha256": "sha256:77f09e428749a28a0fc2594d910a2569e9c7bf0f99ec9252745f896446155d03",
-      "size": 65187
+      "sha256": "sha256:ec03c20f31bb91baf94997d07fd87a2841e21c0a24e4415f0e8e05fcd1c6b2d5",
+      "size": 65483
     },
     {
       "path": "sdk/kotlin/arkts-owned/test-observer/source-receipt.json",
-      "sha256": "sha256:b02cd9b20b07ef9a0d7c4da3e621bf20d7362789cd7b108dc541eeece3a1db1d",
-      "size": 36925
+      "sha256": "sha256:e8407edadc1f5766000a5dfc18ca987b22102e56e19b7f04b266b9e08c32a328",
+      "size": 44345
     },
     {
       "path": "sdk/kotlin/arkts-owned/test-runtime/ManagedRecordMemoryProbe.kt",
@@ -1042,8 +1047,8 @@
         },
         {
           "path": "kotlin/org/cpf/kotlin/akinterop/generated/KNapiGenerated_Index.kt",
-          "sha256": "sha256:ad80edbd7c4ac4c640b5e2f05393270f0e2e4ceca5d3159e1b09c4884388056b",
-          "size": 1457
+          "sha256": "sha256:298730ac2eee1e57b73caba5b4092553959e9e685305a652ff2876b763bd24f5",
+          "size": 1481
         },
         {
           "path": "kotlin/org/cpf/kotlin/akinterop/generated/KNapiGenerated_InterfacesProxy.kt",
@@ -1052,8 +1057,8 @@
         },
         {
           "path": "kotlin/org/cpf/kotlin/akinterop/generated/KNapiGenerated_MetaData.kt",
-          "sha256": "sha256:33e46d009f9ea5741c591fe4965f9864902defdaf65189f8083145430e0fb00f",
-          "size": 14017
+          "sha256": "sha256:ffdaf02ab5ef120a84ec666a6b0ce3abf785aef9640f9d9aac42ab46583e9d40",
+          "size": 14064
         },
         {
           "path": "kotlin/org/cpf/kotlin/akinterop/generated/KNapiGenerated_RegisterEntry.kt",
@@ -1062,18 +1067,18 @@
         },
         {
           "path": "resources/ffi_export.d.ts",
-          "sha256": "sha256:c4d19c165507e0476341bbe683ec4b017f990f1418e34ce0598a2f040e8dc47e",
-          "size": 1449
+          "sha256": "sha256:d1aa4745d1eccca150434d479ec81d7aa209dbe9517f5b46f969c220fd619d0d",
+          "size": 1473
         },
         {
           "path": "resources/frontend-facts.json",
-          "sha256": "sha256:a92cf0512b4eb80b93d315fbbac79cdd968b38d2f80d652713fb44e4b09c68a8",
-          "size": 5361
+          "sha256": "sha256:f8bda7ded1a912c225d321558372f79051c0d6c279d05bd42150a9259e4ee27f",
+          "size": 5413
         },
         {
           "path": "resources/record-export.d.ts",
-          "sha256": "sha256:a5f375d90eb05e987d1a8317a75d9a1dbf31b661360cbdd6f4b1aca89a80dbf7",
-          "size": 1430
+          "sha256": "sha256:40f813b71b219cdea183d502bd72000475f19d3e16dff9794ec824e84e7d3c8f",
+          "size": 1454
         },
         {
           "path": "resources/record-schema.json",
@@ -1153,7 +1158,7 @@
         "diagnostic_prefix": "MADB_RECORD",
         "test_scope": "R6 reuse/rollback plus reviewed controls-v2 real work, delivery, publication, clone, transfer and handle controls; actual NAPI and memory observations are separately declared"
       },
-      "reference_scope": "Actual old nonfinal KSP output for finite review only; final candidate must match or trigger renewed review.",
+      "reference_scope": "Actual final S2 C04 KSP output from producer 18256fcc4b26cf3cd1e2e79c39b86c2512e012d9 (ordinary). Independently compared with the previous reviewed output: five files change only the ownedRuntimeClose completionMode:Int parameter and its number declaration, invocation, KType and source fact; four generated files retain identical bytes. Actual candidate/Compile/Link/ELF binding remains separate.",
       "linker_arguments": [
         "--sysroot={project}/konan/dependencies/sysroot-ohos-aarch64-6.0.2.640-04",
         "-export-dynamic",
@@ -1320,6 +1325,7 @@
         "sdk/kotlin/arkts-owned/test-observer/observer_core.inc",
         "sdk/kotlin/arkts-owned/test-observer/observer_entry.h",
         "sdk/kotlin/arkts-owned/test-observer/observer_provider.h",
+        "sdk/kotlin/arkts-owned/test-observer/provider-call-shim.h",
         "sdk/kotlin/arkts-owned/test-observer/provider-wrap.rsp",
         "sdk/kotlin/arkts-owned/test-observer/provider_observer.cpp",
         "sdk/kotlin/arkts-owned/test-observer/source-receipt.json",
@@ -1465,8 +1471,8 @@
         },
         {
           "path": "kotlin/org/cpf/kotlin/akinterop/generated/KNapiGenerated_Index.kt",
-          "sha256": "sha256:0295b3d31d36041cce2319a62661cfdd0bc8a6d1a26f4f1b14dd5a7be7fc71e7",
-          "size": 2183
+          "sha256": "sha256:4a6f42314de13c2ff3b6d60b294cc7d651ea8e54c54a22c9d7b38927a73e2de8",
+          "size": 2207
         },
         {
           "path": "kotlin/org/cpf/kotlin/akinterop/generated/KNapiGenerated_InterfacesProxy.kt",
@@ -1475,8 +1481,8 @@
         },
         {
           "path": "kotlin/org/cpf/kotlin/akinterop/generated/KNapiGenerated_MetaData.kt",
-          "sha256": "sha256:71886f5072085de1a156277724f431f7710626a336bbe85c7c89ff512cbceef1",
-          "size": 19118
+          "sha256": "sha256:bff10b5d13689b67ac5363bc86e8b8298d3c1a782b13e27f25cfa0ac381526e7",
+          "size": 19165
         },
         {
           "path": "kotlin/org/cpf/kotlin/akinterop/generated/KNapiGenerated_RegisterEntry.kt",
@@ -1485,18 +1491,18 @@
         },
         {
           "path": "resources/ffi_export.d.ts",
-          "sha256": "sha256:18129ceef00e2f797e255dc1588b5ca8385e006854c7688cf361a7e1f1858546",
-          "size": 2175
+          "sha256": "sha256:565111940ab284b7c2f930b40d8516ffa33ed8ec7a908abd5e112706bb54696e",
+          "size": 2199
         },
         {
           "path": "resources/frontend-facts.json",
-          "sha256": "sha256:316126b0dce4bda2d15a7baf1a5a47dba19e70a0132bd6ecb0aab51fd62853ca",
-          "size": 7855
+          "sha256": "sha256:1b5299c8a2f9486f69622c7ab10006d52d2d7ea1876b7ee3a88de458e55a273d",
+          "size": 7907
         },
         {
           "path": "resources/record-export.d.ts",
-          "sha256": "sha256:339974ba853683e4969b080fceef3ad3bed5e336e6e5c201d12748c8b2b3df0e",
-          "size": 2140
+          "sha256": "sha256:60d1f9c32c50d9471af441a11112a09a1daf48b70a75c06b4df3f8da438ebca3",
+          "size": 2164
         },
         {
           "path": "resources/record-schema.json",
@@ -1576,7 +1582,7 @@
         "diagnostic_prefix": "MADB_RECORD",
         "test_scope": "R6 reuse/rollback plus reviewed controls-v2 real work, delivery, publication, clone, transfer and handle controls; actual NAPI and memory observations are separately declared"
       },
-      "reference_scope": "Actual thread-witness compile-test-3 KSP output, independently compared to earlier test KSP: only 8 source line positions changed (+29); all other generated bytes and emitted types unchanged. Not final C04 candidate evidence.",
+      "reference_scope": "Actual final S2 C04 KSP output from producer 18256fcc4b26cf3cd1e2e79c39b86c2512e012d9 (test). Independently compared with the previous reviewed output: five files change only the ownedRuntimeClose completionMode:Int parameter and its number declaration, invocation, KType and source fact; four generated files retain identical bytes. Actual candidate/Compile/Link/ELF binding remains separate.",
       "linker_arguments": [
         "--sysroot={project}/konan/dependencies/sysroot-ohos-aarch64-6.0.2.640-04",
         "-export-dynamic",
@@ -1623,7 +1629,6 @@
         "--wrap=napi_create_arraybuffer",
         "--wrap=napi_create_bigint_int64",
         "--wrap=napi_create_bigint_uint64",
-        "--wrap=napi_create_callsite_info",
         "--wrap=napi_create_double",
         "--wrap=napi_create_error",
         "--wrap=napi_create_external",
@@ -1641,7 +1646,6 @@
         "--wrap=napi_create_uint32",
         "--wrap=napi_define_class",
         "--wrap=napi_define_properties",
-        "--wrap=napi_delete_callsite_info",
         "--wrap=napi_delete_reference",
         "--wrap=napi_get_and_clear_last_exception",
         "--wrap=napi_get_array_length",
@@ -1654,7 +1658,6 @@
         "--wrap=napi_get_null",
         "--wrap=napi_get_property",
         "--wrap=napi_get_property_names",
-        "--wrap=napi_get_property_with_callsite_info",
         "--wrap=napi_get_reference_value",
         "--wrap=napi_get_typedarray_info",
         "--wrap=napi_get_undefined",
@@ -1685,7 +1688,6 @@
         "--wrap=napi_set_element",
         "--wrap=napi_set_named_property",
         "--wrap=napi_set_property",
-        "--wrap=napi_set_property_with_callsite_info",
         "--wrap=napi_strict_equals",
         "--wrap=napi_throw_error",
         "--wrap=napi_throw_range_error",
@@ -2386,6 +2388,14 @@
     {
       "scope": "thread source freeze with actual CPF/KSP23/Compile/Link evidence",
       "sha256": "sha256:54cb3ef9bbffbfbb4fb4a4cd1876bd87b09390fbe3b12802657461c67f214d87"
+    },
+    {
+      "scope": "S2 root-reviewed Kotlin completionMode source delta; actual final candidate binding remains separate",
+      "sha256": "sha256:b815c9db550755bdf1211f0fa72ee68bc1ad592b9402a2f3dd788432104d39c3"
+    },
+    {
+      "scope": "S2 root-reviewed weak optional-NAPI call shim source delta; ordinary remains observer-free",
+      "sha256": "sha256:3d1c56df46eb40d41115b4912b38fbcf95a9f5d1a67df3f8111180d0ff1704eb"
     }
   ]
 }

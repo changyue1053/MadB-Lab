@@ -61,7 +61,7 @@ def successful(case):
             "memory-final": memory(0, 2048, 0, 1024, 0, 2, 2, 2, 2),
             "memory-state-gate": [1, 0, 1, 0, 0, 1, 0, 0],
             "memory-state-values": [2],
-            "memory-state-staged-native": native(**{"7": 1, "9": 0, "10": 2048, "77": 1}),
+            "memory-state-staged-native": native(**{"7": 2, "9": 0, "10": 2048, "77": 1}),
             "memory-state-replaced-native": native(
                 **{"7": 1, "9": 0, "10": 1024, "77": 0}
             ),
@@ -73,7 +73,7 @@ def successful(case):
         "memory-full-rejected": memory(4096, 4096, 0, 0, 4, 5, 5, 1, 6),
         "memory-final": memory(0, 4096, 0, 0, 0, 5, 5, 5, 6),
         **{
-            name: native(**{"3": 0, "4": 4, "10": 4096, "13": 1})
+            name: native(**{"3": 0, "4": 4, "10": 4096, "13": 4})
             for name in (
                 "memory-full-native",
                 "memory-full-after-copy-native",
@@ -201,6 +201,29 @@ class MemoryOracleTests(unittest.TestCase):
         frames = successful("memory-state-staging")
         frames["memory-final"][2] = 0
         self.assertTrue(failures("memory-state-staging", frames))
+
+    def test_staging_source_ticket_is_counted_beside_old_pending(self):
+        for tickets in (0, 1, 3):
+            frames = successful("memory-state-staging")
+            frames["memory-state-staged-native"][7] = tickets
+            self.assertIn(
+                "memory-state-staged-native:7",
+                failures("memory-state-staging", frames),
+                tickets,
+            )
+
+    def test_work_includes_three_queued_and_one_running_at_every_checkpoint(self):
+        for label in (
+            "memory-full-native",
+            "memory-full-after-copy-native",
+            "memory-full-rejected-native",
+        ):
+            for work in (0, 1, 3, 5):
+                frames = successful("memory-full-scratch")
+                frames[label][13] = work
+                self.assertIn(
+                    label + ":13", failures("memory-full-scratch", frames), (label, work)
+                )
 
     def test_contract_field_order_is_not_guessed(self):
         value = {

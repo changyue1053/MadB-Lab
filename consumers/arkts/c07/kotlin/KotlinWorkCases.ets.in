@@ -150,11 +150,12 @@ async function bytes(runtime: Runtime, engine: Engine, deadline: number, emit: E
 async function consumed(runtime: Runtime, engine: Engine, deadline: number, emit: EmitNumbers, control: EmitControl): Promise<void> {
  testArmWork(engine, 2); const op: Operation = engine.startOperation({ value: 41, text: 'consumed' });
  await held(runtime, 2, deadline, emit, control); testArmTransferFailure(runtime, 3);
- await rejectsSnapshot(() => op.result(), 'DeliveryFailureConsumed', 'postguard-failure');
+ const result: Promise<void> = rejectsSnapshot(() => op.result(), 'DeliveryFailureConsumed', 'postguard-failure');
+ testReleaseWork(engine); await result;
  const f: string[] = controls(runtime, 'after-guard-control', control);
  check(counter(f, 27) === 1 && counter(f, 28) === counter(f, 29) && counter(f, 28) > 0, 'actual-guard-paired');
  check(observed(runtime)[26] === 0, 'postguard-waiter-released'); emit('after-guard-native', observed(runtime));
- testReleaseWork(engine); await op.close();
+ await op.close();
 }
 export async function runKotlinWorkCase(name: string, runtime: Runtime, engine: Engine, deadline: number,
  emit: EmitNumbers, control: EmitControl): Promise<boolean> {

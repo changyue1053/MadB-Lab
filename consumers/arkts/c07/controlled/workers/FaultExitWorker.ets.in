@@ -3,10 +3,13 @@ import { hilog } from '@kit.PerformanceAnalysisKit';
 import { Runtime, Engine, Operation, Snapshot, BoundaryError, openRuntime, testArmWork,
   testFailCompletion, testFailAfterSettlement, testExportKey } from @MADB_PUBLIC_MODULE@;
 import { PROBE_NONCE } from '../ProbeConfig';
-import { check, code, snapshot, rejectsVoid } from '../Assertions';
+import { check, code, snapshot, nextTurn } from '../Assertions';
 import { observed, facade, gate } from '../SupportChecks';
 let runtime: Runtime | undefined = undefined;
 let ready: boolean = false;
+let closeResolved: number = 0;
+let closeRejected: number = 0;
+let closeExpectedError: boolean = false;
 function emit(label: string, values: number[]): void {
   hilog.info(0x0000, 'MadBC07Probe', 'CONTROLLED_CASE %{public}s %{public}s %{public}s', PROBE_NONCE, label, JSON.stringify(values));
 }
@@ -36,8 +39,23 @@ async function start(name: string): Promise<void> {
     check(f[11] === 0 && f[19] === 0 && f[85] === 0 && f[87] === 0 && f[88] === 0, 'after-accepted-already-consumed');
     check(resolved === 1 && rejected === 0 && j[11] === 1 && j[12] === 0, 'one-resolve-no-reject-after-accepted');
   }
-  await rejectsVoid(() => r.close(), 'BridgeFailure', 'fault-close-not-a-normal-ack');
-  emit('fault-close-rejected', [1]); ready = true;
+  const close: Promise<void> = r.close();
+  check(close === r.close(), 'fault-close-memoized');
+  // Own both outcomes without blocking the actual env-exit request. These
+  // handlers do not throw into a detached Promise; either early outcome fails
+  // the checks below or the check immediately before workerPort.close().
+  close.then((): void => { closeResolved++; }, (error: Error): void => {
+    closeRejected++;
+    closeExpectedError = error instanceof BoundaryError && code(error) === 'BridgeFailure';
+  });
+  await nextTurn(Date.now() + 10000, 'fault-close-pending-turn');
+  check(closeResolved === 0 && closeRejected === 0, 'held-fault-close-must-remain-pending');
+  const pending: number[] = observed(r, 'fault-close-pending');
+  check(pending[1] !== 3 && pending[13] === 1 && pending[14] === 1 && pending[17] === 0 &&
+    pending[30] === 1 && pending[59] === 0 && pending[60] === 0, 'close-request-retains-held-work');
+  emit('fault-close-pending-native', pending);
+  emit('fault-close-pending-facade', facade(r, 'fault-close-pending'));
+  emit('fault-close-pending', [1, closeResolved, closeRejected, 1]); ready = true;
   worker.workerPort.postMessage('READY ' + testExportKey(r));
 }
 worker.workerPort.onmessage = (event: MessageEvents): void => {
@@ -46,6 +64,8 @@ worker.workerPort.onmessage = (event: MessageEvents): void => {
     try {
       check(ready && runtime !== undefined, 'fault-exit-ready');
       if (runtime === undefined) { throw new Error('LAB_NO_RUNTIME'); }
+      check(closeResolved === 0 && closeRejected === 0, 'close-cannot-settle-before-env-exit');
+      emit('fault-close-at-exit', [1, closeResolved, closeRejected, closeExpectedError ? 1 : 0]);
       emit('worker-exit-request', observed(runtime,'fault-exit-request'));
       worker.workerPort.close();
     } catch (error) { worker.workerPort.postMessage('ERROR ' + (error as Error).message); }

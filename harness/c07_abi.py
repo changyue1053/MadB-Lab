@@ -9,7 +9,23 @@ from c07_diagnostic_abi import reconstruct
 PROVENANCE_KEYS = frozenset(("location", "source", "schema", "authority", "compilerApiVersion",
                              "imports", "tools", "tool", "sdkDependencies", "dependencies"))
 BACKENDS = frozenset(("napi-ohos", "napi-sys-ohos", "napi-build-ohos", "napi-derive-ohos", "napi-derive-backend-ohos"))
-ROLE_KEYS = ("values", "calls", "slots", "limits", "error_channel", "value_slots", "test_types", "execution_domain", "runtime_reopen")
+ROLE_KEYS = ("values", "calls", "slots", "limits", "error_channel", "value_slots", "test_types", "execution_domain", "runtime_reopen", "failed_completion_handoff")
+
+
+def require_failed_completion_handoff(policy):
+    """ADR-0013 baseline 0.10: fixed private Int32 0/1 completion handoff."""
+    role = policy.get("failed_completion_handoff")
+    keys = {"allowed_integers", "deliver_pending", "abandon_failed_pending", "abandon_is_monotonic"}
+    valid = type(role) is dict and set(role) == keys
+    if valid:
+        domain = role["allowed_integers"]
+        valid = (type(domain) is list and len(domain) == 2
+                 and all(type(value) is int for value in domain) and domain == [0, 1]
+                 and type(role["deliver_pending"]) is int and role["deliver_pending"] == 0
+                 and type(role["abandon_failed_pending"]) is int and role["abandon_failed_pending"] == 1
+                 and role["abandon_is_monotonic"] is True)
+    if not valid:
+        raise CandidateError("AbiMismatch", "unsupported C07 failed_completion_handoff role")
 
 
 def semantic_facts(value):
@@ -21,6 +37,7 @@ def semantic_facts(value):
 
 
 def abi_document(contract, declarations, policy):
+    require_failed_completion_handoff(policy)
     logical = {"types": contract["types"], "required_features": contract["required_features"],
                "symbols": [{"public_id": row["public_id"], "shape": row["shape"]} for row in contract["symbols"]],
                "policies": [{name: row[name] for name in ("symbol_id", "slot", "values")} for row in contract["policies"]]}

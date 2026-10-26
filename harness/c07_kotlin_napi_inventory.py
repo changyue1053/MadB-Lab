@@ -14,6 +14,9 @@ import subprocess
 NEUTRAL = frozenset(('napi_acquire_threadsafe_function', 'napi_call_threadsafe_function',
                     'napi_call_threadsafe_function_with_priority', 'napi_release_threadsafe_function'))
 COUNTS = {'bootstrap': 12, 'provider': 83}
+# Four reviewed API24 optional entry addresses; never arbitrary NAPI pointers.
+OPTIONAL_CALLSITE = frozenset(('napi_create_callsite_info', 'napi_delete_callsite_info',
+    'napi_get_property_with_callsite_info', 'napi_set_property_with_callsite_info'))
 FIXED_FIELDS = ('Format', 'Role', 'WrappedApiCount', 'Capabilities', 'TotalAttempts',
     'EnvArgumentAttempts', 'ThreadNeutralAttempts', 'RegistrationAttempts', 'CleanupHandleAttempts',
     'NullEnvAttempts', 'UnboundEnvAttempts', 'WrongEnvAttempts', 'WrongThreadAttempts',
@@ -118,6 +121,31 @@ def contract_roles(contract):
     return result
 
 
+def inspect_relocations(text, rows, role, expected):
+    relocations = []
+    weak_got = set()
+    for line in text.splitlines():
+        match = re.search(r'\b(R_AARCH64_\S+)\s+[0-9a-fA-F]+\s+(napi_\w+)\b', line)
+        if not match:
+            continue
+        kind, api = match.groups()
+        need(api in expected, role + ': relocation outside NAPI inventory')
+        if kind == 'R_AARCH64_GLOB_DAT':
+            entries = [r for r in rows if r['name'] == api and r['section'] == 'UND']
+            need(role == 'provider' and api in OPTIONAL_CALLSITE and entries
+                 and all(r['binding'] == 'WEAK' for r in entries),
+                 role + ': only reviewed optional WEAK callsite addresses may use GOT')
+            weak_got.add(api)
+        else:
+            need(kind == 'R_AARCH64_JUMP_SLOT', role + ': unreviewed real-NAPI pointer relocation')
+        relocations.append({'type': kind, 'api': api})
+    need({r['api'] for r in relocations if r['type'] == 'R_AARCH64_JUMP_SLOT'} == expected,
+         role + ': actual NAPI PLT relocation inventory incomplete')
+    need(not weak_got or weak_got == OPTIONAL_CALLSITE,
+         role + ': optional callsite address quartet incomplete')
+    return relocations, sorted(weak_got)
+
+
 def build(contract_path, libraries, readelf, objdump, output):
     output = Path(output)
     output.mkdir(exist_ok=False, parents=True)
@@ -139,20 +167,15 @@ def build(contract_path, libraries, readelf, objdump, output):
             path.write_text(process.stdout)
             captures[label] = {'command': command, 'output': pin(path), 'text': process.stdout}
         expected = {a['name'] for a in roles[role]}
-        actual = inspect_symbols(symbols(captures['symbols']['text']), role, expected)
+        symbol_rows = symbols(captures['symbols']['text'])
+        actual = inspect_symbols(symbol_rows, role, expected)
         sites = callsites(captures['disassembly']['text'], expected)
-        relocations = []
-        for line in captures['relocations']['text'].splitlines():
-            match = re.search(r'\b(R_AARCH64_\S+)\s+[0-9a-fA-F]+\s+(napi_\w+)\b', line)
-            if match:
-                need(match.group(2) in expected, role + ': relocation outside NAPI inventory')
-                need(match.group(1) == 'R_AARCH64_JUMP_SLOT', role + ': non-PLT real-NAPI pointer relocation requires review')
-                relocations.append({'type': match.group(1), 'api': match.group(2)})
-        need({r['api'] for r in relocations} == expected, role + ': actual NAPI PLT relocation inventory incomplete')
+        relocations, weak_got = inspect_relocations(captures['relocations']['text'], symbol_rows, role, expected)
         for capture in captures.values():
             del capture['text']
         result['roles'][role] = {'library': pin(library), 'api_fields': roles[role], 'actual_napi_imports': actual,
-                                 'callsites': sites, 'napi_relocations': relocations, 'captures': captures}
+                                 'callsites': sites, 'napi_relocations': relocations,
+                                 'weak_got_imports': weak_got, 'captures': captures}
     result['passed'] = True
     (output / 'binding.json').write_text(json.dumps(result, indent=2) + '\n')
     return result

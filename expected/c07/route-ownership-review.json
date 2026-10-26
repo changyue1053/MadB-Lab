@@ -1,6 +1,6 @@
 {
   "status": "reviewed",
-  "producer_revision": "c8e7e01c31a7bc23abf6716abcc85cb47d47f418",
+  "producer_revision": "18256fcc4b26cf3cd1e2e79c39b86c2512e012d9",
   "scope": "Finite C07 C/Cpp/Rust original and composed source review inventory; same source/compiler/object/link/HAR binding is necessary and does not replace controlled target execution.",
   "original_bytes_in_candidate": false,
   "replay_scope": "Original sources and patches are not shipped by current candidates. Candidate checks align frozen references to this independently approved Lab review; no independent candidate-only patch replay is claimed.",
@@ -18,28 +18,28 @@
     },
     {
       "path": "sdk/arkts/native-gateway/include/runtime.hpp",
-      "sha256": "sha256:88e4b119b86a084ad9cae092a82892de1a2ff2d660d316a39021a778f92894d9",
-      "size": 3482
+      "sha256": "sha256:018667b8f0066b4d56dc5659dfc308b6224bb6d2197a9677c8da19a5c934de54",
+      "size": 3616
     },
     {
       "path": "sdk/arkts/native-gateway/src/api.cpp",
-      "sha256": "sha256:080f1103a118f987778be6586ba9ac75ecea7c0b4aab3e3ab5bd0dbd2b59a0af",
-      "size": 19841
+      "sha256": "sha256:523a6a9966d0de617a245ac07b2a7190558bb7d5d757fb6f01a007fe33b53d7d",
+      "size": 20352
     },
     {
       "path": "sdk/arkts/native-gateway/src/runtime.cpp",
-      "sha256": "sha256:6204bafcbf8ad4019f63a37a074c23818478ec83aae91a6953af076368eb1bef",
-      "size": 22917
+      "sha256": "sha256:2ef9479949934dd8e5d8f9f447f7983f9191162ba7f1e0ec5b782b53363dc87b",
+      "size": 23041
     },
     {
       "path": "sdk/arkts/native-gateway/Index.d.ts",
-      "sha256": "sha256:82dea1d77e3c5ed42554ed5a496e2cf4daadc6ae24cce71df420469d01eb11e2",
-      "size": 1163
+      "sha256": "sha256:16d1438992e2121ab9209698560827f121e61422d5dcd2523c9aa9958466c63c",
+      "size": 1187
     },
     {
       "path": "sdk/arkts/facade/Boundary.ets.in",
-      "sha256": "sha256:4579b9115511dddcdc1e0fd12a8d4f510997858ecc203e49f82b0403dd2a573e",
-      "size": 24699
+      "sha256": "sha256:dd3775ec075333a79efaeb236b6dc8da46622fea22b43a6e021cf4cfe19faa15",
+      "size": 25310
     },
     {
       "path": "sdk/arkts/facade/RuntimeFrame.ets",
@@ -128,12 +128,12 @@
     },
     {
       "path": "sdk/arkts/test-support/native/companion.patch",
-      "sha256": "sha256:77f393099559d158b35d6b420511dc09c8facf700c3fc2611db80f59ba76f500",
-      "size": 37403
+      "sha256": "sha256:18059acabf4d192747b89b65440a8d98ac49e6deac414da1cdd56856fdb587b1",
+      "size": 37529
     },
     {
       "path": "sdk/arkts/test-support/native/baseline.json",
-      "sha256": "sha256:93e160b63eb77acf00ab83148cfddfd16eb7e3dd1605bf21ffba8d2fe82e6176",
+      "sha256": "sha256:b0b0447eefef3cc2388207831941021e8c650215a5d0a90692abcab2b094e25a",
       "size": 1158
     },
     {
@@ -193,12 +193,12 @@
     },
     {
       "path": "sdk/arkts/test-support/facade/companion.patch",
-      "sha256": "sha256:8a91fec1a76005a22c0b5f43273229eda9dca1823bf4a1be6e5abff7743f168e",
+      "sha256": "sha256:d7462d6afed83481cca5b93ccf125e04cf352d143a202eee3046452144436f52",
       "size": 11202
     },
     {
       "path": "sdk/arkts/test-support/facade/baseline.json",
-      "sha256": "sha256:1e655e99bbd277d7585a467ca6c52c33f146983b64daca682039c7fe354be0d9",
+      "sha256": "sha256:3a3c24cff7e407279052aed857beec10aae45def2b1690b1b2a318d0706e1af3",
       "size": 234
     },
     {
@@ -313,8 +313,8 @@
     },
     {
       "path": "sdk/rust/arkts-bridge/src/lib.rs",
-      "sha256": "sha256:d1c98a3bdffedd7fa687258cb4d0a42fab9a00c0ad35e4cf0d4c9e091fb52685",
-      "size": 8854
+      "sha256": "sha256:5d7bdccc4d21187df1828828dd57fa8731ff6bbd83e0156f48ee4d8e59997d80",
+      "size": 8922
     },
     {
       "path": "adapters/generators/arkts/rust_frontend.py",
@@ -409,18 +409,18 @@
         },
         {
           "path": "derived/native/include/runtime.hpp",
-          "sha256": "sha256:88e4b119b86a084ad9cae092a82892de1a2ff2d660d316a39021a778f92894d9",
-          "size": 3482
+          "sha256": "sha256:018667b8f0066b4d56dc5659dfc308b6224bb6d2197a9677c8da19a5c934de54",
+          "size": 3616
         },
         {
           "path": "derived/native/src/api.cpp",
-          "sha256": "sha256:080f1103a118f987778be6586ba9ac75ecea7c0b4aab3e3ab5bd0dbd2b59a0af",
-          "size": 19841
+          "sha256": "sha256:523a6a9966d0de617a245ac07b2a7190558bb7d5d757fb6f01a007fe33b53d7d",
+          "size": 20352
         },
         {
           "path": "derived/native/src/runtime.cpp",
-          "sha256": "sha256:6204bafcbf8ad4019f63a37a074c23818478ec83aae91a6953af076368eb1bef",
-          "size": 22917
+          "sha256": "sha256:2ef9479949934dd8e5d8f9f447f7983f9191162ba7f1e0ec5b782b53363dc87b",
+          "size": 23041
         },
         {
           "path": "derived/native/worker/worker.cpp",
@@ -429,13 +429,13 @@
         },
         {
           "path": "derived/native/Index.d.ts",
-          "sha256": "sha256:82dea1d77e3c5ed42554ed5a496e2cf4daadc6ae24cce71df420469d01eb11e2",
-          "size": 1163
+          "sha256": "sha256:16d1438992e2121ab9209698560827f121e61422d5dcd2523c9aa9958466c63c",
+          "size": 1187
         },
         {
           "path": "derived/native/Boundary.ets.in",
-          "sha256": "sha256:4579b9115511dddcdc1e0fd12a8d4f510997858ecc203e49f82b0403dd2a573e",
-          "size": 24699
+          "sha256": "sha256:dd3775ec075333a79efaeb236b6dc8da46622fea22b43a6e021cf4cfe19faa15",
+          "size": 25310
         },
         {
           "path": "generated/native/frame.generated.hpp",
@@ -548,7 +548,7 @@
         ],
         [
           "requestRuntimeClose",
-          1
+          2
         ],
         [
           "pollRuntime",
@@ -650,13 +650,13 @@
       "references": [
         {
           "path": "derived/native/Boundary.ets.in",
-          "sha256": "sha256:0ec522c79d1a8fdc2975806d8c5e8e51da082cf177e0bb12d1073c1381518250",
-          "size": 32361
+          "sha256": "sha256:31e8381bafc7572ad33287731609b28478740138591c12bbc6a5fd404cb0af41",
+          "size": 32972
         },
         {
           "path": "derived/native/Index.d.ts",
-          "sha256": "sha256:3619a2879eb79cbda3434f7d6646d10802dcf80452d58f61503ea9324bf27631",
-          "size": 2024
+          "sha256": "sha256:f7b8c0059047ba7b1491361dcb7ba2f5ee3953301f7ed75b634daddce5345630",
+          "size": 2048
         },
         {
           "path": "derived/native/include/codec.hpp",
@@ -685,8 +685,8 @@
         },
         {
           "path": "derived/native/include/runtime.hpp",
-          "sha256": "sha256:b7667ce1901fed4933155c24f14da29bd0ffa4168bd2507c401700d28513db32",
-          "size": 4059
+          "sha256": "sha256:c815430d1352b7b23382ec3476b126068f780c7460431938b3d775d5706d01a5",
+          "size": 4193
         },
         {
           "path": "derived/native/include/support.hpp",
@@ -710,8 +710,8 @@
         },
         {
           "path": "derived/native/src/api.cpp",
-          "sha256": "sha256:293c29ec2d8f8cd4642a8429abe8a81d021e6a9513a4df6be3d6aaf2e8090f7d",
-          "size": 31723
+          "sha256": "sha256:19f40d89327adcafa6ce4bcc8a1e2a4f527e43274e84db1bf18026d99cbc5d5e",
+          "size": 32234
         },
         {
           "path": "derived/native/src/memory.cpp",
@@ -725,8 +725,8 @@
         },
         {
           "path": "derived/native/src/runtime.cpp",
-          "sha256": "sha256:ab9d245b57c1cf5fdbadf4d7f9d020c3fb216705123c6e1ac45a9df61b36dadc",
-          "size": 32324
+          "sha256": "sha256:c19ecd38f99e22bb91881266d8ebbf0ddf0638fff42b1a76b761517b462bb707",
+          "size": 32448
         },
         {
           "path": "derived/native/src/support.cpp",
@@ -899,7 +899,7 @@
         ],
         [
           "requestRuntimeClose",
-          1
+          2
         ],
         [
           "pollRuntime",
@@ -1035,18 +1035,18 @@
         },
         {
           "path": "derived/native/include/runtime.hpp",
-          "sha256": "sha256:88e4b119b86a084ad9cae092a82892de1a2ff2d660d316a39021a778f92894d9",
-          "size": 3482
+          "sha256": "sha256:018667b8f0066b4d56dc5659dfc308b6224bb6d2197a9677c8da19a5c934de54",
+          "size": 3616
         },
         {
           "path": "derived/native/src/api.cpp",
-          "sha256": "sha256:080f1103a118f987778be6586ba9ac75ecea7c0b4aab3e3ab5bd0dbd2b59a0af",
-          "size": 19841
+          "sha256": "sha256:523a6a9966d0de617a245ac07b2a7190558bb7d5d757fb6f01a007fe33b53d7d",
+          "size": 20352
         },
         {
           "path": "derived/native/src/runtime.cpp",
-          "sha256": "sha256:6204bafcbf8ad4019f63a37a074c23818478ec83aae91a6953af076368eb1bef",
-          "size": 22917
+          "sha256": "sha256:2ef9479949934dd8e5d8f9f447f7983f9191162ba7f1e0ec5b782b53363dc87b",
+          "size": 23041
         },
         {
           "path": "derived/native/worker/worker.cpp",
@@ -1055,13 +1055,13 @@
         },
         {
           "path": "derived/native/Index.d.ts",
-          "sha256": "sha256:82dea1d77e3c5ed42554ed5a496e2cf4daadc6ae24cce71df420469d01eb11e2",
-          "size": 1163
+          "sha256": "sha256:16d1438992e2121ab9209698560827f121e61422d5dcd2523c9aa9958466c63c",
+          "size": 1187
         },
         {
           "path": "derived/native/Boundary.ets.in",
-          "sha256": "sha256:4579b9115511dddcdc1e0fd12a8d4f510997858ecc203e49f82b0403dd2a573e",
-          "size": 24699
+          "sha256": "sha256:dd3775ec075333a79efaeb236b6dc8da46622fea22b43a6e021cf4cfe19faa15",
+          "size": 25310
         },
         {
           "path": "generated/native/frame.generated.hpp",
@@ -1174,7 +1174,7 @@
         ],
         [
           "requestRuntimeClose",
-          1
+          2
         ],
         [
           "pollRuntime",
@@ -1276,13 +1276,13 @@
       "references": [
         {
           "path": "derived/native/Boundary.ets.in",
-          "sha256": "sha256:0ec522c79d1a8fdc2975806d8c5e8e51da082cf177e0bb12d1073c1381518250",
-          "size": 32361
+          "sha256": "sha256:31e8381bafc7572ad33287731609b28478740138591c12bbc6a5fd404cb0af41",
+          "size": 32972
         },
         {
           "path": "derived/native/Index.d.ts",
-          "sha256": "sha256:3619a2879eb79cbda3434f7d6646d10802dcf80452d58f61503ea9324bf27631",
-          "size": 2024
+          "sha256": "sha256:f7b8c0059047ba7b1491361dcb7ba2f5ee3953301f7ed75b634daddce5345630",
+          "size": 2048
         },
         {
           "path": "derived/native/include/codec.hpp",
@@ -1311,8 +1311,8 @@
         },
         {
           "path": "derived/native/include/runtime.hpp",
-          "sha256": "sha256:b7667ce1901fed4933155c24f14da29bd0ffa4168bd2507c401700d28513db32",
-          "size": 4059
+          "sha256": "sha256:c815430d1352b7b23382ec3476b126068f780c7460431938b3d775d5706d01a5",
+          "size": 4193
         },
         {
           "path": "derived/native/include/support.hpp",
@@ -1336,8 +1336,8 @@
         },
         {
           "path": "derived/native/src/api.cpp",
-          "sha256": "sha256:293c29ec2d8f8cd4642a8429abe8a81d021e6a9513a4df6be3d6aaf2e8090f7d",
-          "size": 31723
+          "sha256": "sha256:19f40d89327adcafa6ce4bcc8a1e2a4f527e43274e84db1bf18026d99cbc5d5e",
+          "size": 32234
         },
         {
           "path": "derived/native/src/memory.cpp",
@@ -1351,8 +1351,8 @@
         },
         {
           "path": "derived/native/src/runtime.cpp",
-          "sha256": "sha256:ab9d245b57c1cf5fdbadf4d7f9d020c3fb216705123c6e1ac45a9df61b36dadc",
-          "size": 32324
+          "sha256": "sha256:c19ecd38f99e22bb91881266d8ebbf0ddf0638fff42b1a76b761517b462bb707",
+          "size": 32448
         },
         {
           "path": "derived/native/src/support.cpp",
@@ -1525,7 +1525,7 @@
         ],
         [
           "requestRuntimeClose",
-          1
+          2
         ],
         [
           "pollRuntime",
@@ -1676,18 +1676,18 @@
         },
         {
           "path": "derived/native/include/runtime.hpp",
-          "sha256": "sha256:88e4b119b86a084ad9cae092a82892de1a2ff2d660d316a39021a778f92894d9",
-          "size": 3482
+          "sha256": "sha256:018667b8f0066b4d56dc5659dfc308b6224bb6d2197a9677c8da19a5c934de54",
+          "size": 3616
         },
         {
           "path": "derived/native/src/api.cpp",
-          "sha256": "sha256:080f1103a118f987778be6586ba9ac75ecea7c0b4aab3e3ab5bd0dbd2b59a0af",
-          "size": 19841
+          "sha256": "sha256:523a6a9966d0de617a245ac07b2a7190558bb7d5d757fb6f01a007fe33b53d7d",
+          "size": 20352
         },
         {
           "path": "derived/native/src/runtime.cpp",
-          "sha256": "sha256:6204bafcbf8ad4019f63a37a074c23818478ec83aae91a6953af076368eb1bef",
-          "size": 22917
+          "sha256": "sha256:2ef9479949934dd8e5d8f9f447f7983f9191162ba7f1e0ec5b782b53363dc87b",
+          "size": 23041
         },
         {
           "path": "derived/native/worker/worker.cpp",
@@ -1696,18 +1696,18 @@
         },
         {
           "path": "derived/native/Index.d.ts",
-          "sha256": "sha256:82dea1d77e3c5ed42554ed5a496e2cf4daadc6ae24cce71df420469d01eb11e2",
-          "size": 1163
+          "sha256": "sha256:16d1438992e2121ab9209698560827f121e61422d5dcd2523c9aa9958466c63c",
+          "size": 1187
         },
         {
           "path": "derived/native/Boundary.ets.in",
-          "sha256": "sha256:4579b9115511dddcdc1e0fd12a8d4f510997858ecc203e49f82b0403dd2a573e",
-          "size": 24699
+          "sha256": "sha256:dd3775ec075333a79efaeb236b6dc8da46622fea22b43a6e021cf4cfe19faa15",
+          "size": 25310
         },
         {
           "path": "derived/native/rust-raw/api.cpp",
-          "sha256": "sha256:8da472315ffe5560a5f9e963a409c735bfa139d6918c93e21b07d7b5277467d2",
-          "size": 19061
+          "sha256": "sha256:1120c3a695c0dc8970bb8cf0ccac7d9b253361edc6c5bd9c99ab0103604e9155",
+          "size": 19572
         },
         {
           "path": "derived/native/rust-raw/runtime_ffi.h",
@@ -1828,7 +1828,7 @@
         ],
         [
           "requestRuntimeClose",
-          1
+          2
         ],
         [
           "pollRuntime",
@@ -1942,13 +1942,13 @@
       "references": [
         {
           "path": "derived/native/Boundary.ets.in",
-          "sha256": "sha256:0ec522c79d1a8fdc2975806d8c5e8e51da082cf177e0bb12d1073c1381518250",
-          "size": 32361
+          "sha256": "sha256:31e8381bafc7572ad33287731609b28478740138591c12bbc6a5fd404cb0af41",
+          "size": 32972
         },
         {
           "path": "derived/native/Index.d.ts",
-          "sha256": "sha256:3619a2879eb79cbda3434f7d6646d10802dcf80452d58f61503ea9324bf27631",
-          "size": 2024
+          "sha256": "sha256:f7b8c0059047ba7b1491361dcb7ba2f5ee3953301f7ed75b634daddce5345630",
+          "size": 2048
         },
         {
           "path": "derived/native/include/codec.hpp",
@@ -1977,8 +1977,8 @@
         },
         {
           "path": "derived/native/include/runtime.hpp",
-          "sha256": "sha256:b7667ce1901fed4933155c24f14da29bd0ffa4168bd2507c401700d28513db32",
-          "size": 4059
+          "sha256": "sha256:c815430d1352b7b23382ec3476b126068f780c7460431938b3d775d5706d01a5",
+          "size": 4193
         },
         {
           "path": "derived/native/include/support.hpp",
@@ -1997,8 +1997,8 @@
         },
         {
           "path": "derived/native/src/api.cpp",
-          "sha256": "sha256:293c29ec2d8f8cd4642a8429abe8a81d021e6a9513a4df6be3d6aaf2e8090f7d",
-          "size": 31723
+          "sha256": "sha256:19f40d89327adcafa6ce4bcc8a1e2a4f527e43274e84db1bf18026d99cbc5d5e",
+          "size": 32234
         },
         {
           "path": "derived/native/src/memory.cpp",
@@ -2012,8 +2012,8 @@
         },
         {
           "path": "derived/native/src/runtime.cpp",
-          "sha256": "sha256:ab9d245b57c1cf5fdbadf4d7f9d020c3fb216705123c6e1ac45a9df61b36dadc",
-          "size": 32324
+          "sha256": "sha256:c19ecd38f99e22bb91881266d8ebbf0ddf0638fff42b1a76b761517b462bb707",
+          "size": 32448
         },
         {
           "path": "derived/native/src/support.cpp",
@@ -2027,8 +2027,8 @@
         },
         {
           "path": "derived/native/rust-raw/api.cpp",
-          "sha256": "sha256:049b83fc315b9b11e6238a95f27807f007a5c9b76822f7b77744a8a062d8389b",
-          "size": 30742
+          "sha256": "sha256:88213cfaf708ae4e7bf25a74dd9475f47fbdf560873c3d09266f01e311cd183d",
+          "size": 31253
         },
         {
           "path": "derived/native/rust-raw/runtime_ffi.h",
@@ -2190,7 +2190,7 @@
         ],
         [
           "requestRuntimeClose",
-          1
+          2
         ],
         [
           "pollRuntime",
