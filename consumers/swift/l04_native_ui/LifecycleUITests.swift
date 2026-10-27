@@ -3,7 +3,7 @@ import XCTest
 @MainActor final class LifecycleUITests: XCTestCase {
     private func equal(_ element: XCUIElement, _ expected: String,
                        file: StaticString = #filePath, line: UInt = #line) {
-        let ready = XCTNSPredicateExpectation(predicate: NSPredicate(format: "label == %@", expected), object: element)
+        let ready = XCTNSPredicateExpectation(predicate: NSPredicate(format: "value == %@", expected), object: element)
         XCTAssertEqual(XCTWaiter.wait(for: [ready], timeout: 15), .completed, file: file, line: line)
     }
 
@@ -12,7 +12,7 @@ import XCTest
         equal(app.staticTexts["summary"], "active=\(active) pages=\(pages) drained=\(drained) released=\(released) factories=\(factories) deliveries=\(deliveries) ordinary=\(ordinary) closed=\(closed)")
     }
 
-    func testNativeSwiftUILifecycleAndSharedOrdinaryOwner() {
+    func testNativeSwiftUILifecycleAndSharedOrdinaryOwner() throws {
         continueAfterFailure = false
         let app = XCUIApplication()
         addTeardownBlock { @MainActor in
@@ -40,7 +40,7 @@ import XCTest
             let round = index + 1
             app.buttons["open-swiftui"].click()
             XCTAssertTrue(app.staticTexts["page-id"].waitForExistence(timeout: 15))
-            let identity = app.staticTexts["page-id"].label
+            let identity = try XCTUnwrap(app.staticTexts["page-id"].value as? String)
             XCTAssertNotNil(UUID(uuidString: identity))
             XCTAssertTrue(identities.insert(identity).inserted)
             equal(app.staticTexts["page-value"], "nil")

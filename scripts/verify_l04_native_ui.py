@@ -224,7 +224,14 @@ def cleanup_application(commands: Commands, log: Path, nonce: str, app: Path | N
     process = json.loads(receipt.read_text())
     if (set(process) != {'nonce', 'pid', 'executablePath'} or process['nonce'] != nonce
             or type(process['pid']) is not int or process['pid'] <= 0
-            or process['executablePath'] != expected):
+            or not isinstance(process['executablePath'], str)
+            or not Path(process['executablePath']).is_absolute()):
+        raise ValueError('process receipt is not bound to this application and nonce')
+    try:
+        actual = Path(process['executablePath']).resolve(strict=True)
+    except (OSError, RuntimeError) as error:
+        raise ValueError('process receipt executable cannot be resolved') from error
+    if str(actual) != expected or not actual.is_file():
         raise ValueError('process receipt is not bound to this application and nonce')
     return {**stop_owned_process(commands, process['pid'], expected), 'process_receipt': reference(receipt)}
 

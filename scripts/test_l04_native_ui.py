@@ -149,6 +149,8 @@ class CleanupTests(unittest.TestCase):
                 return '/unrelated/application\n'
         with tempfile.TemporaryDirectory() as temporary:
             root = Path(temporary); log = root / 'trace.jsonl'
+            executable = root / 'app/Contents/MacOS/MadBL04NativeUI'
+            executable.parent.mkdir(parents=True); executable.write_bytes(b'owned executable')
             Path(str(log) + '.process.json').write_text(json.dumps({'nonce': 'owned', 'pid': 1234,
                 'executablePath': str((root / 'app/Contents/MacOS/MadBL04NativeUI').resolve())}))
             with patch('verify_l04_native_ui.os.kill') as kill:
@@ -174,6 +176,39 @@ class CleanupTests(unittest.TestCase):
                 with self.assertRaisesRegex(ValueError, 'bound'):
                     cleanup_application(Commands(), log, 'owned', root / 'app')
                 kill.assert_not_called()
+
+    def test_receipt_absolute_alias_resolves_to_exact_owned_image(self):
+        from verify_l04_native_ui import cleanup_application
+        class Commands:
+            def run(self, argv, **kwargs): return ''
+        with tempfile.TemporaryDirectory() as temporary:
+            root = Path(temporary); app = root / 'app'; log = root / 'trace.jsonl'
+            executable = app / 'Contents/MacOS/MadBL04NativeUI'
+            executable.parent.mkdir(parents=True); executable.write_bytes(b'owned')
+            alias = root / 'alias'; alias.symlink_to(app, target_is_directory=True)
+            Path(str(log) + '.process.json').write_text(json.dumps({'nonce': 'owned', 'pid': 1234,
+                'executablePath': str(alias / 'Contents/MacOS/MadBL04NativeUI')}))
+            with patch('verify_l04_native_ui.os.kill') as kill:
+                result = cleanup_application(Commands(), log, 'owned', app)
+                self.assertEqual(result['state'], 'exited'); self.assertFalse(result['forced'])
+                kill.assert_not_called()
+
+    def test_receipt_relative_missing_and_other_same_bytes_image_rejected(self):
+        from verify_l04_native_ui import cleanup_application
+        class Commands:
+            def run(self, argv, **kwargs): raise AssertionError('untrusted PID must not be queried')
+        with tempfile.TemporaryDirectory() as temporary:
+            root = Path(temporary); app = root / 'app'; log = root / 'trace.jsonl'
+            executable = app / 'Contents/MacOS/MadBL04NativeUI'
+            executable.parent.mkdir(parents=True); executable.write_bytes(b'same bytes')
+            other = root / 'other'; other.write_bytes(executable.read_bytes())
+            alias = root / 'wrong-alias'; alias.symlink_to(other)
+            for path in ('app/Contents/MacOS/MadBL04NativeUI', str(root / 'missing'), str(other), str(alias), 42):
+                Path(str(log) + '.process.json').write_text(json.dumps({'nonce': 'owned', 'pid': 1234,
+                    'executablePath': path}))
+                with self.subTest(path=path), patch('verify_l04_native_ui.os.kill') as kill:
+                    with self.assertRaises(ValueError): cleanup_application(Commands(), log, 'owned', app)
+                    kill.assert_not_called()
 
     def test_launcher_finishes_before_final_application_cleanup(self):
         from verify_l04_native_ui import cleanup_execution
@@ -236,6 +271,8 @@ class CleanupTests(unittest.TestCase):
                 return ''
         with tempfile.TemporaryDirectory() as temporary:
             root = Path(temporary); log = root / 'trace.jsonl'
+            executable = root / 'app/Contents/MacOS/MadBL04NativeUI'
+            executable.parent.mkdir(parents=True); executable.write_bytes(b'owned executable')
             Path(str(log) + '.process.json').write_text(json.dumps({'nonce': 'owned', 'pid': 1234,
                 'executablePath': str((root / 'app/Contents/MacOS/MadBL04NativeUI').resolve())}))
             with patch('verify_l04_native_ui.os.kill') as kill:
