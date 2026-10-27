@@ -21,11 +21,11 @@ sys.path.insert(0, str(ROOT / 'scripts'))
 from candidate import CandidateError, candidate_digest, file_digest
 from e04_dart_candidate import (verify_install, verify_envelope, verify_provenance,
                                 profile_v2_digest, composition_digest, inventory, verify_build_evidence)
-from e04_dart_execution import (Commands, bind_sdk, install_dependency,
+from e04_dart_execution import (Commands, ExecutionFact, bind_sdk, install_dependency,
                                 verify_dependencies, cleanup_private_images)
 from e04_dart_observations import (CASE_IDS, CASE_NAMES, expected_rows, inspect_output,
                                    required_probes)
-from e04_dart_reports import Reports, case_steps, failure_status
+from e04_dart_reports import Reports, case_steps, failure_status, read_command_log
 from l02_reports import CommandFailure, ObservationFailure, file_reference
 from verify_e04_dart import bind_package_configuration
 
@@ -302,6 +302,17 @@ class ExecutionTests(unittest.TestCase):
         self.assertNotIn('DYLD_LIBRARY_PATH',row['environment'])
         self.assertEqual(row['environment']['PUB_CACHE'],str(self.root/'pub-cache'))
 
+    def test_observer_error_cannot_mask_actual_log_write_failure(self):
+        commands=Commands(self.root);write=Path.write_text
+        def unavailable(path,text,*args,**kwargs):
+            if path.parent==self.root/'logs':raise OSError('original log write failure')
+            return write(path,text,*args,**kwargs)
+        def broken_receiver(fact):raise ValueError('secondary observer failure')
+        with patch.object(Path,'write_text',unavailable),self.assertRaisesRegex(OSError,'original log write') as caught:
+            commands.run([sys.executable,'-I','-S','-c','pass'],cwd=self.root,
+                         execution_token=object(),observe=broken_receiver)
+        self.assertTrue(any('secondary observer failure' in note for note in caught.exception.__notes__))
+
     def test_sdk_archive_full_bytes_not_only_dart_executable(self):
         sdk=self.root/'sdk';(sdk/'bin').mkdir(parents=True);(sdk/'bin/dart').write_bytes(b'dart-model')
         (sdk/'snapshot').write_bytes(b'snapshot-model')
@@ -447,16 +458,158 @@ class EvidenceTests(unittest.TestCase):
         with self.assertRaises(ValueError):self.reports.begin('values','aot','ordinary',[str(self.aot),'values','/model-native'])
         with self.assertRaises(ValueError):self.reports.verify()
 
+    def actual_reports(self):
+        # An actual Python fixture exercises the observer seam, never the Dart SDK.
+        rows=expected_rows('values')
+        self.dart.write_text('#!'+sys.executable+'\nimport json,os\n'
+                             'print(json.dumps({"case":"values","pid":os.getpid(),"observations":'
+                             +repr(rows)+'}))\n')
+        self.dart.chmod(0o755)
+        environment=copy.deepcopy(self.reports.environment)
+        environment[0]['sha256']=file_digest(self.dart.read_bytes())
+        reports=Reports(self.root,self.output,self.reports.candidate,'5'*40,environment)
+        reports.bind_commands(self.jit,[str(self.aot)])
+        command=self.jit+['values','/model-native']
+        reports.begin('values','jit','ordinary',command)
+        commands=Commands(self.output)
+        return reports,commands,command,rows
+
+    def test_actual_command_log_passes_strict_reader_and_report_completion(self):
+        reports,commands,command,rows=self.actual_reports()
+        row,reference=commands.run(command,cwd=self.output,**reports.execution_binding())
+        decoded=read_command_log(self.output/reference['path'])
+        self.assertEqual(decoded,row)
+        self.assertEqual(decoded['drain_timeout_ms'],250)
+        self.assertEqual(decoded['reap_timeout_ms'],250)
+        self.assertNotIn('drain_timeout_seconds',decoded)
+        self.assertNotIn('reap_timeout_seconds',decoded)
+        self.assertEqual(reports.complete(reference),rows)
+        self.assertEqual([fact.reference() for fact in reports.attempts['values']],[reference])
+        self.assertEqual(len(reports.records['values']),1)
+
+    def test_fractional_private_timeout_log_is_still_rejected(self):
+        path=self.output/'legacy-fractional-log.json'
+        path.write_bytes(encoded({'drain_timeout_seconds':0.25,'reap_timeout_seconds':0.25}))
+        with self.assertRaisesRegex(CandidateError,'non-integer JSON number: 0.25'):
+            read_command_log(path)
+
+    def failure_report(self,reports,commands,error):
+        local={'result':'error','logs':commands.logs,'error':str(error)}
+        (self.output/'report.json').write_bytes(encoded(local))
+        ref=reports.write(local,error)
+        return json.loads((self.output/ref['path']).read_bytes())
+
+    def test_actual_bad_log_keeps_target_run_fact_without_accepting_observation(self):
+        reports,commands,command,_=self.actual_reports();write=Path.write_text
+        def fractional(path,text,*args,**kwargs):
+            if path.parent==self.output/'logs':
+                value=json.loads(text);value['drain_timeout_seconds']=0.25;text=json.dumps(value)
+            return write(path,text,*args,**kwargs)
+        with patch.object(Path,'write_text',fractional):
+            row,ref=commands.run(command,cwd=self.output,**reports.execution_binding())
+        with self.assertRaises(CandidateError) as caught:reports.complete(ref)
+        self.assertEqual(reports.records['values'],[])
+        public=self.failure_report(reports,commands,caught.exception)
+        result=public['results'][0]
+        self.assertEqual((result['status'],result['evidence_level'],result['actual']['kind']),('error','target-run','unavailable'))
+        self.assertEqual(result['duration_ms'],row['duration_ns']//1000000)
+        facts=json.loads((self.output/'execution-facts.json').read_bytes())['observations']
+        self.assertEqual((facts[0]['pid'],facts[0]['argv']),(row['pid'],command))
+        self.assertEqual(facts[0]['log'],ref)
+
+    def test_actual_log_write_failure_retains_process_facts(self):
+        reports,commands,command,_=self.actual_reports();write=Path.write_text
+        def unavailable(path,text,*args,**kwargs):
+            if path.parent==self.output/'logs':raise OSError('model log storage unavailable')
+            return write(path,text,*args,**kwargs)
+        with patch.object(Path,'write_text',unavailable),self.assertRaisesRegex(OSError,'log storage') as caught:
+            commands.run(command,cwd=self.output,**reports.execution_binding())
+        self.assertEqual(commands.logs,[])
+        public=self.failure_report(reports,commands,caught.exception)
+        self.assertEqual(public['results'][0]['evidence_level'],'target-run')
+        fact=json.loads((self.output/'execution-facts.json').read_bytes())['observations'][0]
+        self.assertGreater(fact['pid'],0);self.assertIsNone(fact['log']);self.assertTrue(fact['reaped'])
+        self.assertEqual(fact['argv'],command)
+
+    def test_spawn_failure_cannot_reuse_previous_same_command_facts(self):
+        reports,commands,command,_=self.actual_reports()
+        commands.run(command,cwd=self.output)  # Prior real command has no selected invocation token.
+        self.dart.unlink()
+        with self.assertRaises(FileNotFoundError) as caught:
+            commands.run(command,cwd=self.output,**reports.execution_binding())
+        self.assertEqual(reports.attempts['values'],[])
+        public=self.failure_report(reports,commands,caught.exception)
+        result=public['results'][0]
+        self.assertEqual((result['evidence_level'],result['actual']['kind']),('static','not-run'))
+        self.assertFalse((self.output/'execution-facts.json').exists())
+
+    def test_old_same_argv_fact_and_duplicate_token_are_rejected(self):
+        reports,commands,command,_=self.actual_reports();binding=reports.execution_binding()
+        _,ref=commands.run(command,cwd=self.output,**binding)
+        fact=reports.attempts['values'][0]
+        with self.assertRaises(ValueError):reports.note_execution(fact)
+        with patch('e04_dart_execution.subprocess.Popen') as spawn,self.assertRaises(ValueError):
+            commands.run(command,cwd=self.output,**binding)
+        spawn.assert_not_called()
+        other=Reports(self.root,self.output,reports.candidate,'5'*40,reports.environment)
+        other.bind_commands(self.jit,[str(self.aot)]);other.begin('values','jit','ordinary',command)
+        with self.assertRaises(ValueError):other.note_execution(fact)
+        self.assertEqual(other.attempts['values'],[])
+        reports.complete(ref)
+
+    def test_changed_log_does_not_become_a_valid_error_attachment(self):
+        reports,commands,command,_=self.actual_reports()
+        _,ref=commands.run(command,cwd=self.output,**reports.execution_binding())
+        (self.output/ref['path']).write_bytes(b'changed after actual execution')
+        with self.assertRaises(ValueError) as caught:reports.complete(ref)
+        public=self.failure_report(reports,commands,caught.exception)
+        self.assertNotIn(ref,public['results'][0]['attachments'])
+        fact=json.loads((self.output/'execution-facts.json').read_bytes())['observations'][0]
+        self.assertIsNone(fact['log']);self.assertGreater(fact['pid'],0)
+
+    def test_log_pid_must_match_actual_execution_fact(self):
+        reports,commands,command,_=self.actual_reports();write=Path.write_text
+        def changed(path,text,*args,**kwargs):
+            if path.parent==self.output/'logs':
+                value=json.loads(text);value['pid']+=1;text=json.dumps(value)
+            return write(path,text,*args,**kwargs)
+        with patch.object(Path,'write_text',changed):
+            _,ref=commands.run(command,cwd=self.output,**reports.execution_binding())
+        with self.assertRaisesRegex(ValueError,'actual process observation'):reports.complete(ref)
+        self.assertEqual(reports.records['values'],[])
+
+    def test_log_cleanup_must_match_actual_execution_fact(self):
+        reports,commands,command,_=self.actual_reports();write=Path.write_text
+        def changed(path,text,*args,**kwargs):
+            if path.parent==self.output/'logs':
+                value=json.loads(text);value['pipes_drained']=False;text=json.dumps(value)
+            return write(path,text,*args,**kwargs)
+        with patch.object(Path,'write_text',changed):
+            _,ref=commands.run(command,cwd=self.output,**reports.execution_binding())
+        with self.assertRaisesRegex(ValueError,'actual process cleanup observation'):reports.complete(ref)
+        self.assertEqual(reports.records['values'],[])
+
+    def note_model_execution(self,path):
+        # Explicit synthetic process facts for report-model tests only.
+        raw=json.loads(path.read_bytes());ref=file_reference(path,self.output)
+        cleanup=tuple((key,raw.get(key,False)) for key in ('timeout','watchdog_killed','pipes_drained',
+                      'capture_complete','output_limit_exceeded','process_cleanup'))
+        self.reports.note_execution(ExecutionFact(self.reports.active_token,tuple(raw['argv']),raw['pid'],
+            raw['duration_ns'],raw['exit_code'],raw['reaped'],cleanup,
+            tuple(ref[key] for key in ('path','sha256','size'))))
+
     def test_actual_pid_and_reaped_process_required(self):
         command=self.jit+['values','/model-native'];self.reports.begin('values','jit','ordinary',command)
         path=self.output/'log.json';path.write_bytes(encoded({'argv':command,'pid':101,'duration_ns':1,'timeout':False,'exit_code':0,
           'reaped':False,'watchdog_killed':False,'stdout':json.dumps({'case':'values','pid':101,'observations':expected_rows('values')})}))
+        self.note_model_execution(path)
         with self.assertRaises(ValueError):self.reports.complete(file_reference(path,self.output))
 
     def test_success_marker_cannot_replace_actual_values(self):
         command=self.jit+['values','/model-native'];self.reports.begin('values','jit','ordinary',command)
         path=self.output/'log.json';path.write_bytes(encoded({'argv':command,'pid':101,'duration_ns':1,'timeout':False,'exit_code':0,
           'reaped':True,'watchdog_killed':False,'stdout':'{"passed":true}'}))
+        self.note_model_execution(path)
         with self.assertRaises(ValueError):self.reports.complete(file_reference(path,self.output))
 
     def test_aot_cannot_be_reported_as_jit(self):
@@ -469,6 +622,7 @@ class EvidenceTests(unittest.TestCase):
             'timeout':True,'exit_code':None,'reaped':False,'watchdog_killed':True,
             'pipes_drained':False,'capture_complete':False,'output_limit_exceeded':False,
             'process_cleanup':'not-confirmed','stdout':''}))
+        self.note_model_execution(path)
         self.reports.note_attempt(file_reference(path,self.output))
         self.assertEqual(len(self.reports.attempts['values']),1)
         with self.assertRaises(ValueError):self.reports.verify()
@@ -492,6 +646,7 @@ class EvidenceTests(unittest.TestCase):
                     'output_limit_exceeded':False,'process_cleanup':'leader-reaped-pipes-drained',
                     'stdout':json.dumps({'case':'load' if name=='package' else name,
                                                                             'pid':101,'observations':rows})}))
+                self.note_model_execution(path)
                 self.reports.complete(file_reference(path,self.output),load_kind=kind,load_facts=facts)
 
     def test_complete_model_requires_all_sixteen_invocations_and_preserved_commands(self):

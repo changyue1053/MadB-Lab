@@ -2,6 +2,7 @@
 from __future__ import annotations
 
 import json
+from dataclasses import dataclass
 import os
 from pathlib import Path
 import re
@@ -10,6 +11,7 @@ import shutil
 import signal
 import stat
 import subprocess
+import sys
 import tarfile
 import time
 import zipfile
@@ -23,6 +25,24 @@ VERSION = re.compile(r'(0|[1-9][0-9]*)\.(0|[1-9][0-9]*)\.(0|[1-9][0-9]*)\Z')
 OUTPUT_LIMIT = 8 * 1024 * 1024
 DRAIN_TIMEOUT = 0.25
 REAP_TIMEOUT = 0.25
+
+
+@dataclass(frozen=True)
+class ExecutionFact:
+    """Private observation from one actual Popen, independent of log decoding."""
+    token: object
+    argv: tuple[str, ...]
+    pid: int
+    duration_ns: int
+    exit_code: int | None
+    reaped: bool
+    cleanup: tuple[tuple[str, bool | str], ...]
+    log: tuple[str, str, int] | None
+
+    def reference(self):
+        if self.log is None:
+            return None
+        return dict(zip(('path', 'sha256', 'size'), self.log))
 
 
 class _OutputDrain:
@@ -95,6 +115,7 @@ class Commands:
         self.logs = []
         self.cleanup_confirmed = True
         self.pending_processes = []
+        self.execution_tokens = set()
         for name in ('home', 'tmp', 'pub-cache', 'logs'):
             (output / name).mkdir()
         self.environment = {'HOME': str(output / 'home'), 'TMPDIR': str(output / 'tmp'),
@@ -102,7 +123,13 @@ class Commands:
                             'LC_ALL': 'C', 'LANG': 'C', 'DART_SUPPRESS_ANALYTICS': 'true',
                             'CI': 'true', 'PUB_ENVIRONMENT': 'madb-lab-e04-offline'}
 
-    def run(self, argv, *, cwd, timeout=60):
+    def run(self, argv, *, cwd, timeout=60, execution_token=None, observe=None):
+        if (execution_token is None) != (observe is None):
+            raise ValueError('execution observation requires one invocation token and receiver')
+        if execution_token is not None:
+            if execution_token in self.execution_tokens:
+                raise ValueError('execution observation token cannot be reused')
+            self.execution_tokens.add(execution_token)
         command = [str(item) for item in argv]
         path = self.output / 'logs' / f'{len(self.logs) + 1:03d}.json'
         start = time.monotonic_ns()
@@ -113,8 +140,8 @@ class Commands:
                  'pid': None, 'exit_code': None, 'timeout': False, 'duration_ns': 0,
                  'stdout': '', 'stderr': '', 'reaped': False, 'watchdog_killed': False,
                  'pipes_drained': False, 'capture_complete': False, 'output_limit_exceeded': False,
-                 'process_cleanup': 'not-confirmed', 'drain_timeout_seconds': DRAIN_TIMEOUT,
-                 'reap_timeout_seconds': REAP_TIMEOUT, 'output_limit_bytes': OUTPUT_LIMIT}
+                 'process_cleanup': 'not-confirmed', 'drain_timeout_ms': int(DRAIN_TIMEOUT * 1000),
+                 'reap_timeout_ms': int(REAP_TIMEOUT * 1000), 'output_limit_bytes': OUTPUT_LIMIT}
         try:
             process = subprocess.Popen(command, cwd=cwd, env=self.environment,
                                        stdout=subprocess.PIPE, stderr=subprocess.PIPE, start_new_session=True)
@@ -162,8 +189,25 @@ class Commands:
                     or not value['pipes_drained'] or not value['reaped']):
                 self.cleanup_confirmed = False
             value['duration_ns'] = time.monotonic_ns() - start
-            path.write_text(json.dumps(value, ensure_ascii=False, indent=2) + '\n')
-            self.logs.append(file_reference(path, self.output))
+            reference = None
+            try:
+                path.write_text(json.dumps(value, ensure_ascii=False, indent=2) + '\n')
+                reference = file_reference(path, self.output)
+                self.logs.append(reference)
+            finally:
+                # Even a failed log write must not erase an actually started process.
+                if process is not None and observe is not None:
+                    log = None if reference is None else tuple(reference[key] for key in ('path', 'sha256', 'size'))
+                    cleanup = tuple((key, value[key]) for key in ('timeout', 'watchdog_killed', 'pipes_drained',
+                                    'capture_complete', 'output_limit_exceeded', 'process_cleanup'))
+                    primary = sys.exception()
+                    try:
+                        observe(ExecutionFact(execution_token, tuple(command), process.pid,
+                                              value['duration_ns'], value['exit_code'], value['reaped'], cleanup, log))
+                    except BaseException as observation_error:
+                        if primary is None:
+                            raise
+                        primary.add_note('Execution observation also failed: ' + str(observation_error))
         if (value['timeout'] or value['exit_code'] != 0 or value['output_limit_exceeded']
                 or not value['capture_complete'] or value.get('invalid_utf8')):
             raise CommandFailure(path, value)

@@ -9,6 +9,7 @@ import re
 from candidate import read_json, file_digest, parse_json
 from check_cases import errors as case_errors
 from e04_dart_observations import CASE_NAMES, CASE_IDS, required_probes, inspect_output
+from e04_dart_execution import ExecutionFact
 from l02_reports import (case_digest, catalog_digest, file_reference,
                          CommandFailure, ObservationFailure)
 
@@ -57,6 +58,8 @@ class Reports:
         self.active = None
         self.commands = None
         self.active_command = None
+        self.active_token = None
+        self.active_fact = None
         for name in CASE_NAMES:
             case = read_json(root / 'cases/e04/dart-sync' / (name + '.json'))
             if (case['id'] != 'e04.dart-sync.' + name or case['expected_result'] != {'kind': 'success'}
@@ -119,11 +122,31 @@ class Reports:
             raise ValueError('target command does not use its separately frozen JIT/AOT entry')
         self.active = (name, mode, variant)
         self.active_command = command
+        self.active_token = object()
+        self.active_fact = None
         return 60
 
+    def execution_binding(self):
+        if self.active is None or self.active_fact is not None:
+            raise ValueError('execution observation requires a fresh selected invocation')
+        return {'execution_token': self.active_token, 'observe': self.note_execution}
+
+    def note_execution(self, fact):
+        if (not isinstance(fact, ExecutionFact) or self.active is None or self.active_fact is not None
+                or fact.token is not self.active_token or list(fact.argv) != self.active_command
+                or type(fact.pid) is not int or fact.pid <= 0
+                or type(fact.duration_ns) is not int or fact.duration_ns < 0
+                or type(fact.reaped) is not bool
+                or (type(fact.exit_code) is not int and not (fact.exit_code is None and not fact.reaped))):
+            raise ValueError('execution fact is absent, stale or differs from this actual invocation')
+        self.active_fact = fact
+        self.attempts[self.active[0]].append(fact)
+
     def note_attempt(self, reference):
-        if self.active is None:
+        if self.active is None or self.active_fact is None:
             raise ValueError('target evidence has no selected case')
+        if reference != self.active_fact.reference():
+            raise ValueError('target log is not the actual invocation log')
         if file_reference(self.output / reference['path'], self.output) != reference:
             raise ValueError('target log changed')
         raw = read_command_log(self.output / reference['path'])
@@ -135,7 +158,11 @@ class Reports:
                 or (type(raw.get('exit_code')) is not int
                     and not (raw.get('exit_code') is None and raw['reaped'] is False))):
             raise ValueError('target log lacks actual PID/timing/exit facts')
-        self.attempts[self.active[0]].append(deepcopy(reference))
+        if any(raw[key] != getattr(self.active_fact, key) for key in ('pid', 'duration_ns', 'exit_code', 'reaped')):
+            raise ValueError('decoded log differs from actual process observation')
+        if any(raw.get(key) != value or type(raw.get(key)) is not type(value)
+               for key, value in self.active_fact.cleanup):
+            raise ValueError('decoded log differs from actual process cleanup observation')
         return raw
 
     def complete(self, reference, *, load_kind=None, load_facts=None):
@@ -154,13 +181,15 @@ class Reports:
                                    'duration_ns': raw['duration_ns'], 'observations': observations})
         self.active = None
         self.active_command = None
+        self.active_token = None
+        self.active_fact = None
         return observations
 
     def verify(self):
         if self.active is not None or any(tuple((r['mode'], r['variant']) for r in self.records[name]) != required_probes(name)
                                           for name in CASE_NAMES):
             raise ValueError('not all fixed resource cases have both actual JIT and AOT observations')
-        if any(self.attempts[name] != [r['log'] for r in self.records[name]] for name in CASE_NAMES):
+        if any([fact.reference() for fact in self.attempts[name]] != [r['log'] for r in self.records[name]] for name in CASE_NAMES):
             raise ValueError('case actual target attempts are duplicated or incomplete')
         if catalog_digest(self.root) != self.catalog or case_errors(self.root):
             raise ValueError('case catalog changed')
@@ -181,9 +210,28 @@ class Reports:
         owner = self.active[0] if self.active else next((n for n in CASE_NAMES if not self.records[n]), CASE_NAMES[0])
         manifest, provenance = self.candidate['manifest'], self.candidate['provenance']
         results = []
-        common = [self.index, file_reference(self.output / 'report.json', self.output), *local['logs']]
+        common = [self.index, file_reference(self.output / 'report.json', self.output)]
+        def available(reference):
+            if reference is None:
+                return None
+            try:
+                return reference if file_reference(self.output / reference['path'], self.output) == reference else None
+            except (OSError, ValueError):
+                return None
+        common.extend(reference for reference in local['logs'] if available(reference) is not None)
         if self.commands is not None:
             common.append(self.command_reference)
+        facts = []
+        for name in CASE_NAMES:
+            for fact in self.attempts[name]:
+                facts.append({'case_id': self.cases[name]['id'], 'argv': list(fact.argv), 'pid': fact.pid,
+                              'duration_ns': fact.duration_ns, 'exit_code': fact.exit_code,
+                              'reaped': fact.reaped, 'process': dict(fact.cleanup),
+                              'log': available(fact.reference())})
+        if facts:
+            path = self.output / 'execution-facts.json'
+            path.write_text(json.dumps({'observations': facts}, indent=2) + '\n')
+            common.append(file_reference(path, self.output))
         for name in CASE_NAMES:
             status = 'passed' if error is None else failure_status(error) if name == owner else 'blocked'
             attempts = self.attempts[name]
@@ -195,7 +243,7 @@ class Reports:
                            'exit_code': 0 if status == 'passed' else None,
                            'reason': 'fixed JIT/AOT observations and input closure passed' if error is None else str(error)[:3000]},
                 'evidence_level': 'target-run' if attempts else 'static',
-                'duration_ms': sum(read_command_log(self.output / ref['path'])['duration_ns'] for ref in attempts) // 1000000,
+                'duration_ms': sum(fact.duration_ns for fact in attempts) // 1000000,
                 'resource_observations': [], 'diagnostics': [{'code': 'LAB.E04ResourceScope', 'message': SCOPE, 'location': None}],
                 'cleanup': 'complete' if error is None else 'failed' if attempts else 'not-run',
                 'attachments': [self.references[name], *common],

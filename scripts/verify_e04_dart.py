@@ -16,8 +16,8 @@ from candidate import CandidateError, DIGEST, file_digest, parse_json, read_json
 from e04_dart_candidate import inventory, verify_candidate
 from e04_dart_execution import Commands, bind_sdk, install_dependency, verify_dependencies, cleanup_private_images
 from e04_dart_observations import CASE_NAMES, MODES, required_probes
-from e04_dart_reports import Reports, SCOPE, read_command_log
-from l02_reports import CommandFailure, file_reference
+from e04_dart_reports import Reports, SCOPE
+from l02_reports import file_reference
 from verify_l02 import lab_identity
 
 
@@ -161,18 +161,8 @@ def main(argv=None):
                 base = prefixes[mode]
                 arguments = ['load', native, kind] if name == 'package' else [name, native]
                 timeout = reports.begin(name, mode, variant, [*base, *arguments])
-                try:
-                    _, log = commands.run([*base, *arguments], cwd=project, timeout=timeout)
-                except CommandFailure as error:
-                    reports.note_attempt(file_reference(error.path, args.output))
-                    raise
-                except (OSError, ValueError, RuntimeError):
-                    if commands.logs:
-                        last = commands.logs[-1]
-                        raw = read_command_log(args.output / last['path'])
-                        if type(raw.get('pid')) is int:
-                            reports.note_attempt(last)
-                    raise
+                _, log = commands.run([*base, *arguments], cwd=project, timeout=timeout,
+                                      **reports.execution_binding())
                 observed = reports.complete(log, load_kind=kind, load_facts=facts)
                 report['observations'].append({'case': name, 'mode': mode, 'variant': variant,
                                                'log': log, 'observations': observed})
