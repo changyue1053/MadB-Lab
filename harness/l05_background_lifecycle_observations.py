@@ -38,6 +38,25 @@ UI_PHASES = tuple(UI_EXPECTED)
 _PROTOCOL = re.compile(r'(?<!\S)(L05_BACKGROUND_[A-Z_]+)\s+(\S+)')
 _TAG = re.compile(r'[A-Fa-f0-9]+/MadBL05Background:')
 _PID = re.compile(r'[1-9][0-9]*')
+_MESSAGE = re.compile(r'^\S+\s+\S+\s+\S+\s+\S+\s+\S+\s+\S+: (.*)$')
+
+# OpenHarmony-v6.1-Release, hilog 84928bb7, hilog_printf.cpp:313/316
+# emits at most one of these prefixes before the application's format string.
+# The selected SDK hitrace/trace.h limits IDs to 60/26/26 bits. This is only
+# transport syntax; PID/tag/nonce and every application frame remain mandatory.
+_CHAIN = r'(?:0|[1-9a-f][0-9a-f]{0,14})'
+_SPAN = r'(?:0|[1-9a-f][0-9a-f]{0,6})'
+_TRACE = re.compile(r'^\[(' + _CHAIN + r')(?:, (' + _SPAN + r'), (' + _SPAN + r'))?\] ')
+
+
+def _message_after_trace(message):
+    if not message.startswith('['):
+        return message
+    match = _TRACE.match(message)
+    if match is None or any(value is not None and int(value, 16) > (1 << 26) - 1
+                            for value in match.groups()[1:]):
+        raise ValueError('malformed or out-of-range HiTrace envelope')
+    return message[match.end():]
 
 
 def parse(raw, *, nonce, pid, complete=False):
@@ -67,7 +86,16 @@ def parse(raw, *, nonce, pid, complete=False):
                 or _PID.fullmatch(parts[3]) is None or _TAG.fullmatch(parts[5]) is None):
             errors.append('nonce/PID/tag binding mismatch')
             continue
-        message = parts[6]
+        try:
+            # split(maxsplit=6) normalizes whitespace at the message boundary.
+            # Recover the exact bytes after the single standard tag separator.
+            envelope = _MESSAGE.fullmatch(line)
+            if envelope is None:
+                raise ValueError('invalid exact log message separator')
+            message = _message_after_trace(envelope[1])
+        except ValueError as error:
+            errors.append(str(error))
+            continue
         marker = match[1]
         if not message.startswith(marker + ' ' + nonce):
             errors.append('protocol marker is not the exact log message')

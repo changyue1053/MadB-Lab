@@ -180,6 +180,46 @@ class BackgroundObservationsTests(unittest.TestCase):
         for rows in ([failure], [failure, *evidence()], [*evidence(), failure]):
             self.rejects(rows, complete=False)
 
+    def test_only_fixed_hitrace_envelopes_preserve_full_protocol(self):
+        for prefix in ('[0] ', '[fffffffffffffff] ', '[0, 0, 0] ',
+                       '[fffffffffffffff, 3ffffff, 3ffffff] ',
+                       '[a92ab16a2bc74d9, ed518e, 4f8686] '):
+            with self.subTest(prefix=prefix):
+                rows = [row.replace(': L05_', ': ' + prefix + 'L05_', 1) for row in evidence()]
+                self.assertTrue(self.parsed(rows)['complete'])
+
+    def test_hitrace_is_not_arbitrary_prefix_or_relaxed_payload(self):
+        prefixes = ('arbitrary ', ' [1] ', '[1] [2] ', '[1] extra ',
+                    '[1, 2] ', '[1, 2, 3, 4] ', '[1,2,3] ', '[1,  2, 3] ',
+                    '[1, 2, 3]\t', '[1, 2, 3]  ', '[1, 2, 3 ',
+                    '[1000000000000000] ', '[1, 4000000, 0] ', '[1, 0, 4000000] ',
+                    '[1, 10000000, 0] ', '[0x1] ', '[A] ', '[1, A, 0] ',
+                    '[00] ', '[1, 00, 0] ', '[-1] ', '[+1] ', '[, 1, 2] ')
+        for prefix in prefixes:
+            with self.subTest(prefix=prefix):
+                rows = evidence()
+                rows[0] = rows[0].replace(': L05_', ': ' + prefix + 'L05_', 1)
+                self.rejects(rows, complete=False)
+        traced = [row.replace(': L05_', ': [1, 2, 3] L05_', 1) for row in evidence()]
+        for first in (traced[0].replace(' 123 124 ', ' 999 124 '),
+                      traced[0].replace('/MadBL05Background:', '/OtherTag:'),
+                      traced[0].replace(NONCE, NONCE + '-other'),
+                      traced[0].replace('[1, 1, 1, 1, 1, 1]', '[1, 1, 1, 1, 1, 2]'),
+                      traced[0] + ' suffix'):
+            with self.subTest(first=first):
+                self.rejects([first, *traced[1:]])
+        self.rejects([traced[-1], *traced[:-1]], complete=False)
+
+    def test_formal001_trace_prefix_still_cannot_complete_missing_cycles(self):
+        rows = evidence()[:7]
+        rows[5] = rows[5].replace(': L05_', ': [a92ab16a2bc74d9, ed518e, 4f8686] L05_', 1)
+        rows[6] = rows[6].replace(': L05_', ': [a92ab16a2bc74d9, eeec4, ed518e] L05_', 1)
+        observed = self.parsed(rows, complete=False)
+        self.assertEqual(observed['errors'], [])
+        self.assertEqual(observed['status'], 'incomplete')
+        self.assertEqual(len(observed['frames']), 7)
+        self.rejects(rows, complete=True)
+
 
 class BackgroundUiTests(unittest.TestCase):
     def test_phase_requires_one_snapshot_not_alternating_partial_matches(self):
