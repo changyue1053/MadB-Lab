@@ -1,0 +1,75 @@
+{
+  "schema": "madb.case/1",
+  "id": "i01.rust-c-values.bootstrap",
+  "kind": "template",
+  "problem_ids": [
+    "VERIFY-001",
+    "VERIFY-002"
+  ],
+  "source_ids": [],
+  "selector": null,
+  "requires": {
+    "features": [],
+    "environment": []
+  },
+  "fixture": {
+    "path": "consumers/c/i01_values.c",
+    "sha256": "sha256:71cdbe03b85919e4c98b4ec5a97e878125caa60082a10636f8e84e603c741ea8",
+    "size": 5468,
+    "schema": "madb.lab-source/1"
+  },
+  "setup": [
+    {
+      "id": "install",
+      "action": "environment",
+      "entrypoint": "isolated-public-candidate",
+      "arguments": [
+        {
+          "kind": "string",
+          "value": "exact-clean-producer-lab-and-candidate-identities"
+        }
+      ]
+    }
+  ],
+  "steps": [
+    {
+      "id": "bootstrap",
+      "action": "call",
+      "entrypoint": "bootstrap",
+      "arguments": []
+    }
+  ],
+  "assertions": [
+    {
+      "observation": "bootstrap.result",
+      "operator": "equals",
+      "expected": [
+        {
+          "kind": "string",
+          "value": "The actual library returns the candidate interface/profile bytes. Invalid capacity and null output reject with status1; unsupported version returns11 and zeros exactly64 output bytes without touching a sentinel."
+        }
+      ]
+    }
+  ],
+  "expected_result": {
+    "kind": "success"
+  },
+  "cleanup": [
+    {
+      "id": "ephemeral-values",
+      "action": "cleanup",
+      "entrypoint": "verify-process-completion",
+      "arguments": [
+        {
+          "kind": "string",
+          "value": "inline-values-no-consumer-free; reaped-process-not-Rust-allocation-count"
+        }
+      ]
+    }
+  ],
+  "timeout_policy": {
+    "timeout_ms": 180000,
+    "on_timeout": "error",
+    "recovery": "isolate"
+  }
+}

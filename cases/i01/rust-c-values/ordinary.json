@@ -1,0 +1,75 @@
+{
+  "schema": "madb.case/1",
+  "id": "i01.rust-c-values.ordinary",
+  "kind": "template",
+  "problem_ids": [
+    "VERIFY-001",
+    "VERIFY-002"
+  ],
+  "source_ids": [],
+  "selector": null,
+  "requires": {
+    "features": [],
+    "environment": []
+  },
+  "fixture": {
+    "path": "consumers/c/i01_values.c",
+    "sha256": "sha256:71cdbe03b85919e4c98b4ec5a97e878125caa60082a10636f8e84e603c741ea8",
+    "size": 5468,
+    "schema": "madb.lab-source/1"
+  },
+  "setup": [
+    {
+      "id": "install",
+      "action": "environment",
+      "entrypoint": "isolated-public-candidate",
+      "arguments": [
+        {
+          "kind": "string",
+          "value": "exact-clean-producer-lab-and-candidate-identities"
+        }
+      ]
+    }
+  ],
+  "steps": [
+    {
+      "id": "ordinary",
+      "action": "call",
+      "entrypoint": "ordinary",
+      "arguments": []
+    }
+  ],
+  "assertions": [
+    {
+      "observation": "ordinary.result",
+      "operator": "equals",
+      "expected": [
+        {
+          "kind": "string",
+          "value": "Eleven independent normal API vectors cover ASCII trim, all-whitespace and empty, Unicode whitespace around 温度, embedded NUL, supplementary scalar, exactly64-byte ASCII and Unicode, i32 min/max, and retained zero-width space. Every call preserves all input bytes, has successful kind/status/error, exact output bytes and zero unused tail."
+        }
+      ]
+    }
+  ],
+  "expected_result": {
+    "kind": "success"
+  },
+  "cleanup": [
+    {
+      "id": "ephemeral-values",
+      "action": "cleanup",
+      "entrypoint": "verify-process-completion",
+      "arguments": [
+        {
+          "kind": "string",
+          "value": "inline-values-no-consumer-free; reaped-process-not-Rust-allocation-count"
+        }
+      ]
+    }
+  ],
+  "timeout_policy": {
+    "timeout_ms": 180000,
+    "on_timeout": "error",
+    "recovery": "isolate"
+  }
+}
