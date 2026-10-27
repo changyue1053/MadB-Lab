@@ -1,0 +1,99 @@
+{
+  "schema": "madb.case/1",
+  "id": "e04.dart-sync.ranges",
+  "kind": "template",
+  "problem_ids": [
+    "ERR-001",
+    "TYPE-006"
+  ],
+  "source_ids": [],
+  "selector": null,
+  "requires": {
+    "features": [],
+    "environment": []
+  },
+  "fixture": {
+    "path": "consumers/dart/e04_sync/consumer.dart",
+    "sha256": "sha256:9b32cd14243546c52d5b32b2ec342b62687590b7691ff7203e93094739237a40",
+    "size": 9028,
+    "schema": "madb.lab-source/1"
+  },
+  "setup": [
+    {
+      "id": "install",
+      "action": "environment",
+      "entrypoint": "isolated-public-candidate",
+      "arguments": [
+        {
+          "kind": "string",
+          "value": "exact-clean-producer-lab-and-candidate-identities; Dart3.13.7 macOS arm64; no private producer source or cache"
+        }
+      ]
+    }
+  ],
+  "steps": [
+    {
+      "id": "jit-ordinary",
+      "action": "call",
+      "entrypoint": "ranges",
+      "arguments": [
+        {
+          "kind": "string",
+          "value": "jit"
+        },
+        {
+          "kind": "string",
+          "value": "ordinary"
+        }
+      ]
+    },
+    {
+      "id": "aot-ordinary",
+      "action": "call",
+      "entrypoint": "ranges",
+      "arguments": [
+        {
+          "kind": "string",
+          "value": "aot"
+        },
+        {
+          "kind": "string",
+          "value": "ordinary"
+        }
+      ]
+    }
+  ],
+  "assertions": [
+    {
+      "observation": "ranges.result",
+      "operator": "equals",
+      "expected": [
+        {
+          "kind": "string",
+          "value": "[{\"id\":\"too-long\",\"error\":\"RangeError\",\"state\":\"open\",\"input_preserved\":true},{\"id\":\"timeout--1\",\"error\":\"RangeError\",\"state\":\"open\"},{\"id\":\"timeout-4294967296\",\"error\":\"RangeError\",\"state\":\"open\"},{\"id\":\"after-rejection\",\"sum\":5,\"state\":\"open\"},{\"id\":\"explicit-close\",\"state\":\"closed\"}]"
+        }
+      ]
+    }
+  ],
+  "expected_result": {
+    "kind": "success"
+  },
+  "cleanup": [
+    {
+      "id": "process-and-cache",
+      "action": "cleanup",
+      "entrypoint": "verify-process-completion",
+      "arguments": [
+        {
+          "kind": "string",
+          "value": "explicit resource close where created; all target processes reaped before exact private image-cache cleanup; no native allocator-count proof"
+        }
+      ]
+    }
+  ],
+  "timeout_policy": {
+    "timeout_ms": 120000,
+    "on_timeout": "error",
+    "recovery": "isolate"
+  }
+}

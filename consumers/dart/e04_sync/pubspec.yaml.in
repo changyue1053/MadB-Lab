@@ -1,0 +1,7 @@
+name: madb_lab_e04_sync
+publish_to: none
+environment:
+  sdk: '3.13.7'
+dependencies:
+  madb_dart_ffi:
+    path: '@PACKAGE@'
