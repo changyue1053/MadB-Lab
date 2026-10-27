@@ -33,6 +33,22 @@ class Commands:
         self.environment['SWIFTPM_MODULECACHE_OVERRIDE'] = str(output / 'swift-module-cache')
         self.environment['PYTHONDONTWRITEBYTECODE'] = '1'
 
+    def owned_processes(self, executables):
+        argv = ['/bin/ps', '-axo', 'pid=,comm=']
+        result = subprocess.run(argv, cwd=self.output, env=self.environment,
+                                stdout=subprocess.PIPE, stderr=subprocess.PIPE, text=True, timeout=10)
+        selected = select_owned_processes(result.stdout, executables) if result.returncode == 0 else []
+        record = {'argv': argv, 'cwd': str(self.output), 'exit_code': result.returncode,
+                  'stderr': result.stderr, 'exact_executables': sorted(executables), 'selected': selected,
+                  'stdout_handling': 'Only exact owned executable records retained; unrelated process metadata discarded.'}
+        path = self.output / 'logs' / f'{len(self.records):03d}.json'
+        path.parent.mkdir(exist_ok=True)
+        path.write_text(json.dumps(record, ensure_ascii=False, indent=2) + '\n')
+        self.records.append({'path': path.relative_to(self.output).as_posix(), **reference(path)})
+        if result.returncode:
+            raise RuntimeError('owned process inventory failed: ' + str(path))
+        return selected
+
     def run(self, argv, *, timeout=60, allowed=(0,)):
         argv = [str(item) for item in argv]
         process = subprocess.Popen(argv, cwd=self.output, env=self.environment, stdout=subprocess.PIPE,
@@ -127,31 +143,32 @@ def verify_tools(observed):
             raise ValueError('consumer compiler/SDK bytes changed during execution')
 
 
-def cleanup_application(commands: Commands, log: Path, nonce: str, app: Path | None):
-    receipt = Path(str(log) + '.process.json')
-    if app is None or not receipt.exists():
-        return {'state': 'not_observed', 'forced': False, 'reason': 'process receipt unavailable'}
-    if receipt.is_symlink() or not receipt.is_file() or receipt.stat().st_size > 4096:
-        raise ValueError('application process receipt is not a bounded regular file')
-    process = json.loads(receipt.read_text())
-    expected = str((app / 'Contents/MacOS' / SCHEME).resolve())
-    if (set(process) != {'nonce', 'pid', 'executablePath'} or process['nonce'] != nonce
-            or type(process['pid']) is not int or process['pid'] <= 0
-            or process['executablePath'] != expected):
-        raise ValueError('process receipt is not bound to this application and nonce')
-    pid = process['pid']
-    proof = {'process_receipt': reference(receipt)}
+def select_owned_processes(text, executables):
+    selected = []
+    for line in text.splitlines():
+        parts = line.strip().split(None, 1)
+        if len(parts) != 2 or not parts[0].isdigit() or not parts[1].startswith('/'):
+            continue
+        executable = str(Path(parts[1]).resolve())
+        if executable in executables:
+            pid = int(parts[0])
+            if pid <= 0 or any(item['pid'] == pid for item in selected):
+                raise ValueError('invalid or duplicated owned process identity')
+            selected.append({'pid': pid, 'executablePath': executable})
+    return selected
+
+
+def stop_owned_process(commands: Commands, pid: int, expected: str):
     def running():
         text = commands.run(['/bin/ps', '-p', str(pid), '-o', 'comm='], allowed=(0, 1)).strip()
         if not text:
             return False
-        if text != expected:
-            # An unexpected path may mean PID reuse or a truncated observation.
-            # Neither licenses a signal nor proves that our app exited.
+        if not text.startswith('/') or str(Path(text).resolve()) != expected:
+            # Neither PID reuse nor a truncated observation licenses a signal.
             raise RuntimeError('application PID is present with an unconfirmed executable identity')
         return True
     if not running():
-        return {'state': 'exited', 'forced': False, 'pid': pid, **proof}
+        return {'state': 'exited', 'forced': False, 'pid': pid}
     os.kill(pid, signal.SIGTERM)
     deadline = time.monotonic() + 3
     while running() and time.monotonic() < deadline:
@@ -162,9 +179,59 @@ def cleanup_application(commands: Commands, log: Path, nonce: str, app: Path | N
         while running() and time.monotonic() < deadline:
             time.sleep(0.05)
     if running():
-        raise RuntimeError('owned native UI application survived cleanup')
-    return {'state': 'exited', 'forced': True, 'pid': pid, **proof,
+        raise RuntimeError('owned UI process survived cleanup')
+    return {'state': 'exited', 'forced': True, 'pid': pid,
             'meaning': 'process cleanup only; not native owner-close proof'}
+
+
+def cleanup_application(commands: Commands, log: Path, nonce: str, app: Path | None):
+    receipt = Path(str(log) + '.process.json')
+    if app is None:
+        return {'state': 'not_observed', 'forced': False, 'reason': 'app was not built'}
+    expected = str((app / 'Contents/MacOS' / SCHEME).resolve())
+    if not receipt.exists():
+        # A launch may stall before even the earliest application entry. Recover
+        # only processes executing this fresh output's exact application image.
+        found = commands.owned_processes({expected})
+        recovered = [stop_owned_process(commands, item['pid'], expected) for item in found]
+        return {'state': 'not_observed', 'forced': bool(recovered), 'recovered': recovered,
+                'reason': 'process receipt unavailable; no normal application completion claim'}
+    if receipt.is_symlink() or not receipt.is_file() or receipt.stat().st_size > 4096:
+        raise ValueError('application process receipt is not a bounded regular file')
+    process = json.loads(receipt.read_text())
+    if (set(process) != {'nonce', 'pid', 'executablePath'} or process['nonce'] != nonce
+            or type(process['pid']) is not int or process['pid'] <= 0
+            or process['executablePath'] != expected):
+        raise ValueError('process receipt is not bound to this application and nonce')
+    return {**stop_owned_process(commands, process['pid'], expected), 'process_receipt': reference(receipt)}
+
+
+def cleanup_test_runner(commands: Commands, app: Path | None):
+    if app is None:
+        return {'state': 'not_needed', 'processes': []}
+    name = SCHEME + 'Tests-Runner'
+    executable = str((app.parent / (name + '.app') / 'Contents/MacOS' / name).resolve())
+    found = commands.owned_processes({executable})
+    processes = [stop_owned_process(commands, item['pid'], executable) for item in found]
+    if commands.owned_processes({executable}):
+        raise RuntimeError('owned XCTest runner remains after cleanup')
+    return {'state': 'exited', 'processes': processes,
+            'meaning': 'XCTest control-process cleanup; separate from native application close'}
+
+
+def cleanup_execution(commands: Commands, log: Path, nonce: str, app: Path | None):
+    result = {}
+    # Stop the launcher first: it must not start an application after our final
+    # application inventory. Failures in either domain never skip the other one.
+    try:
+        result['xctest_runner_cleanup'] = cleanup_test_runner(commands, app)
+    except Exception as error:
+        result['xctest_runner_cleanup_error'] = str(error)
+    try:
+        result['cleanup'] = cleanup_application(commands, log, nonce, app)
+    except Exception as error:
+        result['cleanup_error'] = str(error)
+    return result
 
 
 def main():
@@ -250,16 +317,17 @@ def main():
             if report[stage] == 'started':
                 report[stage] = 'failed'
     finally:
-        try:
-            report['cleanup'] = cleanup_application(commands, args.output / 'target-evidence.jsonl', nonce, app)
-            if not args.build_only and report['result'] in ('passed', 'development-passed'):
-                if report['cleanup']['state'] != 'exited' or report['cleanup']['forced']:
-                    raise ValueError('normal application exit was not independently confirmed')
-                if report['cleanup']['pid'] != report['observations']['pid']:
-                    raise ValueError('native evidence differs from the owned application process')
-        except Exception as error:
-            report['cleanup_error'] = str(error)
+        report.update(cleanup_execution(commands, args.output / 'target-evidence.jsonl', nonce, app))
+        if 'cleanup_error' in report or 'xctest_runner_cleanup_error' in report:
             report['result'] = 'failed'
+        if not args.build_only and report['result'] in ('passed', 'development-passed'):
+            cleanup = report['cleanup']
+            if cleanup['state'] != 'exited' or cleanup['forced']:
+                report['cleanup_error'] = 'normal application exit was not independently confirmed'
+                report['result'] = 'failed'
+            elif cleanup['pid'] != report['observations']['pid']:
+                report['cleanup_error'] = 'native evidence differs from the owned application process'
+                report['result'] = 'failed'
         report['commands'] = commands.records
         (args.output / 'report.json').write_text(json.dumps(report, ensure_ascii=False, indent=2) + '\n')
     print(json.dumps({key: report.get(key) for key in ('result', 'compile', 'target', 'cleanup', 'error', 'cleanup_error')}))

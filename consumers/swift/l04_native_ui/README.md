@@ -53,7 +53,9 @@ environment entries. The log path must be absolute and absent before launch.
 They are test orchestration inputs, not new SDK or MadB public configuration.
 The checked constructor must reject a deliberately different profile with the
 existing typed `ProfileMismatch` code before the valid engine is opened.
-Before constructing that owner, the app exclusively creates and synchronizes
+The explicit application entry creates and retains its delegate, registers it on
+`NSApplication.shared`, and runs the AppKit event loop. Before starting that loop
+or constructing the native owner, it exclusively creates and synchronizes
 `<log path>.process.json` with its nonce, PID and standardized absolute executable
 path. This permits independent process identification if native startup fails;
 the receipt is not evidence of native initialization, cleanup or acceptance.

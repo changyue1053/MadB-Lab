@@ -158,6 +158,8 @@ class CleanupTests(unittest.TestCase):
     def test_missing_or_wrong_receipt_cannot_claim_process_cleanup(self):
         from verify_l04_native_ui import cleanup_application
         class Commands:
+            def owned_processes(self, executables):
+                return []
             def run(self, argv, **kwargs):
                 raise AssertionError('untrusted PID must not be queried')
         with tempfile.TemporaryDirectory() as temporary:
@@ -171,6 +173,60 @@ class CleanupTests(unittest.TestCase):
                 with self.assertRaisesRegex(ValueError, 'bound'):
                     cleanup_application(Commands(), log, 'owned', root / 'app')
                 kill.assert_not_called()
+
+    def test_launcher_finishes_before_final_application_cleanup(self):
+        from verify_l04_native_ui import cleanup_execution
+        events = []
+        state = {'app_started': False}
+        def runner(*args):
+            events.append('runner')
+            state['app_started'] = True  # Launch crosses the controller stop window.
+            return {'state': 'exited'}
+        def application(*args):
+            events.append('application')
+            self.assertTrue(state['app_started'])
+            state['app_started'] = False
+            return {'state': 'exited', 'forced': True}
+        with patch('verify_l04_native_ui.cleanup_test_runner', side_effect=runner), \
+                patch('verify_l04_native_ui.cleanup_application', side_effect=application):
+            result = cleanup_execution(None, Path('trace'), 'nonce', Path('app'))
+        self.assertEqual(events, ['runner', 'application'])
+        self.assertFalse(state['app_started'])
+        self.assertTrue(result['cleanup']['forced'])  # Cannot claim normal native exit.
+
+    def test_launcher_cleanup_failure_does_not_skip_application(self):
+        from verify_l04_native_ui import cleanup_execution
+        with patch('verify_l04_native_ui.cleanup_test_runner', side_effect=RuntimeError('controller cleanup failed')), \
+                patch('verify_l04_native_ui.cleanup_application', return_value={'state': 'exited'}) as application:
+            result = cleanup_execution(None, Path('trace'), 'nonce', Path('app'))
+            application.assert_called_once()
+            self.assertEqual(result['xctest_runner_cleanup_error'], 'controller cleanup failed')
+
+    def test_exact_output_image_filter_rejects_similar_names(self):
+        from verify_l04_native_ui import select_owned_processes
+        wanted = '/private/tmp/owned/Runner.app/Contents/MacOS/Runner'
+        text = '17 /other/Runner.app/Contents/MacOS/Runner\n18 ' + wanted + '\n19 Runner\n'
+        self.assertEqual(select_owned_processes(text, {wanted}), [{'pid': 18, 'executablePath': wanted}])
+
+    def test_xctest_runner_cleanup_even_without_application_receipt(self):
+        from verify_l04_native_ui import cleanup_test_runner
+        with tempfile.TemporaryDirectory() as temporary:
+            app = Path(temporary).resolve() / 'App.app'
+            expected = str(app.parent / 'MadBL04NativeUITests-Runner.app/Contents/MacOS/MadBL04NativeUITests-Runner')
+            class Commands:
+                def __init__(self): self.inventories = 0; self.probes = 0
+                def owned_processes(self, executables):
+                    self.inventories += 1
+                    if executables != {expected}: raise AssertionError('wrong owned image')
+                    return [{'pid': 1234, 'executablePath': expected}] if self.inventories == 1 else []
+                def run(self, argv, **kwargs):
+                    self.probes += 1
+                    return expected if self.probes == 1 else ''
+            with patch('verify_l04_native_ui.os.kill') as kill:
+                result = cleanup_test_runner(Commands(), app)
+                self.assertEqual(result['state'], 'exited')
+                self.assertTrue(result['processes'][0]['forced'])
+                self.assertEqual(kill.call_count, 1)
 
     def test_absent_owned_pid_is_observed_without_signal(self):
         from verify_l04_native_ui import cleanup_application

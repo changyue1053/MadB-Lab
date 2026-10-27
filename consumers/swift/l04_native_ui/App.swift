@@ -2,12 +2,21 @@ import AppKit
 import Darwin
 import SwiftUI
 
-@main @MainActor final class NativeAppDelegate: NSObject, NSApplicationDelegate, NSWindowDelegate {
+@main private enum NativeAppMain {
+    @MainActor static func main() {
+        let delegate = NativeAppDelegate()
+        delegate.writeProcessReceipt()
+        let application = NSApplication.shared
+        application.delegate = delegate
+        withExtendedLifetime(delegate) { application.run() }
+    }
+}
+
+@MainActor final class NativeAppDelegate: NSObject, NSApplicationDelegate, NSWindowDelegate {
     private var window: NSWindow?
     private var owner: NativeApplicationOwner?
 
     func applicationDidFinishLaunching(_ notification: Notification) {
-        writeProcessReceipt()
         let owner = NativeApplicationOwner()
         self.owner = owner
         let window = NSWindow(contentRect: NSRect(x: 0, y: 0, width: 880, height: 600),
@@ -27,7 +36,7 @@ import SwiftUI
     func applicationShouldTerminateAfterLastWindowClosed(_ sender: NSApplication) -> Bool { true }
     func applicationWillTerminate(_ notification: Notification) { owner?.applicationTerminated() }
 
-    private func writeProcessReceipt() {
+    fileprivate func writeProcessReceipt() {
         let process = ProcessInfo.processInfo
         guard let nonce = process.environment["MADB_L04_NONCE"], !nonce.isEmpty,
               let path = process.environment["MADB_L04_LOG_PATH"], path.hasPrefix("/"),
