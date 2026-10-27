@@ -69,6 +69,7 @@ def main():
         [sys.executable, "scripts/test_l05.py"],
         [sys.executable, "scripts/test_l05_page_lifecycle.py"],
         [sys.executable, "scripts/test_l04_ui.py"],
+        [sys.executable, "scripts/test_l04_native_ui.py"],
         [sys.executable, "scripts/test_l02.py"],
         [sys.executable, "scripts/test_l02_values.py"],
         [sys.executable, "harness/c09_close_windows_tests.py"],

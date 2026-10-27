@@ -1,0 +1,211 @@
+"""Independent negative checks for L04 native UI evidence admission; no UI execution."""
+from copy import deepcopy
+import json
+from pathlib import Path
+import sys
+import tempfile
+import unittest
+from unittest.mock import patch
+import uuid
+
+ROOT = Path(__file__).resolve().parents[1]
+sys.path.insert(0, str(ROOT / 'harness'))
+from l04_native_ui import admit_package, inspect_frames, inventory, sha
+
+IDENTITY = {'profile_digest': 'sha256:' + '1' * 64, 'interface_digest': 'sha256:' + '2' * 64}
+VALUES = [
+    ('ascii', 'native page one', [0, 127, 128, 255]), ('after-1', 'after one', [255, 0]),
+    ('unicode', '你好é🙂', [0, 195, 169, 255]), ('after-2', '页面退出后', [128, 1]),
+    ('nul', 'left\0right', []), ('after-3', '', [0]),
+]
+
+
+def sample(index):
+    name, text, octets = VALUES[index - 1]
+    return {'id': name, 'text': text, 'bytes': octets, 'sequence': None, 'phase': 'open'}
+
+
+def synthetic_frames():
+    rows = []
+    state = {'nonce': 'nonce', 'pid': 1234, 'mainThread': True, 'profile': IDENTITY['profile_digest'],
+             'interface': IDENTITY['interface_digest'], 'pageID': None, 'pageSnapshot': None,
+             'ordinarySnapshot': None, 'status': 'idle', 'createdPages': 0, 'drainedPages': 0,
+             'releasedPages': 0, 'pageFactories': 0, 'ordinaryDeliveries': 0, 'publishedIndex': 0,
+             'native': {'activeSubscriptions': 0, 'activeOperations': 0, 'queuedItems': 0,
+                        'inflightItems': 0, 'retainedBytes': 0, 'activeWaiters': 0, 'closed': False}}
+    def emit(event):
+        rows.append(deepcopy({**state, 'event': event}))
+    state['wrongProfileCode'] = 'ProfileMismatch'
+    emit('bootstrap-verified')
+    state['native']['activeSubscriptions'] = 1
+    emit('owner-started')
+    for index in range(1, 4):
+        state['pageID'] = str(uuid.UUID(int=index))
+        state['createdPages'] = index
+        state['pageSnapshot'] = None
+        state['status'] = 'idle'
+        emit('page-created')
+        state['pageFactories'] = index
+        state['native']['activeSubscriptions'] = 2
+        state['status'] = 'observing'
+        emit('page-started'); emit('page-refreshed')
+        state['duplicateCode'] = 'alreadyActive'
+        emit('duplicate-rejected')
+        state['pageSnapshot'] = sample(index * 2 - 1)
+        state['ordinarySnapshot'] = sample(index * 2 - 1)
+        state['ordinaryDeliveries'] = state['publishedIndex'] = index * 2 - 1
+        emit('page-value')
+        state['status'] = 'stopping'
+        emit('page-disappeared')
+        state['native']['activeSubscriptions'] = 1
+        state['drainedPages'] = index
+        state['status'] = 'stopped'
+        emit('page-drained')
+        state['releasedPages'] = index
+        emit('model-release-observed')
+        state['ordinarySnapshot'] = sample(index * 2)
+        state['ordinaryDeliveries'] = state['publishedIndex'] = index * 2
+        emit('after-page-value')
+    state['native']['activeSubscriptions'] = 0
+    emit('ordinary-drained')
+    state['native']['closed'] = True
+    emit('owner-closed'); emit('application-terminated')
+    return rows
+
+
+class EvidenceTests(unittest.TestCase):
+    def inspect(self, rows):
+        return inspect_frames('\n'.join(json.dumps(row, ensure_ascii=False) for row in rows), 'nonce', IDENTITY)
+
+    def test_complete_synthetic_observation(self):
+        self.assertEqual(self.inspect(synthetic_frames())['fresh_swiftui_pages'], 3)
+
+    def test_reject_each_resource_leak(self):
+        for field in ('activeOperations', 'queuedItems', 'inflightItems', 'retainedBytes', 'activeWaiters', 'activeSubscriptions'):
+            with self.subTest(field=field):
+                rows = synthetic_frames(); rows[-2]['native'][field] = 1
+                with self.assertRaises(ValueError): self.inspect(rows)
+
+    def test_exact_independent_values(self):
+        for index in (6, 15, 24):
+            with self.subTest(index=index):
+                rows = synthetic_frames(); rows[index]['pageSnapshot']['text'] += 'wrong'
+                with self.assertRaisesRegex(ValueError, 'value differs'): self.inspect(rows)
+
+    def test_ordinary_survives_each_page(self):
+        rows = synthetic_frames(); rows[10]['ordinarySnapshot'] = sample(1)
+        with self.assertRaisesRegex(ValueError, 'survive'): self.inspect(rows)
+
+    def test_drain_precedes_model_release(self):
+        rows = synthetic_frames(); rows[8], rows[9] = rows[9], rows[8]
+        with self.assertRaisesRegex(ValueError, 'order'): self.inspect(rows)
+
+    def test_page_cannot_close_shared_engine(self):
+        rows = synthetic_frames(); rows[8]['native']['closed'] = True
+        with self.assertRaisesRegex(ValueError, 'prematurely'): self.inspect(rows)
+
+    def test_duplicate_start_cannot_resubscribe(self):
+        rows = synthetic_frames(); rows[5]['pageFactories'] = 2
+        with self.assertRaisesRegex(ValueError, 'factory'): self.inspect(rows)
+
+    def test_profile_rejection_must_be_typed(self):
+        rows = synthetic_frames(); rows[0]['wrongProfileCode'] = 'any failure'
+        with self.assertRaisesRegex(ValueError, 'typed rejection'): self.inspect(rows)
+
+    def test_bound_identity_nonce_thread_and_pid(self):
+        for key, value in [('profile', 'wrong'), ('interface', 'wrong'), ('nonce', 'wrong'), ('mainThread', False), ('pid', 8)]:
+            with self.subTest(key=key):
+                rows = synthetic_frames(); rows[7][key] = value
+                with self.assertRaises(ValueError): self.inspect(rows)
+
+    def test_missing_termination_is_not_success(self):
+        rows = synthetic_frames()[:-1]
+        with self.assertRaisesRegex(ValueError, 'frame count'): self.inspect(rows)
+
+    def test_no_initial_replay(self):
+        rows = synthetic_frames(); rows[3]['pageSnapshot'] = sample(1)
+        with self.assertRaisesRegex(ValueError, 'replay'): self.inspect(rows)
+
+    def test_boolean_is_not_resource_count(self):
+        rows = synthetic_frames(); rows[8]['native']['activeSubscriptions'] = True
+        with self.assertRaisesRegex(ValueError, 'invalid count'): self.inspect(rows)
+
+    def test_boolean_is_not_snapshot_octet(self):
+        rows = synthetic_frames(); rows[6]['pageSnapshot']['bytes'][0] = False
+        with self.assertRaisesRegex(ValueError, 'value types'): self.inspect(rows)
+
+    def test_duplicate_json_keys_rejected(self):
+        text = '\n'.join(json.dumps(row) for row in synthetic_frames())
+        text = text.replace('"pid": 1234', '"pid": 1234, "pid": 1234', 1)
+        with self.assertRaisesRegex(ValueError, 'duplicate'): inspect_frames(text, 'nonce', IDENTITY)
+
+
+class CleanupTests(unittest.TestCase):
+    def test_unknown_live_pid_identity_is_not_signalled_or_called_exited(self):
+        from verify_l04_native_ui import cleanup_application
+        class Commands:
+            def run(self, argv, **kwargs):
+                return '/unrelated/application\n'
+        with tempfile.TemporaryDirectory() as temporary:
+            root = Path(temporary); log = root / 'trace.jsonl'
+            Path(str(log) + '.process.json').write_text(json.dumps({'nonce': 'owned', 'pid': 1234,
+                'executablePath': str((root / 'app/Contents/MacOS/MadBL04NativeUI').resolve())}))
+            with patch('verify_l04_native_ui.os.kill') as kill:
+                with self.assertRaisesRegex(RuntimeError, 'unconfirmed executable'):
+                    cleanup_application(Commands(), log, 'owned', root / 'app')
+                kill.assert_not_called()
+
+    def test_missing_or_wrong_receipt_cannot_claim_process_cleanup(self):
+        from verify_l04_native_ui import cleanup_application
+        class Commands:
+            def run(self, argv, **kwargs):
+                raise AssertionError('untrusted PID must not be queried')
+        with tempfile.TemporaryDirectory() as temporary:
+            root = Path(temporary); log = root / 'trace.jsonl'
+            result = cleanup_application(Commands(), log, 'owned', root / 'app')
+            self.assertEqual(result['state'], 'not_observed')
+            receipt = Path(str(log) + '.process.json')
+            receipt.write_text(json.dumps({'nonce': 'wrong', 'pid': 1234,
+                'executablePath': str((root / 'app/Contents/MacOS/MadBL04NativeUI').resolve())}))
+            with patch('verify_l04_native_ui.os.kill') as kill:
+                with self.assertRaisesRegex(ValueError, 'bound'):
+                    cleanup_application(Commands(), log, 'owned', root / 'app')
+                kill.assert_not_called()
+
+    def test_absent_owned_pid_is_observed_without_signal(self):
+        from verify_l04_native_ui import cleanup_application
+        class Commands:
+            def run(self, argv, **kwargs):
+                return ''
+        with tempfile.TemporaryDirectory() as temporary:
+            root = Path(temporary); log = root / 'trace.jsonl'
+            Path(str(log) + '.process.json').write_text(json.dumps({'nonce': 'owned', 'pid': 1234,
+                'executablePath': str((root / 'app/Contents/MacOS/MadBL04NativeUI').resolve())}))
+            with patch('verify_l04_native_ui.os.kill') as kill:
+                result = cleanup_application(Commands(), log, 'owned', root / 'app')
+                self.assertEqual({key: result[key] for key in ('state', 'forced', 'pid')},
+                                 {'state': 'exited', 'forced': False, 'pid': 1234})
+                kill.assert_not_called()
+
+
+class PublicSourceTests(unittest.TestCase):
+    def test_pinned_public_inventory_and_mutations(self):
+        with tempfile.TemporaryDirectory() as temporary:
+            root = Path(temporary); package = root / 'package'; package.mkdir()
+            for name in ('Package.swift', 'LICENSE', 'NOTICE', 'Sources/MadBObservation/MadBStateModel.swift',
+                         'Sources/MadBObservation/MadBStateSource.swift', 'Integration/SKIE/MadBSkieStateSource.swift'):
+                path = package / name; path.parent.mkdir(parents=True, exist_ok=True); path.write_text(name)
+            value = {'product_revision': '3' * 40,
+                     'files': [{'path': path, **item} for path, item in inventory(package, modes=True).items()]}
+            pin = root / 'pin.json'; pin.write_text(json.dumps(value)); digest = sha(pin.read_bytes())
+            admit_package(package, pin, digest)
+            with self.assertRaisesRegex(ValueError, 'trust'): admit_package(package, pin, '0' * 64)
+            (package / 'extra.swift').write_text('untrusted')
+            with self.assertRaisesRegex(ValueError, 'inventory'): admit_package(package, pin, digest)
+            (package / 'extra.swift').unlink()
+            (package / 'NOTICE').write_text('changed')
+            with self.assertRaisesRegex(ValueError, 'inventory'): admit_package(package, pin, digest)
+
+
+if __name__ == '__main__':
+    unittest.main()
