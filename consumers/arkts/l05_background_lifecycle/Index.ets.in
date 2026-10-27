@@ -1,0 +1,31 @@
+import { common } from '@kit.AbilityKit';
+import { ArkUIStateModel } from '../ArkUIStateModel';
+import { owner, PageStatus } from '../ApplicationOwner';
+import { failed } from '../Trace';
+
+@Entry
+@ComponentV2
+struct Index {
+  @Local model: ArkUIStateModel = new ArkUIStateModel();
+  @Local status: PageStatus = new PageStatus();
+  aboutToAppear(): void { try { owner.bindPage(this.model, this.status); } catch (error) { failed(error as Error); } }
+  aboutToDisappear(): void { try { owner.pageDisappeared(); } catch (error) { failed(error as Error); } }
+  build() {
+    Column({ space: 16 }) {
+      Text('L05 actual background and foreground').id('l05-bg-title')
+      Text(this.status.phase).id('l05-bg-phase')
+      Text('1').id('l05-bg-page-id')
+      Text(this.model.snapshot === undefined ? 'EMPTY' : this.model.snapshot.text).id('l05-bg-value')
+      Text(String(this.status.ordinaryCount)).id('l05-bg-ordinary')
+      Button('Publish').id('l05-bg-publish').onClick(() => { owner.publishForeground().catch(failed); })
+      Button('Background').id('l05-bg-background').onClick(() => {
+        try {
+          owner.armBackground();
+          const context = this.getUIContext().getHostContext() as common.UIAbilityContext;
+          context.moveAbilityToBackground().catch(failed);
+        } catch (error) { failed(error as Error); }
+      })
+      Button('Finish').id('l05-bg-finish').onClick(() => { owner.finish().catch(failed); })
+    }.width('100%').height('100%').justifyContent(FlexAlign.Center)
+  }
+}

@@ -68,6 +68,7 @@ def main():
         [sys.executable, "-m", "unittest", "discover", "-s", "harness/tests"],
         [sys.executable, "scripts/test_l05.py"],
         [sys.executable, "scripts/test_l05_page_lifecycle.py"],
+        [sys.executable, "scripts/test_l05_background_lifecycle.py"],
         [sys.executable, "scripts/test_l04_ui.py"],
         [sys.executable, "scripts/test_l04_native_ui.py"],
         [sys.executable, "scripts/test_l02.py"],

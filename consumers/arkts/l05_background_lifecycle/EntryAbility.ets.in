@@ -1,0 +1,13 @@
+import { UIAbility } from '@kit.AbilityKit';
+import { window } from '@kit.ArkUI';
+import { owner } from './ApplicationOwner';
+import { failed } from './Trace';
+
+export default class EntryAbility extends UIAbility {
+  onCreate(): void { try { owner.abilityCreated(); } catch (error) { failed(error as Error); } }
+  onWindowStageCreate(stage: window.WindowStage): void {
+    stage.loadContent('pages/Index', (error) => { if (error.code) { failed(new Error(error.message)); } });
+  }
+  onForeground(): void { try { owner.foreground(); } catch (error) { failed(error as Error); } }
+  onBackground(): void { try { owner.background(); } catch (error) { failed(error as Error); } }
+}

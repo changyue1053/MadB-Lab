@@ -1,0 +1,176 @@
+import { openRuntime, Runtime, Engine, Subscription, Snapshot } from @MADB_PUBLIC_MODULE@;
+import { ArkUIStateModel } from './ArkUIStateModel';
+import { check, snapshot, until } from './Assertions';
+import { emit, failed, complete } from './Trace';
+
+@ObservedV2
+export class PageStatus {
+  @Trace phase: string = 'STARTING';
+  @Trace ordinaryCount: number = 0;
+}
+
+// The page owns this model/observation; this application owner retains the
+// asynchronous drain and the shared Runtime/Engine across real UIAbility events.
+export class ApplicationOwner {
+  private runtime: Runtime | undefined = undefined;
+  private engine: Engine | undefined = undefined;
+  private ordinary: Subscription | undefined = undefined;
+  private model: ArkUIStateModel | undefined = undefined;
+  private status: PageStatus | undefined = undefined;
+  private received: Snapshot[] = [];
+  private creates: number = 0;
+  private pages: number = 0;
+  private foregrounds: number = 0;
+  private backgrounds: number = 0;
+  private attachments: number = 0;
+  private foregroundNow: boolean = false;
+  private armed: boolean = false;
+  private backgroundReady: boolean = false;
+  private started: boolean = false;
+  private finished: boolean = false;
+  private failure: Error | undefined = undefined;
+  private backgroundAttempt: Promise<void> | undefined = undefined;
+  private resumeAttempt: Promise<void> | undefined = undefined;
+  private finishAttempt: Promise<void> | undefined = undefined;
+
+  abilityCreated(): void { this.creates++; check(this.creates === 1, 'same-ability-instance'); }
+  bindPage(model: ArkUIStateModel, status: PageStatus): void {
+    this.pages++; check(this.pages === 1 && this.model === undefined, 'same-page-instance');
+    check(model.phase === 'idle' && model.snapshot === undefined, 'initial-inert-model');
+    this.model = model; this.status = status; this.startIfReady();
+  }
+  pageDisappeared(): void { check(this.finished, 'page-survives-background-and-resume'); }
+  private recordFailure(error: Error): void { this.failure = error; failed(error); }
+  private healthy(): void {
+    const failure = this.failure;
+    if (failure !== undefined) { throw failure; }
+    check(!this.finished, 'owner-not-closed');
+  }
+  private startIfReady(): void {
+    if (this.started || !this.foregroundNow || this.model === undefined || this.status === undefined) { return; }
+    check(this.creates === 1 && this.foregrounds === 1 && this.pages === 1, 'initial-real-lifecycle');
+    this.started = true;
+    this.runtime = openRuntime(); this.engine = this.runtime.connect();
+    this.ordinary = this.engine.observeState((value: Snapshot): void => {
+      this.received.push(value);
+      if (this.status !== undefined) { this.status.ordinaryCount = this.received.length; }
+    });
+    this.model.attach(this.engine); this.attachments++;
+    check(this.model.snapshot === undefined && this.model.phase === 'attached', 'initial-no-replay');
+    this.status.phase = 'READY_0'; emit('initial-ready', [this.creates, this.pages, 1, 1, 1, this.foregrounds]);
+  }
+  foreground(): void {
+    // OS shutdown/cleanup may deliver a lifecycle callback after every public
+    // close has completed. This guard does not hide finishing or failed work.
+    if (this.finished) { return; }
+    this.healthy(); this.foregroundNow = true; this.foregrounds++;
+    if (this.foregrounds === 1) { this.startIfReady(); return; }
+    check(this.started && this.backgroundReady && this.foregrounds === this.backgrounds + 1,
+      'real-foreground-follows-completed-background');
+    const cycle = this.backgrounds;
+    emit('foreground-entered-' + String(cycle), [cycle, this.foregrounds]);
+    this.resumeAttempt = this.resume(cycle);
+    this.resumeAttempt.catch((error: Error): void => { this.recordFailure(error); });
+  }
+  private async resume(cycle: number): Promise<void> {
+    const epoch = this.foregrounds;
+    check(this.backgroundAttempt !== undefined, 'resume-has-retained-background-work');
+    if (this.backgroundAttempt !== undefined) { await this.backgroundAttempt; }
+    this.healthy();
+    check(this.foregroundNow && this.foregrounds === epoch && this.backgrounds === cycle && !this.armed,
+      'resume-continuation-matches-active-foreground');
+    check(this.model !== undefined && this.engine !== undefined && this.status !== undefined, 'resume-owner-present');
+    if (this.model !== undefined && this.engine !== undefined && this.status !== undefined) {
+      check(this.model.phase === 'idle', 'drained-before-reattach');
+      this.model.attach(this.engine); this.attachments++;
+      check(this.model.snapshot === undefined && this.model.phase === 'attached', 'resume-no-replay');
+      emit('page-reattached-' + String(cycle), [cycle, this.pages, 0]);
+      this.backgroundReady = false; this.status.phase = 'READY_' + String(cycle);
+    }
+  }
+  async publishForeground(): Promise<void> {
+    this.healthy(); const cycle = this.backgrounds;
+    check(this.foregroundNow && this.model !== undefined && this.engine !== undefined && this.status !== undefined,
+      'publish-current-foreground');
+    if (this.model === undefined || this.engine === undefined || this.status === undefined) { return; }
+    check(this.status.phase === 'READY_' + String(cycle), 'one-publication-per-foreground');
+    this.status.phase = 'PUBLISHING';
+    const epoch = this.foregrounds; const value = cycle * 10 + 1; const text = 'FOREGROUND-' + String(cycle);
+    this.engine.publishState({ value: value, text: text });
+    await until(() => this.received.length === cycle * 2 + 1 && this.model !== undefined && this.model.snapshot !== undefined,
+      'page-and-shared-ordinary-delivery');
+    check(this.foregroundNow && this.foregrounds === epoch, 'foreground-publication-not-background');
+    snapshot(this.model.snapshot, value, text, 'foreground-model');
+    snapshot(this.received[this.received.length - 1], value, text, 'foreground-ordinary');
+    emit('foreground-published-' + String(cycle), [cycle, value, this.received.length]);
+    this.status.phase = 'PUBLISHED_' + String(cycle);
+  }
+  armBackground(): void {
+    this.healthy();
+    check(this.foregroundNow && !this.armed && this.backgrounds < 3 && this.status !== undefined,
+      'one-bounded-background-request');
+    if (this.status !== undefined) {
+      check(this.status.phase === 'PUBLISHED_' + String(this.backgrounds), 'background-after-visible-publication');
+      this.status.phase = 'BACKGROUND_REQUESTED';
+    }
+    this.armed = true;
+  }
+  background(): void {
+    if (this.finished) { return; }
+    this.healthy();
+    check(this.started && this.foregroundNow && this.armed && this.model !== undefined, 'real-armed-background');
+    this.foregroundNow = false; this.armed = false; this.backgrounds++;
+    const cycle = this.backgrounds;
+    emit('background-entered-' + String(cycle), [cycle, this.pages, this.received.length]);
+    let stopFailure: Error | undefined = undefined;
+    try { if (this.model !== undefined) { this.model.requestStop(); } } catch (error) { stopFailure = error as Error; }
+    // Keep the actual close even after a stop error. Never replace a rejection
+    // with a successful target frame, and never await inside UIAbility callback.
+    this.backgroundAttempt = this.drainAndPublish(cycle, stopFailure);
+    this.backgroundAttempt.catch((error: Error): void => { this.recordFailure(error); });
+  }
+  private async drainAndPublish(cycle: number, stopFailure: Error | undefined): Promise<void> {
+    const epoch = this.foregrounds;
+    check(this.model !== undefined && this.engine !== undefined && this.status !== undefined, 'background-owner-present');
+    if (this.model === undefined || this.engine === undefined || this.status === undefined) { return; }
+    await this.model.close();
+    if (stopFailure !== undefined) { throw stopFailure; }
+    this.healthy();
+    check(!this.foregroundNow && this.foregrounds === epoch && this.backgrounds === cycle, 'drain-completed-in-background');
+    check(this.model.phase === 'idle', 'background-observation-drained');
+    snapshot(this.model.snapshot, (cycle - 1) * 10 + 1, 'FOREGROUND-' + String(cycle - 1), 'background-preserved-model');
+    emit('page-drained-' + String(cycle), [cycle, this.pages]);
+    const value = (cycle - 1) * 10 + 2; const text = 'BACKGROUND-' + String(cycle);
+    this.engine.publishState({ value: value, text: text });
+    await until(() => this.received.length === cycle * 2, 'shared-ordinary-delivered-while-background');
+    check(!this.foregroundNow && this.foregrounds === epoch, 'background-delivery-before-any-resume');
+    snapshot(this.received[this.received.length - 1], value, text, 'background-ordinary');
+    snapshot(this.model.snapshot, (cycle - 1) * 10 + 1, 'FOREGROUND-' + String(cycle - 1), 'stopped-page-unchanged');
+    snapshot(this.engine.roundtrip({ value: 100 + cycle, text: 'shared-owner' }), 100 + cycle, 'shared-owner', 'background-engine-usable');
+    emit('background-published-' + String(cycle), [cycle, value, this.received.length, 100 + cycle]);
+    this.backgroundReady = true; this.status.phase = 'BACKGROUND_DONE_' + String(cycle);
+  }
+  finish(): Promise<void> {
+    if (this.finishAttempt !== undefined) { return this.finishAttempt; }
+    this.finishAttempt = this.finishOwned();
+    return this.finishAttempt;
+  }
+  private async finishOwned(): Promise<void> {
+    this.healthy();
+    if (this.backgroundAttempt !== undefined) { await this.backgroundAttempt; }
+    if (this.resumeAttempt !== undefined) { await this.resumeAttempt; }
+    check(this.foregroundNow && this.backgrounds === 3 && this.foregrounds === 4 && this.attachments === 4 &&
+      this.creates === 1 && this.pages === 1 && this.received.length === 7 && this.status !== undefined &&
+      this.status.phase === 'PUBLISHED_3', 'all-real-background-foreground-cycles');
+    const expected: number[] = [1, 2, 11, 12, 21, 22, 31];
+    for (let index: number = 0; index < expected.length; index++) { check(this.received[index].value === expected[index], 'ordinary-exact-order'); }
+    if (this.model !== undefined) { this.model.requestStop(); await this.model.close(); }
+    if (this.ordinary !== undefined) { this.ordinary.requestStop(); await this.ordinary.close(); }
+    if (this.engine !== undefined) { await this.engine.close(); }
+    if (this.runtime !== undefined) { await this.runtime.close(); }
+    this.finished = true;
+    if (this.status !== undefined) { this.status.phase = 'FINISHED'; }
+    emit('owner-closed', [this.pages, this.backgrounds, this.attachments, this.received.length, 1]); complete();
+  }
+}
+export const owner: ApplicationOwner = new ApplicationOwner();
