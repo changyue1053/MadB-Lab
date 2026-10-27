@@ -245,6 +245,34 @@ class CleanupTests(unittest.TestCase):
                 kill.assert_not_called()
 
 
+class SigningTests(unittest.TestCase):
+    def observe(self, entitlements, details='Signature=adhoc\nTeamIdentifier=not set\n'):
+        import plistlib
+        sys.path.insert(0, str(ROOT / 'scripts'))
+        import verify_l04_native_ui as runner
+        class Commands:
+            def run(self, argv, **kwargs):
+                if '--entitlements' in argv:
+                    return plistlib.dumps(entitlements).decode()
+                return details if kwargs.get('include_stderr') else ''
+        return runner.observe_signing(Commands(), Path('/private/output/MadBL04NativeUI.app'))
+
+    def test_xcode_ad_hoc_receipts_keep_distribution_unclaimed(self):
+        result = self.observe({'com.apple.security.get-task-allow': True})
+        self.assertEqual(result['mode'], 'local-ad-hoc-development-only')
+        self.assertIs(result['distribution_signature'], False)
+        self.assertEqual(len(result['products']), 3)
+
+    def test_absent_or_false_development_task_entitlement_rejected(self):
+        for entitlements in ({}, {'com.apple.security.get-task-allow': False}):
+            with self.subTest(entitlements=entitlements), self.assertRaisesRegex(ValueError, 'entitlement is absent'):
+                self.observe(entitlements)
+
+    def test_developer_or_other_signature_cannot_claim_ad_hoc(self):
+        with self.assertRaisesRegex(ValueError, 'ad-hoc signature'):
+            self.observe({'com.apple.security.get-task-allow': True}, 'Signature size=4442\nTeamIdentifier=EXAMPLE\n')
+
+
 class SchemeTests(unittest.TestCase):
     def test_macos_runner_uses_observed_xcode_default_launcher(self):
         scheme = ET.parse(ROOT / 'consumers/swift/l04_native_ui/MadBL04NativeUI.xcscheme').getroot()

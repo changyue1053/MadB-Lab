@@ -6,6 +6,7 @@ import json
 import os
 from pathlib import Path
 import platform
+import plistlib
 import shutil
 import signal
 import subprocess
@@ -49,7 +50,7 @@ class Commands:
             raise RuntimeError('owned process inventory failed: ' + str(path))
         return selected
 
-    def run(self, argv, *, timeout=60, allowed=(0,)):
+    def run(self, argv, *, timeout=60, allowed=(0,), include_stderr=False):
         argv = [str(item) for item in argv]
         process = subprocess.Popen(argv, cwd=self.output, env=self.environment, stdout=subprocess.PIPE,
                                    stderr=subprocess.PIPE, start_new_session=True)
@@ -68,7 +69,7 @@ class Commands:
         self.records.append({'path': path.relative_to(self.output).as_posix(), **reference(path)})
         if process.returncode not in allowed or timed_out:
             raise RuntimeError('command failed: ' + str(path))
-        return record['stdout']
+        return record['stdout'] + record['stderr'] if include_stderr else record['stdout']
 
 
 def source_inputs():
@@ -132,15 +133,37 @@ def observe_tools(commands: Commands, candidate: dict):
         path = Path(commands.run(['/usr/bin/xcrun', '--find', name]).strip()).resolve(strict=True)
         images[name] = {'path': str(path), **reference(path)}
     sdk = Path(commands.run(['/usr/bin/xcrun', '--sdk', 'macosx', '--show-sdk-path']).strip())
+    images['codesign'] = {'path': '/usr/bin/codesign', **reference(Path('/usr/bin/codesign'))}
+    signing_paths = [sdk / 'SDKSettings.json',
+                     sdk.parents[1] / 'Library/Xcode/Agents/XCTRunner.app/Contents/Resources/RunnerEntitlements.plist',
+                     sdk.parents[1] / 'Library/Xcode/PrivatePlugIns/IDEOSXSupportCore.ideplugin/Contents/Resources/BaseEntitlements.plist']
     return {'xcode': xcode, 'swift': swift, 'sdk_version': sdk_version, 'sdk_build': sdk_build,
             'sdk_settings': {'path': str(sdk / 'SDKSettings.plist'), **reference(sdk / 'SDKSettings.plist')},
+            'signing_inputs': [{'path': str(path), **reference(path)} for path in signing_paths],
             'images': images, 'host': commands.run(['/usr/bin/sw_vers']).strip()}
 
 
 def verify_tools(observed):
-    for record in [*observed['images'].values(), observed['sdk_settings']]:
+    for record in [*observed['images'].values(), observed['sdk_settings'], *observed['signing_inputs']]:
         if reference(Path(record['path'])) != {key: record[key] for key in ('sha256', 'size')}:
             raise ValueError('consumer compiler/SDK bytes changed during execution')
+
+
+def observe_signing(commands, app):
+    runner = app.parent / 'MadBL04NativeUITests-Runner.app'
+    bundle = runner / 'Contents/PlugIns/MadBL04NativeUITests.xctest'
+    observed = {'mode': 'local-ad-hoc-development-only', 'distribution_signature': False, 'products': []}
+    for name, path in (('application', app), ('test-runner', runner), ('test-bundle', bundle)):
+        commands.run(['/usr/bin/codesign', '--verify', '--deep', '--strict', '--verbose=2', path])
+        details = commands.run(['/usr/bin/codesign', '-d', '--verbose=4', path], include_stderr=True)
+        if 'Signature=adhoc' not in details.splitlines() or 'TeamIdentifier=not set' not in details.splitlines():
+            raise ValueError('expected local ad-hoc signature without a developer team: ' + name)
+        raw = commands.run(['/usr/bin/codesign', '-d', '--entitlements', '-', '--xml', path])
+        entitlements = plistlib.loads(raw.encode()) if raw.strip() else {}
+        if name != 'test-bundle' and entitlements.get('com.apple.security.get-task-allow') is not True:
+            raise ValueError('Xcode development task entitlement is absent: ' + name)
+        observed['products'].append({'name': name, 'path': str(path), 'entitlements': entitlements})
+    return observed
 
 
 def select_owned_processes(text, executables):
@@ -282,12 +305,14 @@ def main():
                 '-destination', 'platform=macOS,arch=arm64', '-derivedDataPath', args.output / 'DerivedData',
                 '-clonedSourcePackagesDirPath', args.output / 'SourcePackages', '-packageCachePath', args.output / 'PackageCache',
                 '-disableAutomaticPackageResolution',
-                '-skipPackageUpdates', '-parallel-testing-enabled', 'NO', 'CODE_SIGNING_ALLOWED=NO']
+                '-skipPackageUpdates', '-parallel-testing-enabled', 'NO', 'CODE_SIGNING_ALLOWED=YES',
+                'CODE_SIGN_IDENTITY=-', 'DEVELOPMENT_TEAM=']
         report['compile'] = 'started'
         commands.run(base + ['-resultBundlePath', args.output / 'compile.xcresult', 'build-for-testing'], timeout=300)
         report['compile'] = 'passed'
         app = args.output / 'DerivedData/Build/Products/Release' / (SCHEME + '.app')
         report['app_files'] = inventory(app)
+        report['signing'] = observe_signing(commands, app)
         report['linked_images'] = commands.run(['/usr/bin/otool', '-L', app / 'Contents/MacOS' / SCHEME])
         if not args.build_only:
             report['target'] = 'started'
